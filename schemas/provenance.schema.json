@@ -25,21 +25,27 @@
     "creation_tool": { "type": "string" },
     "upstream_source": {
       "type": "object",
+      "required": ["author", "url", "license_evidence"],
       "properties": {
         "repository": { "type": "string" },
         "author": { "type": "string" },
         "url": { "type": "string" },
+        "license_evidence": { "type": "string" },
         "commit": { "type": "string" }
-      }
+      },
+      "additionalProperties": false
     },
     "generation_metadata": {
       "type": "object",
+      "required": ["model", "provider", "prompt", "parameters", "date"],
       "properties": {
         "model": { "type": "string" },
         "provider": { "type": "string" },
         "prompt": { "type": "string" },
-        "parameters": { "type": "object" }
-      }
+        "parameters": { "type": "object" },
+        "date": { "type": "string" }
+      },
+      "additionalProperties": false
     },
     "clean_room_attestation": {
       "type": "object",
@@ -67,5 +73,31 @@
     },
     "test_only": { "type": "boolean" }
   },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "source_type": { "const": "project_synthetic" } }
+      },
+      "then": {
+        "required": ["creation_tool"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "source_type": { "const": "externally_licensed" } }
+      },
+      "then": {
+        "required": ["upstream_source"]
+      }
+    },
+    {
+      "if": {
+        "properties": { "source_type": { "const": "ai_generated" } }
+      },
+      "then": {
+        "required": ["generation_metadata"]
+      }
+    }
+  ],
   "additionalProperties": false
 }

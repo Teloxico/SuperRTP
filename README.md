@@ -108,31 +108,38 @@ Executes 10 mechanical checks:
 7. Clean-room fixture binary and source hash integrity against `fixture_manifest.json`
 8. Headless EasyRPG Player positive control (clean resolution without missing asset warnings)
 9. Headless EasyRPG Player negative control (isolated `Image not found: CharSet/Actor1` failure)
-10. Presence and geometry of 4-direction runtime verification screenshots
+10. Evidence chain cryptographic integrity and 4-direction runtime verification screenshots
 
-### 2. Generate Canonical Asset
+### 2. Generate Clean-Room Fixture Graphics
+```bash
+python3 tools/generate_fixture_graphics.py
+```
+Deterministically generates fallback `ChipSet.png` and `System.png` for the test fixture from geometric primitives using pure Python standard library.
+
+### 3. Generate Canonical Asset
 ```bash
 python3 tools/generate_calibration_charset.py
 ```
 
-### 3. Build RM2000 Target Pack
+### 4. Build RM2000 Target Pack
 ```bash
 python3 tools/build_target.py --target rm2000 --clean
 ```
 
-### 4. Validate Target Pack
+### 5. Validate Target Pack
 ```bash
 python3 tools/validate_target.py --target rm2000
 ```
 
-### 5. Runtime Verification (EasyRPG Player)
+### 6. Runtime Verification & Evidence Verification (EasyRPG Player)
 ```bash
-# Positive test (RTP resolved):
-easyrpg-player --project-path tests/fixtures/rm2000_min --rtp-path generated/rm2000 --engine rpg2k --new-game --disable-audio
+# Verify existing evidence chain, screenshot hashes, and logs:
+python3 tools/verify_runtime.py --verify
 
-# Negative control (Missing asset fallback):
-easyrpg-player --project-path tests/fixtures/rm2000_min --no-rtp --engine rpg2k --new-game --disable-audio
+# Or execute full live replay in EasyRPG under virtual X11, capture screenshots, and regenerate evidence:
+python3 tools/verify_runtime.py --run-replay
 ```
+Generates [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json) cryptographically binding engine version, target manifest hash, fixture manifest hash, replay file hash, and screenshot hashes.
 
 ## Clean-Room Policy & Licensing
 

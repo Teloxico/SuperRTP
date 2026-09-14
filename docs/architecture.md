@@ -29,7 +29,7 @@ Different RPG engine generations employ fundamentally different resource lookup 
 1. **RPG Maker 2000 / 2003 (EasyRPG Player)**:
    - Uses case-insensitive table-based alias lookup.
    - Primary filenames and historical localization aliases differ between versions (e.g., `Actor1` vs `Hero1`, `Chara1`, Japanese `主人公1`).
-   - Slot mappings are derived directly from upstream EasyRPG `src/rtp_table.cpp`.
+   - Slot mappings are derived directly from upstream EasyRPG `src/rtp_table.cpp` (table `rtp_table_2k`, release commit `78328fa` / v0.8.1.1).
    - Palette color format: 8-bit indexed PNG (maximum 256 colors).
    - RM2000 transparency model: Palette index 0 is designated as transparent color. SuperRTP additionally provides standard `tRNS` chunks for modern viewer compatibility.
 
@@ -59,13 +59,24 @@ For RPG Maker 2000 / 2003 character spritesheets:
 ## 4. Deterministic Reproducibility
 
 Builds are required to be bit-for-bit reproducible:
-- The builder quantizes colors using a deterministic scanline ordering.
+- The builder performs deterministic exact palette extraction and indexing (requiring $\le 256$ unique colors, sorted by RGBA appearance).
 - `manifest.json` timestamps support `SOURCE_DATE_EPOCH` environment variables and default to a static ISO epoch (`1970-01-01T00:00:00Z`).
 - Automated tests verify that successive clean builds produce identical hashes across all generated files.
 
 ## 5. Clean-Room Test Fixtures
 
-Test fixtures under `tests/fixtures/rm2000_min/` are generated from clean-room source code using `liblcf` (`tools/generate_fixture.cpp`).
-- Binaries contain zero proprietary assets.
-- `tests/fixtures/rm2000_min/fixture_manifest.json` tracks the generator source SHA-256 and binary file hashes.
-- Bundled fallback assets (`ChipSet/ChipSet.png`, `System/System.png`) eliminate non-RTP runtime log noise during automated test runs.
+Test fixtures under `tests/fixtures/rm2000_min/` are generated entirely from clean-room source code:
+- Map and database binaries (`LMT`, `LDB`, `LMU`) are generated via `liblcf` (`tools/generate_fixture.cpp`).
+- Minimal fallback graphics (`ChipSet/ChipSet.png` and `System/System.png`) are generated deterministically using pure Python standard library (`tools/generate_fixture_graphics.py`) from geometric shapes.
+- Binaries and graphics contain zero proprietary creative assets.
+- `tests/fixtures/rm2000_min/fixture_manifest.json` tracks the generator source SHA-256 and binary/graphic file hashes.
+- Bundled fallback assets eliminate non-RTP runtime log noise during automated test runs.
+
+## 6. Runtime Verification & Evidence Chaining
+
+Runtime verification is executed through `tools/verify_runtime.py`:
+- Drives headless EasyRPG Player via an Xvfb virtual frame buffer.
+- Replays deterministic multi-frame inputs (`tests/fixtures/rm2000_min/replay_charset.txt`) navigating all 4 directional faces.
+- Captures frame screenshots and negative control fallback images (`artifacts/runtime/rm2000/charset/`).
+- Performs programmatic pixel-level and directional assertion checks.
+- Generates `artifacts/runtime/rm2000/charset/verification_evidence.json`, cryptographically binding target manifest hash, fixture manifest hash, replay script hash, EasyRPG version, and screenshot image hashes.

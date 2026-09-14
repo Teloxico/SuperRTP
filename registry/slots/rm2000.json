@@ -2,7 +2,7 @@
   "target": "rm2000",
   "target_name": "RPG Maker 2000 Runtime Package",
   "engine": "RPG Maker 2000",
-  "reference_source": "EasyRPG Player src/rtp_table.cpp (table_2000, commit c32ec69 / v0.8.1.1)",
+  "reference_source": "EasyRPG Player src/rtp_table.cpp (rtp_table_2k, commit 78328fa / v0.8.1.1)",
   "slots": {
     "CharSet/Actor1.png": {
       "asset_id": "test.calibration.walking-character",

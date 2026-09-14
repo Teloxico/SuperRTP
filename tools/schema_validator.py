@@ -90,6 +90,49 @@ def validate_schema(data, schema, path="root"):
             for idx, item in enumerate(data):
                 validate_schema(item, item_schema, path=f"{path}[{idx}]")
 
+    # 8. Combinator: allOf
+    if "allOf" in schema:
+        for idx, subschema in enumerate(schema["allOf"]):
+            validate_schema(data, subschema, path=f"{path}.allOf[{idx}]")
+
+    # 9. Combinator: anyOf
+    if "anyOf" in schema:
+        matched = False
+        for subschema in schema["anyOf"]:
+            try:
+                validate_schema(data, subschema, path=path)
+                matched = True
+                break
+            except SchemaValidationError:
+                pass
+        if not matched:
+            raise SchemaValidationError(f"[{path}] Data does not match any schema in 'anyOf'")
+
+    # 10. Combinator: oneOf
+    if "oneOf" in schema:
+        match_count = 0
+        for subschema in schema["oneOf"]:
+            try:
+                validate_schema(data, subschema, path=path)
+                match_count += 1
+            except SchemaValidationError:
+                pass
+        if match_count != 1:
+            raise SchemaValidationError(f"[{path}] Data matched {match_count} schemas in 'oneOf', expected exactly 1")
+
+    # 11. Conditional: if / then / else
+    if "if" in schema:
+        condition_met = True
+        try:
+            validate_schema(data, schema["if"], path=path)
+        except SchemaValidationError:
+            condition_met = False
+
+        if condition_met and "then" in schema:
+            validate_schema(data, schema["then"], path=path)
+        elif not condition_met and "else" in schema:
+            validate_schema(data, schema["else"], path=path)
+
     return True
 
 def validate_file_against_schema(data_filepath, schema_filepath):
