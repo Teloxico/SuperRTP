@@ -1,0 +1,22 @@
+{
+  "asset_id": "test.calibration.walking-character",
+  "canonical_path": "registry/assets/test_calibration_walking_character.png",
+  "sha256": "7f447a5e9f148a1a1129b9ca93def5cc33592dd1f75be321b0c0c6e8d8a77376",
+  "license": "CC0-1.0",
+  "creator": "SuperRTP Project",
+  "creation_tool": "tools/generate_calibration_charset.py",
+  "clean_room_attestation": {
+    "proprietary_rtp_derived": false,
+    "openrtp_derived": false,
+    "external_art_used": false,
+    "ai_generation_used": false,
+    "geometric_primitives_only": true,
+    "notes": "Generated exclusively from mathematical polygon coordinates, directional arrows, and step indicators using Python standard library struct/zlib."
+  },
+  "specification": {
+    "rpg_engine": "RPG Maker 2000 / EasyRPG Player",
+    "asset_class": "CharSet",
+    "notes": "Test-only compatibility calibration fixture for Phase 1 vertical slice."
+  },
+  "test_only": true
+}

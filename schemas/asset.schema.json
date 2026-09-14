@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superrtp.org/schemas/asset.schema.json",
+  "title": "SuperRTP Asset Metadata",
+  "type": "object",
+  "required": [
+    "id",
+    "name",
+    "type",
+    "format",
+    "dimensions",
+    "test_only",
+    "license",
+    "file",
+    "sha256"
+  ],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$" },
+    "name": { "type": "string" },
+    "description": { "type": "string" },
+    "type": { "type": "string", "enum": ["charset", "chipset", "faceset", "battle", "panorama", "title", "system"] },
+    "format": { "type": "string" },
+    "dimensions": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": {
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "grid": {
+      "type": "object",
+      "properties": {
+        "characters_x": { "type": "integer" },
+        "characters_y": { "type": "integer" },
+        "frame_width": { "type": "integer" },
+        "frame_height": { "type": "integer" },
+        "columns_per_character": { "type": "integer" },
+        "rows_per_character": { "type": "integer" }
+      }
+    },
+    "palette": {
+      "type": "object",
+      "properties": {
+        "max_colors": { "type": "integer", "maximum": 256 },
+        "transparent_index": { "type": "integer" }
+      }
+    },
+    "test_only": { "type": "boolean" },
+    "license": { "type": "string" },
+    "file": { "type": "string" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
+  },
+  "additionalProperties": false
+}

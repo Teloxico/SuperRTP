@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superrtp.org/schemas/slot_mapping.schema.json",
+  "title": "SuperRTP Slot Mapping",
+  "type": "object",
+  "required": [
+    "target",
+    "target_name",
+    "engine",
+    "reference_source",
+    "slots"
+  ],
+  "properties": {
+    "target": { "type": "string" },
+    "target_name": { "type": "string" },
+    "engine": { "type": "string" },
+    "reference_source": { "type": "string" },
+    "slots": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "asset_id",
+          "category",
+          "slot_path",
+          "test_only"
+        ],
+        "properties": {
+          "asset_id": { "type": "string" },
+          "category": { "type": "string" },
+          "slot_path": { "type": "string" },
+          "aliases": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "format": { "type": "string" },
+          "dimensions": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "test_only": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

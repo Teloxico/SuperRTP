@@ -1,0 +1,23 @@
+{
+  "target": "rm2000",
+  "target_name": "RPG Maker 2000 Runtime Package",
+  "engine": "RPG Maker 2000",
+  "reference_source": "EasyRPG Player src/rtp_table.cpp",
+  "slots": {
+    "CharSet/Actor1.png": {
+      "asset_id": "test.calibration.walking-character",
+      "category": "CharSet",
+      "slot_path": "CharSet/Actor1.png",
+      "aliases": [
+        "CharSet/Hero1.png",
+        "CharSet/actor1.png",
+        "CharSet/hero1.png",
+        "CharSet/chara1.png",
+        "CharSet/主人公1.png"
+      ],
+      "format": "indexed-png",
+      "dimensions": [288, 256],
+      "test_only": true
+    }
+  }
+}

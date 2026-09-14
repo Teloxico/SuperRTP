@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://superrtp.org/schemas/provenance.schema.json",
+  "title": "SuperRTP Provenance Record",
+  "type": "object",
+  "required": [
+    "asset_id",
+    "canonical_path",
+    "sha256",
+    "license",
+    "creator",
+    "creation_tool",
+    "clean_room_attestation",
+    "test_only"
+  ],
+  "properties": {
+    "asset_id": { "type": "string" },
+    "canonical_path": { "type": "string" },
+    "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "license": { "type": "string" },
+    "creator": { "type": "string" },
+    "creation_tool": { "type": "string" },
+    "clean_room_attestation": {
+      "type": "object",
+      "required": [
+        "proprietary_rtp_derived",
+        "openrtp_derived",
+        "external_art_used",
+        "ai_generation_used",
+        "geometric_primitives_only"
+      ],
+      "properties": {
+        "proprietary_rtp_derived": { "type": "boolean", "const": false },
+        "openrtp_derived": { "type": "boolean", "const": false },
+        "external_art_used": { "type": "boolean", "const": false },
+        "ai_generation_used": { "type": "boolean", "const": false },
+        "geometric_primitives_only": { "type": "boolean" },
+        "notes": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "specification": {
+      "type": "object",
+      "properties": {
+        "rpg_engine": { "type": "string" },
+        "asset_class": { "type": "string" },
+        "notes": { "type": "string" }
+      }
+    },
+    "test_only": { "type": "boolean" }
+  },
+  "additionalProperties": false
+}

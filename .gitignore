@@ -1,0 +1,9 @@
+generated/
+.cache/
+tmp/
+dist/
+__pycache__/
+*.pyc
+.env
+tools/generate_fixture
+node_modules/
