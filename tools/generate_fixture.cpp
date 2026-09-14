@@ -4,6 +4,7 @@
 #include <lcf/rpg/database.h>
 #include <lcf/rpg/treemap.h>
 #include <lcf/rpg/map.h>
+#include <lcf/rpg/terrain.h>
 #include <lcf/ldb/reader.h>
 #include <lcf/lmt/reader.h>
 #include <lcf/lmu/reader.h>
@@ -14,8 +15,8 @@
  *
  * Deterministically creates:
  *   - RPG_RT.ini (with FullPackageFlag=0 to enforce RTP lookup)
- *   - RPG_RT.ldb (Database with Actor 1 referencing CharSet "Actor1", slot 0)
- *   - RPG_RT.lmt (Map Tree with starting location at center of Map 1)
+ *   - RPG_RT.ldb (Database with Actor 1 referencing CharSet "Actor1", slot 0, and default Terrain 1)
+ *   - RPG_RT.lmt (Map Tree with Root ID 0 and starting location at center of Map 1)
  *   - Map0001.lmu (20x15 tile map matching 320x240 native RM2000 screen)
  *
  * This fixture contains zero proprietary data and zero bundled CharSet assets,
@@ -38,15 +39,23 @@ int main(int argc, char* argv[]) {
     actor.character_index = 0;
     db.actors.push_back(actor);
 
+    // Terrain 1: Standard walkable terrain (eliminates GetBushDepth invalid terrain warning)
+    lcf::rpg::Terrain terrain;
+    terrain.ID = 1;
+    terrain.name = "Grass";
+    terrain.bush_depth = 0;
+    db.terrains.push_back(terrain);
+
     // System configuration
     db.system.party = {1};
     db.system.system_name = "System";
 
-    // Chipset 1: Minimal chipset definition
+    // Chipset 1: Minimal chipset definition referencing bundled ChipSet
     lcf::rpg::Chipset chipset;
     chipset.ID = 1;
     chipset.name = "Basic";
     chipset.chipset_name = "ChipSet";
+    chipset.terrain_data.resize(162, 1); // Default all tiles to Terrain ID 1
     db.chipsets.push_back(chipset);
 
     if (!lcf::LDB_Reader::Save(out_dir + "/RPG_RT.ldb", db)) {

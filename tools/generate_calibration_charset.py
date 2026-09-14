@@ -2,17 +2,19 @@
 """
 Clean-Room Synthetic Calibration CharSet Generator for SuperRTP.
 
-Generates a test-only canonical walking character sprite sheet compliant with
-RPG Maker 2000 specifications:
+Generates a neutral canonical walking character sprite sheet:
 - Total dimensions: 288 x 256 pixels
 - Character layout: 8 characters arranged in a 4x2 grid (72 x 128 per character)
 - Frame layout: 3 columns x 4 rows per character (24 x 32 per frame)
   - Col 0: Left step, Col 1: Standing (idle), Col 2: Right step
-  - Row 0: Facing Down, Row 1: Facing Left, Row 2: Facing Right, Row 3: Facing Up
-- Pixel format: PNG 8-bit indexed colormap (Color Type 3)
-- Palette index 0: Transparent background (tRNS alpha 0)
-- Visual primitives: Pure geometric directional arrows and step markers
-- Provenance: 100% synthetic, zero proprietary RTP creative assets
+  - Physical RM2000/EasyRPG Row Order:
+      Row 0: Facing Up (facing 0)
+      Row 1: Facing Right (facing 1)
+      Row 2: Facing Down (facing 2)
+      Row 3: Facing Left (facing 3)
+- Neutral format: 32-bit RGBA pixel matrix (uncompressed bytes + master PNG)
+- Target-specific transformations (e.g. 8-bit indexed palette, tRNS) are handled
+  downstream by tools/build_target.py.
 """
 
 import os
@@ -20,57 +22,42 @@ import sys
 import struct
 import zlib
 import hashlib
+import json
 
-def create_png(width, height, palette, pixel_indices):
-    """
-    Constructs an 8-bit indexed PNG with a tRNS chunk ensuring index 0 is transparent.
-    """
+def create_rgba_png(width, height, rgba_bytes):
+    """Encodes 32-bit RGBA pixels into standard 32-bit PNG."""
     def chunk(chunk_type, data):
         c_type = chunk_type.encode('ascii')
         crc = zlib.crc32(c_type + data) & 0xffffffff
         return struct.pack('>I', len(data)) + c_type + data + struct.pack('>I', crc)
 
-    # PNG Signature
     png_sig = b'\x89PNG\r\n\x1a\n'
-
-    # IHDR: width, height, bit depth (8), color type (3 = indexed), compression (0), filter (0), interlace (0)
-    ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 3, 0, 0, 0)
+    # IHDR: width, height, bit depth (8), color type (6 = RGBA), compression (0), filter (0), interlace (0)
+    ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)
     ihdr_chunk = chunk('IHDR', ihdr_data)
 
-    # PLTE: palette of RGB triples (max 256 entries)
-    plte_data = bytearray()
-    for r, g, b in palette:
-        plte_data.extend([r, g, b])
-    plte_chunk = chunk('PLTE', bytes(plte_data))
-
-    # tRNS: transparency chunk. Palette index 0 has alpha 0, others default to 255.
-    trns_data = b'\x00'
-    trns_chunk = chunk('tRNS', trns_data)
-
-    # IDAT: image data with scanline filter type 0 (None)
     raw_data = bytearray()
+    row_bytes = width * 4
     for y in range(height):
-        raw_data.append(0)  # Filter type 0
-        start = y * width
-        raw_data.extend(pixel_indices[start:start + width])
+        raw_data.append(0)  # Filter type 0 (None)
+        start = y * row_bytes
+        raw_data.extend(rgba_bytes[start:start + row_bytes])
 
     compressed_idat = zlib.compress(bytes(raw_data), level=9)
     idat_chunk = chunk('IDAT', compressed_idat)
-
-    # IEND
     iend_chunk = chunk('IEND', b'')
 
-    return png_sig + ihdr_chunk + plte_chunk + trns_chunk + idat_chunk + iend_chunk
+    return png_sig + ihdr_chunk + idat_chunk + iend_chunk
 
-def generate_calibration_charset():
+def generate_canonical_rgba():
     width = 288
     height = 256
-    pixels = bytearray(width * height)
+    # 4 bytes per pixel: R, G, B, A (0 = fully transparent)
+    rgba = bytearray(width * height * 4)
 
-    # Define color schemes for 8 character slots (Slots 0 to 7)
-    # Each slot has: (body_color, outline_color, accent_color, foot_color)
+    # 8 Character slot color themes
     slot_themes = [
-        # Slot 0 (Hero / Actor 1): Cyan / Amber / Gold
+        # Slot 0 (Protagonist / Actor 1): Cyan / Amber / Gold
         {"body": (0, 210, 230), "outline": (10, 40, 70), "accent": (255, 230, 80), "foot": (240, 160, 20)},
         # Slot 1: Emerald / Forest / Lemon
         {"body": (40, 220, 120), "outline": (10, 60, 30), "accent": (220, 255, 80), "foot": (180, 200, 30)},
@@ -88,181 +75,67 @@ def generate_calibration_charset():
         {"body": (210, 215, 220), "outline": (50, 55, 60), "accent": (255, 255, 255), "foot": (150, 110, 70)},
     ]
 
-    # Build palette:
-    # Index 0: Transparent (0, 0, 0)
-    # Index 1: Neutral dark grid / calibration border (30, 30, 35)
-    palette = [
-        (0, 0, 0),      # 0: Transparent
-        (30, 30, 35),   # 1: Frame calibration corner marker
-    ]
+    # Frame boundary calibration color (dark subtle tick)
+    calibration_color = (30, 30, 35)
 
-    slot_color_indices = []
-    for theme in slot_themes:
-        b_idx = len(palette)
-        palette.append(theme["body"])
-        o_idx = len(palette)
-        palette.append(theme["outline"])
-        a_idx = len(palette)
-        palette.append(theme["accent"])
-        f_idx = len(palette)
-        palette.append(theme["foot"])
-        slot_color_indices.append({
-            "body": b_idx,
-            "outline": o_idx,
-            "accent": a_idx,
-            "foot": f_idx,
-        })
-
-    # Render each character
     for char_idx in range(8):
         char_grid_x = char_idx % 4
         char_grid_y = char_idx // 4
         char_base_x = char_grid_x * 72
         char_base_y = char_grid_y * 128
-        colors = slot_color_indices[char_idx]
+        theme = slot_themes[char_idx]
 
         for row in range(4):        # 4 directions
             for col in range(3):    # 3 walking frames
                 fx0 = char_base_x + col * 24
                 fy0 = char_base_y + row * 32
 
-                # Helper to set pixel inside cell
-                def set_px(lx, ly, color_idx):
+                def set_px(lx, ly, rgb):
                     if 0 <= lx < 24 and 0 <= ly < 32:
-                        pixels[(fy0 + ly) * width + (fx0 + lx)] = color_idx
+                        idx = ((fy0 + ly) * width + (fx0 + lx)) * 4
+                        rgba[idx] = rgb[0]
+                        rgba[idx + 1] = rgb[1]
+                        rgba[idx + 2] = rgb[2]
+                        rgba[idx + 3] = 255  # Fully opaque
 
-                # 1. Subtle corner calibration ticks (2x2 at corners)
-                # Allows immediate verification that tile alignment is exact
-                set_px(0, 0, 1)
-                set_px(1, 0, 1)
-                set_px(0, 1, 1)
-                set_px(23, 0, 1)
-                set_px(22, 0, 1)
-                set_px(23, 1, 1)
-                set_px(0, 31, 1)
-                set_px(1, 31, 1)
-                set_px(0, 30, 1)
-                set_px(23, 31, 1)
-                set_px(22, 31, 1)
-                set_px(23, 30, 1)
+                # 1. Subtle 2x2 corner calibration markers
+                for cx, cy in [(0,0), (1,0), (0,1), (23,0), (22,0), (23,1),
+                               (0,31), (1,31), (0,30), (23,31), (22,31), (23,30)]:
+                    set_px(cx, cy, calibration_color)
 
                 # 2. Feet / Step markers at bottom (ly = 24..28)
                 # Col 0: Left step (left foot forward/lower, right foot back)
                 # Col 1: Standing (center feet symmetric)
                 # Col 2: Right step (right foot forward/lower, left foot back)
-                if col == 1:  # Center / Idle standing
+                if col == 1:  # Center idle standing
                     for ly in range(25, 28):
                         for lx in range(7, 10):
-                            set_px(lx, ly, colors["foot"])
+                            set_px(lx, ly, theme["foot"])
                         for lx in range(14, 17):
-                            set_px(lx, ly, colors["foot"])
+                            set_px(lx, ly, theme["foot"])
                 elif col == 0:  # Left step forward
-                    for ly in range(26, 29):  # Left foot lower/forward
+                    for ly in range(26, 29):
                         for lx in range(6, 10):
-                            set_px(lx, ly, colors["foot"])
-                    for ly in range(24, 26):  # Right foot higher/back
+                            set_px(lx, ly, theme["foot"])
+                    for ly in range(24, 26):
                         for lx in range(14, 17):
-                            set_px(lx, ly, colors["foot"])
+                            set_px(lx, ly, theme["foot"])
                 elif col == 2:  # Right step forward
-                    for ly in range(24, 26):  # Left foot higher/back
+                    for ly in range(24, 26):
                         for lx in range(7, 10):
-                            set_px(lx, ly, colors["foot"])
-                    for ly in range(26, 29):  # Right foot lower/forward
+                            set_px(lx, ly, theme["foot"])
+                    for ly in range(26, 29):
                         for lx in range(14, 18):
-                            set_px(lx, ly, colors["foot"])
+                            set_px(lx, ly, theme["foot"])
 
                 # 3. Geometric Directional Arrow Body
-                # Row 0: Facing Down (V)
-                # Row 1: Facing Left (<)
-                # Row 2: Facing Right (>)
-                # Row 3: Facing Up (^)
-                if row == 0:  # Down
-                    # Draw a wide downward chevron arrow
-                    for ly in range(5, 23):
-                        # Arrow tapers down towards tip at (11.5, 21)
-                        if ly <= 13:
-                            # Upper wings
-                            left_edge = max(3, 11 - (ly - 5) * 1)
-                            right_edge = min(20, 12 + (ly - 5) * 1)
-                            notch_left = 11 - (ly - 5) // 2
-                            notch_right = 12 + (ly - 5) // 2
-                            for lx in range(left_edge, right_edge + 1):
-                                if ly < 9 and notch_left <= lx <= notch_right:
-                                    continue  # inner notch
-                                is_outline = (lx == left_edge or lx == right_edge or
-                                              (ly >= 8 and (lx == notch_left or lx == notch_right)))
-                                set_px(lx, ly, colors["outline"] if is_outline else colors["body"])
-                        else:
-                            # Lower tip
-                            span = 21 - ly
-                            left_edge = 11 - span
-                            right_edge = 12 + span
-                            for lx in range(left_edge, right_edge + 1):
-                                is_outline = (lx == left_edge or lx == right_edge or ly == 21)
-                                set_px(lx, ly, colors["outline"] if is_outline else colors["body"])
-                    # Center accent core
-                    for ly in range(11, 14):
-                        for lx in range(10, 14):
-                            set_px(lx, ly, colors["accent"])
+                # CRITICAL PHYSICAL RM2000 ROW ORDER:
+                # Row 0: Facing Up (facing 0)
+                # Row 1: Facing Right (facing 1)
+                # Row 2: Facing Down (facing 2)
+                # Row 3: Facing Left (facing 3)
 
-                elif row == 1:  # Left
-                    # Draw a pointing-left chevron arrow
-                    for lx in range(4, 20):
-                        if lx <= 12:
-                            # Tip pointing left towards x=4
-                            span = lx - 4
-                            top_edge = 13 - span
-                            bottom_edge = 14 + span
-                            for ly in range(top_edge, bottom_edge + 1):
-                                is_outline = (lx == 4 or ly == top_edge or ly == bottom_edge)
-                                set_px(lx, ly, colors["outline"] if is_outline else colors["body"])
-                        else:
-                            # Back notch
-                            span = 19 - lx
-                            top_edge = 6 + (12 - lx) // 2
-                            bottom_edge = 21 - (12 - lx) // 2
-                            inner_top = 10 + span // 2
-                            inner_bot = 17 - span // 2
-                            for ly in range(6, 22):
-                                if inner_top <= ly <= inner_bot and lx > 14:
-                                    continue
-                                is_outline = (lx == 19 or ly == 6 or ly == 21 or
-                                              (lx <= 15 and (ly == inner_top or ly == inner_bot)))
-                                set_px(lx, ly, colors["outline"] if is_outline else colors["body"])
-                    # Center accent core
-                    for ly in range(12, 16):
-                        for lx in range(9, 13):
-                            set_px(lx, ly, colors["accent"])
-
-                elif row == 2:  # Right
-                    # Draw a pointing-right chevron arrow
-                    for lx in range(4, 20):
-                        if lx >= 11:
-                            # Tip pointing right towards x=19
-                            span = 19 - lx
-                            top_edge = 13 - span
-                            bottom_edge = 14 + span
-                            for ly in range(top_edge, bottom_edge + 1):
-                                is_outline = (lx == 19 or ly == top_edge or ly == bottom_edge)
-                                set_px(lx, ly, colors["outline"] if is_outline else colors["body"])
-                        else:
-                            # Back notch
-                            span = lx - 4
-                            inner_top = 10 + span // 2
-                            inner_bot = 17 - span // 2
-                            for ly in range(6, 22):
-                                if inner_top <= ly <= inner_bot and lx < 9:
-                                    continue
-                                is_outline = (lx == 4 or ly == 6 or ly == 21 or
-                                              (lx >= 8 and (ly == inner_top or ly == inner_bot)))
-                                set_px(lx, ly, colors["outline"] if is_outline else colors["body"])
-                    # Center accent core
-                    for ly in range(12, 16):
-                        for lx in range(11, 15):
-                            set_px(lx, ly, colors["accent"])
-
-                elif row == 3:  # Up
-                    # Draw an upward pointing chevron arrow
+                if row == 0:  # UP (^)
                     for ly in range(5, 23):
                         if ly <= 13:
                             # Pointing up towards tip at (11.5, 5)
@@ -271,7 +144,7 @@ def generate_calibration_charset():
                             right_edge = 12 + span
                             for lx in range(left_edge, right_edge + 1):
                                 is_outline = (ly == 5 or lx == left_edge or lx == right_edge)
-                                set_px(lx, ly, colors["outline"] if is_outline else colors["body"])
+                                set_px(lx, ly, theme["outline"] if is_outline else theme["body"])
                         else:
                             # Lower wings and inner notch
                             span = ly - 13
@@ -284,29 +157,160 @@ def generate_calibration_charset():
                                     continue
                                 is_outline = (lx == 3 or lx == 20 or ly == 22 or
                                               (ly <= 19 and (lx == notch_left or lx == notch_right)))
-                                set_px(lx, ly, colors["outline"] if is_outline else colors["body"])
+                                set_px(lx, ly, theme["outline"] if is_outline else theme["body"])
                     # Center accent core
                     for ly in range(11, 14):
                         for lx in range(10, 14):
-                            set_px(lx, ly, colors["accent"])
+                            set_px(lx, ly, theme["accent"])
 
-    png_bytes = create_png(width, height, palette, pixels)
-    return png_bytes
+                elif row == 1:  # RIGHT (>)
+                    for lx in range(4, 20):
+                        if lx >= 11:
+                            # Tip pointing right towards x=19
+                            span = 19 - lx
+                            top_edge = 13 - span
+                            bottom_edge = 14 + span
+                            for ly in range(top_edge, bottom_edge + 1):
+                                is_outline = (lx == 19 or ly == top_edge or ly == bottom_edge)
+                                set_px(lx, ly, theme["outline"] if is_outline else theme["body"])
+                        else:
+                            # Back notch
+                            span = lx - 4
+                            inner_top = 10 + span // 2
+                            inner_bot = 17 - span // 2
+                            for ly in range(6, 22):
+                                if inner_top <= ly <= inner_bot and lx < 9:
+                                    continue
+                                is_outline = (lx == 4 or ly == 6 or ly == 21 or
+                                              (lx >= 8 and (ly == inner_top or ly == inner_bot)))
+                                set_px(lx, ly, theme["outline"] if is_outline else theme["body"])
+                    # Center accent core
+                    for ly in range(12, 16):
+                        for lx in range(11, 15):
+                            set_px(lx, ly, theme["accent"])
+
+                elif row == 2:  # DOWN (v)
+                    for ly in range(5, 23):
+                        if ly <= 13:
+                            # Upper wings
+                            left_edge = max(3, 11 - (ly - 5) * 1)
+                            right_edge = min(20, 12 + (ly - 5) * 1)
+                            notch_left = 11 - (ly - 5) // 2
+                            notch_right = 12 + (ly - 5) // 2
+                            for lx in range(left_edge, right_edge + 1):
+                                if ly < 9 and notch_left <= lx <= notch_right:
+                                    continue
+                                is_outline = (lx == left_edge or lx == right_edge or
+                                              (ly >= 8 and (lx == notch_left or lx == notch_right)))
+                                set_px(lx, ly, theme["outline"] if is_outline else theme["body"])
+                        else:
+                            # Lower tip pointing down to (11.5, 21)
+                            span = 21 - ly
+                            left_edge = 11 - span
+                            right_edge = 12 + span
+                            for lx in range(left_edge, right_edge + 1):
+                                is_outline = (lx == left_edge or lx == right_edge or ly == 21)
+                                set_px(lx, ly, theme["outline"] if is_outline else theme["body"])
+                    # Center accent core
+                    for ly in range(11, 14):
+                        for lx in range(10, 14):
+                            set_px(lx, ly, theme["accent"])
+
+                elif row == 3:  # LEFT (<)
+                    for lx in range(4, 20):
+                        if lx <= 12:
+                            # Tip pointing left towards x=4
+                            span = lx - 4
+                            top_edge = 13 - span
+                            bottom_edge = 14 + span
+                            for ly in range(top_edge, bottom_edge + 1):
+                                is_outline = (lx == 4 or ly == top_edge or ly == bottom_edge)
+                                set_px(lx, ly, theme["outline"] if is_outline else theme["body"])
+                        else:
+                            # Back notch
+                            span = 19 - lx
+                            top_edge = 6 + (12 - lx) // 2
+                            bottom_edge = 21 - (12 - lx) // 2
+                            inner_top = 10 + span // 2
+                            inner_bot = 17 - span // 2
+                            for ly in range(6, 22):
+                                if inner_top <= ly <= inner_bot and lx > 14:
+                                    continue
+                                is_outline = (lx == 19 or ly == 6 or ly == 21 or
+                                              (lx <= 15 and (ly == inner_top or ly == inner_bot)))
+                                set_px(lx, ly, theme["outline"] if is_outline else theme["body"])
+                    # Center accent core
+                    for ly in range(12, 16):
+                        for lx in range(9, 13):
+                            set_px(lx, ly, theme["accent"])
+
+    return bytes(rgba)
+
+def generate_calibration_charset():
+    rgba_bytes = generate_canonical_rgba()
+    master_png = create_rgba_png(288, 256, rgba_bytes)
+    return rgba_bytes, master_png
 
 def main():
-    target_path = "registry/assets/test_calibration_walking_character.png"
-    if len(sys.argv) > 1:
-        target_path = sys.argv[1]
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    assets_dir = os.path.join(repo_root, "registry", "assets")
+    os.makedirs(assets_dir, exist_ok=True)
 
-    os.makedirs(os.path.dirname(os.path.abspath(target_path)), exist_ok=True)
-    png_bytes = generate_calibration_charset()
+    rgba_bytes = generate_canonical_rgba()
+    raw_path = os.path.join(assets_dir, "test_calibration_walking_character.rgba")
+    with open(raw_path, "wb") as f:
+        f.write(rgba_bytes)
 
-    with open(target_path, "wb") as f:
-        f.write(png_bytes)
+    master_png = create_rgba_png(288, 256, rgba_bytes)
+    master_png_path = os.path.join(assets_dir, "test_calibration_walking_character_master.png")
+    with open(master_png_path, "wb") as f:
+        f.write(master_png)
 
-    sha256_hash = hashlib.sha256(png_bytes).hexdigest()
-    print(f"Generated canonical calibration asset: {target_path}")
-    print(f"Size: {len(png_bytes)} bytes")
+    sha256_hash = hashlib.sha256(rgba_bytes).hexdigest()
+
+    meta = {
+        "id": "test.calibration.walking-character",
+        "name": "RM2000 Calibration Walking Character Sprite Sheet",
+        "description": "Synthetic clean-room geometric calibration sprite sheet for RPG Maker 2000 CharSet verification",
+        "type": "charset",
+        "format": "image/x-rgba-raw; 32-bit",
+        "dimensions": {
+            "width": 288,
+            "height": 256
+        },
+        "grid": {
+            "characters_x": 4,
+            "characters_y": 2,
+            "frame_width": 24,
+            "frame_height": 32,
+            "columns_per_character": 3,
+            "rows_per_character": 4
+        },
+        "directions": {
+            "row_0": "UP",
+            "row_1": "RIGHT",
+            "row_2": "DOWN",
+            "row_3": "LEFT"
+        },
+        "animation_columns": {
+            "col_0": "STEP_LEFT",
+            "col_1": "IDLE",
+            "col_2": "STEP_RIGHT"
+        },
+        "test_only": True,
+        "license": "CC0-1.0",
+        "file": "registry/assets/test_calibration_walking_character.rgba",
+        "master_png": "registry/assets/test_calibration_walking_character_master.png",
+        "sha256": sha256_hash
+    }
+
+    meta_path = os.path.join(assets_dir, "test_calibration_walking_character.json")
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
+
+    print(f"Generated canonical RGBA source: {raw_path}")
+    print(f"Generated master PNG preview: {master_png_path}")
+    print(f"Metadata written: {meta_path}")
     print(f"SHA-256: {sha256_hash}")
 
 if __name__ == "__main__":

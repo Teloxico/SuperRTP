@@ -39,6 +39,23 @@
         "rows_per_character": { "type": "integer" }
       }
     },
+    "directions": {
+      "type": "object",
+      "properties": {
+        "row_0": { "type": "string" },
+        "row_1": { "type": "string" },
+        "row_2": { "type": "string" },
+        "row_3": { "type": "string" }
+      }
+    },
+    "animation_columns": {
+      "type": "object",
+      "properties": {
+        "col_0": { "type": "string" },
+        "col_1": { "type": "string" },
+        "col_2": { "type": "string" }
+      }
+    },
     "palette": {
       "type": "object",
       "properties": {
@@ -49,6 +66,7 @@
     "test_only": { "type": "boolean" },
     "license": { "type": "string" },
     "file": { "type": "string" },
+    "master_png": { "type": "string" },
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" }
   },
   "additionalProperties": false

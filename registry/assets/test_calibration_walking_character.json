@@ -3,7 +3,7 @@
   "name": "RM2000 Calibration Walking Character Sprite Sheet",
   "description": "Synthetic clean-room geometric calibration sprite sheet for RPG Maker 2000 CharSet verification",
   "type": "charset",
-  "format": "image/png; indexed-8",
+  "format": "image/x-rgba-raw; 32-bit",
   "dimensions": {
     "width": 288,
     "height": 256
@@ -16,12 +16,20 @@
     "columns_per_character": 3,
     "rows_per_character": 4
   },
-  "palette": {
-    "max_colors": 256,
-    "transparent_index": 0
+  "directions": {
+    "row_0": "UP",
+    "row_1": "RIGHT",
+    "row_2": "DOWN",
+    "row_3": "LEFT"
+  },
+  "animation_columns": {
+    "col_0": "STEP_LEFT",
+    "col_1": "IDLE",
+    "col_2": "STEP_RIGHT"
   },
   "test_only": true,
   "license": "CC0-1.0",
-  "file": "registry/assets/test_calibration_walking_character.png",
-  "sha256": "7f447a5e9f148a1a1129b9ca93def5cc33592dd1f75be321b0c0c6e8d8a77376"
+  "file": "registry/assets/test_calibration_walking_character.rgba",
+  "master_png": "registry/assets/test_calibration_walking_character_master.png",
+  "sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790"
 }

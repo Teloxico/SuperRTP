@@ -8,8 +8,7 @@
     "canonical_path",
     "sha256",
     "license",
-    "creator",
-    "creation_tool",
+    "source_type",
     "clean_room_attestation",
     "test_only"
   ],
@@ -18,22 +17,41 @@
     "canonical_path": { "type": "string" },
     "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
     "license": { "type": "string" },
+    "source_type": {
+      "type": "string",
+      "enum": ["project_synthetic", "externally_licensed", "ai_generated"]
+    },
     "creator": { "type": "string" },
     "creation_tool": { "type": "string" },
+    "upstream_source": {
+      "type": "object",
+      "properties": {
+        "repository": { "type": "string" },
+        "author": { "type": "string" },
+        "url": { "type": "string" },
+        "commit": { "type": "string" }
+      }
+    },
+    "generation_metadata": {
+      "type": "object",
+      "properties": {
+        "model": { "type": "string" },
+        "provider": { "type": "string" },
+        "prompt": { "type": "string" },
+        "parameters": { "type": "object" }
+      }
+    },
     "clean_room_attestation": {
       "type": "object",
       "required": [
         "proprietary_rtp_derived",
-        "openrtp_derived",
-        "external_art_used",
-        "ai_generation_used",
-        "geometric_primitives_only"
+        "openrtp_derived"
       ],
       "properties": {
         "proprietary_rtp_derived": { "type": "boolean", "const": false },
         "openrtp_derived": { "type": "boolean", "const": false },
-        "external_art_used": { "type": "boolean", "const": false },
-        "ai_generation_used": { "type": "boolean", "const": false },
+        "external_art_used": { "type": "boolean" },
+        "ai_generation_used": { "type": "boolean" },
         "geometric_primitives_only": { "type": "boolean" },
         "notes": { "type": "string" }
       },
