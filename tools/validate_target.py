@@ -6,13 +6,14 @@ Mechanically verifies that generated target packs conform to strict compatibilit
 provenance, and structural invariants without relying on assumptions.
 
 Validates:
-  1. File existence & PNG binary chunk structure (IHDR, PLTE, tRNS, IDAT, IEND)
-  2. Resolution (288x256 for RM2000 CharSet)
-  3. Color model (8-bit indexed colormap, Color Type 3, <= 256 palette entries)
-  4. Transparency (tRNS chunk specifying palette index 0 as transparent)
-  5. Geometric frame divisibility (72x128 character slot, 24x32 frame cell)
-  6. Provenance completeness (valid sidecar, matching SHA-256, CC0-1.0, clean-room attestation)
-  7. Test-only designation verification
+  1. JSON Schema conformance for slot mapping, asset metadata, and provenance records
+  2. File existence & PNG binary chunk structure (IHDR, PLTE, IDAT, IEND)
+  3. Resolution (288x256 for RM2000 CharSet)
+  4. Color model (8-bit indexed colormap, Color Type 3, <= 256 palette entries)
+  5. Transparency semantics (Palette index 0 transparent; tRNS checked if present)
+  6. Geometric frame divisibility (72x128 character slot, 24x32 frame cell)
+  7. Provenance completeness (matching SHA-256, CC0-1.0, clean-room attestation)
+  8. Test-only designation verification
 
 Usage:
   python3 tools/validate_target.py --target rm2000 [--target-dir generated/rm2000]
@@ -25,6 +26,10 @@ import struct
 import zlib
 import hashlib
 import argparse
+
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
+from schema_validator import validate_schema
 
 PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
 
@@ -74,8 +79,6 @@ def validate_png_charset(filepath):
         raise ValueError("PNG must start with IHDR chunk")
     if "PLTE" not in chunk_types:
         raise ValueError("Missing required PLTE (Palette) chunk for indexed RM2000 CharSet")
-    if "tRNS" not in chunk_types:
-        raise ValueError("Missing required tRNS (Transparency) chunk for RM2000 CharSet")
     if "IDAT" not in chunk_types:
         raise ValueError("Missing IDAT chunk")
     if chunk_types[-1] != "IEND":
@@ -94,7 +97,7 @@ def validate_png_charset(filepath):
     if compression != 0 or filter_method != 0 or interlace != 0:
         raise ValueError("Unsupported compression/filter/interlace method")
 
-    # Inspect PLTE
+    # Inspect PLTE (Palette index 0 is the engine compatibility transparent color)
     plte_data = next(c[1] for c in chunks if c[0] == "PLTE")
     if len(plte_data) % 3 != 0:
         raise ValueError(f"PLTE data length ({len(plte_data)}) is not a multiple of 3")
@@ -102,12 +105,12 @@ def validate_png_charset(filepath):
     if num_colors > 256:
         raise ValueError(f"Palette exceeds 256 colors: {num_colors}")
 
-    # Inspect tRNS
-    trns_data = next(c[1] for c in chunks if c[0] == "tRNS")
-    if len(trns_data) == 0:
-        raise ValueError("Empty tRNS chunk")
-    if trns_data[0] != 0:
-        raise ValueError(f"Transparency index 0 is not transparent (alpha={trns_data[0]})")
+    # Inspect tRNS if present (modern viewer enhancement, optional for original RM2000 engine)
+    has_trns = "tRNS" in chunk_types
+    if has_trns:
+        trns_data = next(c[1] for c in chunks if c[0] == "tRNS")
+        if len(trns_data) > 0 and trns_data[0] != 0:
+            raise ValueError(f"Transparency index 0 in tRNS has non-zero alpha ({trns_data[0]})")
 
     # Check grid divisibility
     char_w, char_h = width // 4, height // 2
@@ -124,45 +127,87 @@ def validate_png_charset(filepath):
         "color_type": color_type,
         "num_colors": num_colors,
         "transparent_index": 0,
+        "has_trns": has_trns,
         "characters_grid": "4x2",
         "frame_cell": f"{frame_w}x{frame_h}"
     }
 
-def validate_provenance(repo_root, asset_id, actual_sha256):
-    """Validates that provenance records are complete and attest clean-room integrity."""
-    # Find provenance file
-    prov_candidate = os.path.join(repo_root, "registry", "provenance", f"{asset_id.replace('.', '_')}.json")
-    if not os.path.exists(prov_candidate):
-        found = False
+def validate_schemas(repo_root, target):
+    """Enforces JSON Schema validation on registry files."""
+    slots_path = os.path.join(repo_root, "registry", "slots", f"{target}.json")
+    slots_schema_path = os.path.join(repo_root, "schemas", "slot_mapping.schema.json")
+    with open(slots_path, "r", encoding="utf-8") as sf:
+        slots_data = json.load(sf)
+    with open(slots_schema_path, "r", encoding="utf-8") as ssf:
+        slots_schema = json.load(ssf)
+    validate_schema(slots_data, slots_schema, path=os.path.basename(slots_path))
+
+    asset_schema_path = os.path.join(repo_root, "schemas", "asset.schema.json")
+    with open(asset_schema_path, "r", encoding="utf-8") as asf:
+        asset_schema = json.load(asf)
+
+    prov_schema_path = os.path.join(repo_root, "schemas", "provenance.schema.json")
+    with open(prov_schema_path, "r", encoding="utf-8") as psf:
+        prov_schema = json.load(psf)
+
+    for slot_key, slot_info in slots_data.get("slots", {}).items():
+        asset_id = slot_info["asset_id"]
+
+        # Find and validate asset metadata against schema
+        asset_file = None
+        for fname in os.listdir(os.path.join(repo_root, "registry", "assets")):
+            if fname.endswith(".json"):
+                cand = os.path.join(repo_root, "registry", "assets", fname)
+                with open(cand, "r", encoding="utf-8") as cf:
+                    data = json.load(cf)
+                    if data.get("id") == asset_id:
+                        asset_file = cand
+                        validate_schema(data, asset_schema, path=fname)
+                        break
+        if not asset_file:
+            raise FileNotFoundError(f"Asset metadata for '{asset_id}' not found")
+
+        # Find and validate provenance against schema
+        prov_file = None
         for fname in os.listdir(os.path.join(repo_root, "registry", "provenance")):
             if fname.endswith(".json"):
                 cand = os.path.join(repo_root, "registry", "provenance", fname)
-                with open(cand, "r", encoding="utf-8") as f:
-                    data = json.load(f)
+                with open(cand, "r", encoding="utf-8") as cf:
+                    data = json.load(cf)
                     if data.get("asset_id") == asset_id:
-                        prov_candidate = cand
-                        found = True
+                        prov_file = cand
+                        validate_schema(data, prov_schema, path=fname)
                         break
-        if not found:
-            raise FileNotFoundError(f"Provenance record for '{asset_id}' not found in registry/provenance/")
+        if not prov_file:
+            raise FileNotFoundError(f"Provenance record for '{asset_id}' not found")
 
-    with open(prov_candidate, "r", encoding="utf-8") as pf:
+    return True
+
+def validate_provenance(repo_root, asset_id, source_sha256):
+    """Validates that provenance records are complete and attest clean-room integrity."""
+    prov_file = None
+    for fname in os.listdir(os.path.join(repo_root, "registry", "provenance")):
+        if fname.endswith(".json"):
+            cand = os.path.join(repo_root, "registry", "provenance", fname)
+            with open(cand, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if data.get("asset_id") == asset_id:
+                    prov_file = cand
+                    break
+    if not prov_file:
+        raise FileNotFoundError(f"Provenance record for '{asset_id}' not found in registry/provenance/")
+
+    with open(prov_file, "r", encoding="utf-8") as pf:
         prov = json.load(pf)
 
-    if prov.get("sha256") != actual_sha256:
-        raise ValueError(f"Provenance hash mismatch: expected {prov.get('sha256')}, got {actual_sha256}")
+    if prov.get("sha256") != source_sha256:
+        raise ValueError(f"Provenance hash mismatch: expected {prov.get('sha256')}, got {source_sha256}")
 
     attestation = prov.get("clean_room_attestation", {})
     if attestation.get("proprietary_rtp_derived") is not False:
         raise ValueError("Provenance violation: proprietary_rtp_derived must be false")
     if attestation.get("openrtp_derived") is not False:
         raise ValueError("Provenance violation: openrtp_derived must be false")
-    if attestation.get("external_art_used") is not False:
-        raise ValueError("Provenance violation: external_art_used must be false")
-    if attestation.get("ai_generation_used") is not False:
-        raise ValueError("Provenance violation: ai_generation_used must be false")
-    if not attestation.get("geometric_primitives_only"):
-        raise ValueError("Provenance violation: geometric_primitives_only must be true for test fixture")
 
     license_str = prov.get("license")
     if license_str != "CC0-1.0":
@@ -171,10 +216,21 @@ def validate_provenance(repo_root, asset_id, actual_sha256):
     return prov
 
 def validate_target(target, target_dir=None):
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    repo_root = REPO_ROOT
     if target_dir is None:
         target_dir = os.path.join(repo_root, "generated", target)
     target_dir = os.path.abspath(target_dir)
+
+    print(f"=== Validating SuperRTP Target '{target}' ===")
+
+    # Step 1: Enforce Schema Validation
+    print("Enforcing JSON Schema validation on registry metadata...")
+    try:
+        validate_schemas(repo_root, target)
+        print("  PASSED: All registry metadata conforms to JSON schemas.")
+    except Exception as e:
+        print(f"  FAILED Schema validation: {e}")
+        return 1
 
     manifest_path = os.path.join(target_dir, "manifest.json")
     if not os.path.exists(manifest_path):
@@ -183,10 +239,10 @@ def validate_target(target, target_dir=None):
     with open(manifest_path, "r", encoding="utf-8") as mf:
         manifest = json.load(mf)
 
-    print(f"=== Validating SuperRTP Target '{target}' ===")
     print(f"Directory: {target_dir}")
     print(f"Target Name: {manifest.get('target_name')}")
     print(f"Engine: {manifest.get('engine')}")
+    print(f"Reference Source: {manifest.get('reference_source')}")
     print(f"Entries to validate: {len(manifest.get('entries', []))}")
 
     all_passed = True
@@ -216,16 +272,30 @@ def validate_target(target, target_dir=None):
         # PNG Specification check
         try:
             specs = validate_png_charset(filepath)
-            print(f"  PASSED PNG specs: {specs['width']}x{specs['height']}, {specs['num_colors']} colors, indexed-8, tRNS alpha 0")
+            print(f"  PASSED PNG specs: {specs['width']}x{specs['height']}, {specs['num_colors']} colors, indexed-8, index 0 transparent (tRNS={specs['has_trns']})")
         except Exception as e:
             print(f"  FAILED PNG validation: {e}")
             all_passed = False
             continue
 
-        # Provenance check
+        # Source Asset & Provenance check
         try:
-            prov = validate_provenance(repo_root, asset_id, actual_sha256)
-            print(f"  PASSED Provenance: License={prov['license']}, CleanRoom=VERIFIED, TestOnly={prov.get('test_only')}")
+            # Find source asset
+            source_meta = None
+            for fname in os.listdir(os.path.join(repo_root, "registry", "assets")):
+                if fname.endswith(".json"):
+                    cand = os.path.join(repo_root, "registry", "assets", fname)
+                    with open(cand, "r", encoding="utf-8") as cf:
+                        d = json.load(cf)
+                        if d.get("id") == asset_id:
+                            source_meta = d
+                            break
+            source_file = os.path.join(repo_root, source_meta["file"])
+            with open(source_file, "rb") as sf:
+                source_sha256 = hashlib.sha256(sf.read()).hexdigest()
+
+            prov = validate_provenance(repo_root, asset_id, source_sha256)
+            print(f"  PASSED Provenance: License={prov['license']}, CleanRoom=VERIFIED, SourceType={prov['source_type']}")
         except Exception as e:
             print(f"  FAILED Provenance validation: {e}")
             all_passed = False

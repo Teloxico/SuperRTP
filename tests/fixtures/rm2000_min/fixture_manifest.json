@@ -1,0 +1,13 @@
+{
+  "generator_source": "tools/generate_fixture.cpp",
+  "generator_sha256": "511c89727ab777b612ff14a372c1ee2449e3c87bb70d4e824caa756edfff82cc",
+  "liblcf_version": "0.8.1",
+  "files": {
+    "Map0001.lmu": "a287e32f88a5838366b8710c545b678ac31ec3c2450c7f322297006542f9f768",
+    "RPG_RT.ini": "3151b17d356609fcd18845e8c3912a70c8214ffb2c062b6cd5d1f5aee91efa88",
+    "RPG_RT.ldb": "ad99a8d5b7841a18f229e13980634298fdf0dd1326d0e9472ef39240dc130b50",
+    "RPG_RT.lmt": "3003381ff8059dc0544d01fe1a7ed204060e9fb82f8e94d3e22b5f35ac4fc0ca",
+    "ChipSet/ChipSet.png": "945d45efdc447637fee87704c87ff93ab0737a0588d30eaa6975dca615970ae7",
+    "System/System.png": "4b40ea57f11bd38b60ded956d44129d7528d69e1d39cde25b95cd748755cdda8"
+  }
+}

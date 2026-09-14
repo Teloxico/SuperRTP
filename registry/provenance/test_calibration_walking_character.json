@@ -1,8 +1,9 @@
 {
   "asset_id": "test.calibration.walking-character",
-  "canonical_path": "registry/assets/test_calibration_walking_character.png",
-  "sha256": "7f447a5e9f148a1a1129b9ca93def5cc33592dd1f75be321b0c0c6e8d8a77376",
+  "canonical_path": "registry/assets/test_calibration_walking_character.rgba",
+  "sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
   "license": "CC0-1.0",
+  "source_type": "project_synthetic",
   "creator": "SuperRTP Project",
   "creation_tool": "tools/generate_calibration_charset.py",
   "clean_room_attestation": {
