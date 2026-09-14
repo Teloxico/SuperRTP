@@ -1,0 +1,11 @@
+generated/
+.cache/
+tmp/
+dist/
+__pycache__/
+*.pyc
+.env
+# Playwright CLI output (may contain credentials)
+.playwright-cli/
+tools/generate_fixture
+node_modules/
