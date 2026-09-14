@@ -41,6 +41,54 @@ from schema_validator import validate_schema, SchemaValidationError
 from generate_fixture_graphics import generate_minimal_chipset, generate_minimal_system
 from verify_runtime import verify_evidence_chain, run_replay_and_record, verify_directional_screenshot
 
+def compile_and_run_fixture_generator(target, output_dir):
+    """
+    Compiles tools/generate_fixture.cpp against pinned liblcf 0.8.1 and generates
+    the minimal game fixture into output_dir.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    cxx = shutil.which("g++") or shutil.which("clang++")
+    require_runtime = os.environ.get("SUPERRTP_REQUIRE_RUNTIME") == "1"
+
+    if not cxx:
+        if require_runtime:
+            raise RuntimeError("C++ compiler (g++ or clang++) required by SUPERRTP_REQUIRE_RUNTIME=1 but not found")
+        raise unittest.SkipTest("C++ compiler not found on PATH")
+
+    env = os.environ.copy()
+    brew_pc = "/home/linuxbrew/.linuxbrew/opt/liblcf/lib/pkgconfig"
+    if os.path.exists(brew_pc):
+        curr_pc = env.get("PKG_CONFIG_PATH", "")
+        env["PKG_CONFIG_PATH"] = f"{brew_pc}:{curr_pc}" if curr_pc else brew_pc
+
+    try:
+        modver_res = subprocess.run(["pkg-config", "--modversion", "liblcf"], env=env, capture_output=True, text=True, check=True)
+        modver = modver_res.stdout.strip()
+    except Exception as e:
+        if require_runtime:
+            raise RuntimeError(f"liblcf required by SUPERRTP_REQUIRE_RUNTIME=1 but pkg-config failed: {e}")
+        raise unittest.SkipTest(f"liblcf not found via pkg-config: {e}")
+
+    if not modver.startswith("0.8.1"):
+        raise ValueError(f"liblcf version pin violation: expected 0.8.1, got {modver}")
+
+    cflags_res = subprocess.run(["pkg-config", "--cflags", "liblcf"], env=env, capture_output=True, text=True, check=True)
+    libs_res = subprocess.run(["pkg-config", "--libs", "liblcf"], env=env, capture_output=True, text=True, check=True)
+    cflags = cflags_res.stdout.split()
+    libs = libs_res.stdout.split()
+
+    brew_lib = "/home/linuxbrew/.linuxbrew/opt/liblcf/lib"
+    rpath_flags = [f"-Wl,-rpath,{brew_lib}"] if os.path.exists(brew_lib) else []
+
+    with tempfile.TemporaryDirectory(prefix="superrtp_genfix_bin_") as bin_dir:
+        bin_path = os.path.join(bin_dir, "generate_fixture")
+        src_cpp = os.path.join(REPO_ROOT, "tools", "generate_fixture.cpp")
+        compile_cmd = [cxx, "-O2", "-std=c++17", src_cpp] + cflags + libs + rpath_flags + ["-o", bin_path]
+        subprocess.run(compile_cmd, env=env, capture_output=True, text=True, check=True)
+
+        run_cmd = [bin_path, output_dir, target]
+        subprocess.run(run_cmd, env=env, capture_output=True, text=True, check=True)
+
 class TestSuperRTPVerticalSlice(unittest.TestCase):
 
     def test_01_canonical_asset_reproducibility(self):
@@ -219,8 +267,18 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         }
         validate_schema(ai_prov, prov_schema)
 
+        # 8. Slot mapping schemas and alias taxonomy validation
+        slots_schema_path = os.path.join(REPO_ROOT, "schemas", "slot_mapping.schema.json")
+        with open(slots_schema_path, "r", encoding="utf-8") as ssf:
+            slots_schema = json.load(ssf)
+        for t in ("rm2000", "rm2003"):
+            slot_file = os.path.join(REPO_ROOT, "registry", "slots", f"{t}.json")
+            with open(slot_file, "r", encoding="utf-8") as sf:
+                slot_data = json.load(sf)
+            validate_schema(slot_data, slots_schema)
+
     def test_07_clean_room_fixture_manifest_integrity(self):
-        """Verify clean-room test fixture binaries, source generators, and programmatic graphics match manifest."""
+        """Verify clean-room test fixture binaries, dynamic C++ regeneration, and programmatic graphics match manifest."""
         manifest_path = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2000_min", "fixture_manifest.json")
         self.assertTrue(os.path.exists(manifest_path), "Fixture manifest must exist")
         with open(manifest_path, "r") as f:
@@ -235,6 +293,25 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         # Check Python graphics generator source
         gen_py_path = os.path.join(REPO_ROOT, manifest["graphics_generator_source"])
         self.assertEqual(compute_sha256(gen_py_path), manifest["graphics_generator_sha256"], "Graphics generator script modified")
+
+        # Dynamically compile and execute C++ generator into temporary directory and verify byte-for-byte identity
+        with tempfile.TemporaryDirectory(prefix="superrtp_fixture_check_2k_") as gen_tmp:
+            compile_and_run_fixture_generator("rm2000", gen_tmp)
+            binary_files = ["Map0001.lmu", "RPG_RT.ini", "RPG_RT.ldb", "RPG_RT.lmt"]
+            for bf in binary_files:
+                gen_file = os.path.join(gen_tmp, bf)
+                committed_file = os.path.join(fixture_dir, bf)
+                self.assertTrue(os.path.exists(gen_file), f"Generator failed to produce {bf}")
+                self.assertEqual(
+                    compute_sha256(gen_file),
+                    compute_sha256(committed_file),
+                    f"Dynamic generator output diverged from committed {bf} in rm2000"
+                )
+                self.assertEqual(
+                    compute_sha256(gen_file),
+                    manifest["files"][bf],
+                    f"Dynamic generator output diverged from manifest hash for {bf} in rm2000"
+                )
 
         # Verify programmatic regeneration of ChipSet and System reproduces exact pinned hashes
         chipset_png_bytes = generate_minimal_chipset()
@@ -378,27 +455,38 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
             verify_directional_screenshot(os.path.join(artifact_dir, "rm2000_charset_left.png"), "right")
 
     def test_12_rm2003_target_builder_and_cross_target_determinism(self):
-        """Verify RM2003 builds deterministically, shares identical Actor1.png with RM2000, and includes Hero1 alias."""
+        """Verify RM2003 builds deterministically across runs, shares identical Actor1.png with RM2000, and includes Hero1 alias."""
+        temp_dir_2k3_a = tempfile.mkdtemp(prefix="superrtp_build2k3_a_")
+        temp_dir_2k3_b = tempfile.mkdtemp(prefix="superrtp_build2k3_b_")
         temp_dir_2k = tempfile.mkdtemp(prefix="superrtp_build2k_")
-        temp_dir_2k3 = tempfile.mkdtemp(prefix="superrtp_build2k3_")
         try:
-            build_target("rm2000", output_dir=temp_dir_2k, clean=True, timestamp=0)
-            build_target("rm2003", output_dir=temp_dir_2k3, clean=True, timestamp=0)
+            # 1. Build RM2003 twice with identical static timestamp and verify full byte-for-byte tree identity
+            build_target("rm2003", output_dir=temp_dir_2k3_a, clean=True, timestamp=0)
+            build_target("rm2003", output_dir=temp_dir_2k3_b, clean=True, timestamp=0)
 
-            # 1. Primary Actor1.png must be byte-for-byte identical across RM2000 and RM2003 targets
+            for root, _, files in os.walk(temp_dir_2k3_a):
+                rel_dir = os.path.relpath(root, temp_dir_2k3_a)
+                for f in files:
+                    pa = os.path.join(root, f)
+                    pb = os.path.join(temp_dir_2k3_b, rel_dir, f)
+                    self.assertTrue(os.path.exists(pb), f"Missing file in duplicate RM2003 build: {f}")
+                    self.assertEqual(compute_sha256(pa), compute_sha256(pb), f"RM2003 build divergence in {f}")
+
+            # 2. Build RM2000 and verify primary Actor1.png is byte-for-byte identical across RM2000 and RM2003
+            build_target("rm2000", output_dir=temp_dir_2k, clean=True, timestamp=0)
             p2k_actor1 = os.path.join(temp_dir_2k, "CharSet", "Actor1.png")
-            p2k3_actor1 = os.path.join(temp_dir_2k3, "CharSet", "Actor1.png")
+            p2k3_actor1 = os.path.join(temp_dir_2k3_a, "CharSet", "Actor1.png")
             self.assertEqual(compute_sha256(p2k_actor1), compute_sha256(p2k3_actor1),
                              "Actor1.png must be byte-identical between RM2000 and RM2003 builds")
 
-            # 2. Check RM2003-specific aliases: Hero1 must exist in RM2003 but not in RM2000
-            self.assertTrue(os.path.exists(os.path.join(temp_dir_2k3, "CharSet", "Hero1.png")),
+            # 3. Check RM2003-specific aliases: Hero1 must exist in RM2003 but not in RM2000
+            self.assertTrue(os.path.exists(os.path.join(temp_dir_2k3_a, "CharSet", "Hero1.png")),
                             "RM2003 must contain Hero1.png")
             self.assertFalse(os.path.exists(os.path.join(temp_dir_2k, "CharSet", "Hero1.png")),
                              "RM2000 must NOT contain Hero1.png")
 
-            # 3. Check RM2003 manifest entries
-            manifest_path = os.path.join(temp_dir_2k3, "manifest.json")
+            # 4. Check RM2003 manifest entries
+            manifest_path = os.path.join(temp_dir_2k3_a, "manifest.json")
             with open(manifest_path, "r") as f:
                 manifest = json.load(f)
             self.assertEqual(manifest["target"], "rm2003")
@@ -407,15 +495,16 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
             self.assertFalse(entries["CharSet/Hero1.png"]["is_primary"])
             self.assertEqual(entries["CharSet/Hero1.png"]["primary_slot"], "CharSet/Actor1.png")
 
-            # 4. Target validator passes on RM2003
-            exit_code = validate_target("rm2003", target_dir=temp_dir_2k3)
+            # 5. Target validator passes on RM2003
+            exit_code = validate_target("rm2003", target_dir=temp_dir_2k3_a)
             self.assertEqual(exit_code, 0)
         finally:
+            shutil.rmtree(temp_dir_2k3_a, ignore_errors=True)
+            shutil.rmtree(temp_dir_2k3_b, ignore_errors=True)
             shutil.rmtree(temp_dir_2k, ignore_errors=True)
-            shutil.rmtree(temp_dir_2k3, ignore_errors=True)
 
     def test_13_rm2003_clean_room_fixture_integrity(self):
-        """Verify RM2003 clean-room test fixture binaries, source generators, and programmatic graphics match manifest."""
+        """Verify RM2003 clean-room test fixture binaries, dynamic C++ regeneration, and programmatic graphics match manifest."""
         manifest_path = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2003_min", "fixture_manifest.json")
         self.assertTrue(os.path.exists(manifest_path), "RM2003 fixture manifest must exist")
         with open(manifest_path, "r") as f:
@@ -428,6 +517,25 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         self.assertEqual(compute_sha256(gen_cpp_path), manifest["generator_sha256"], "Generator C++ source modified")
         gen_py_path = os.path.join(REPO_ROOT, manifest["graphics_generator_source"])
         self.assertEqual(compute_sha256(gen_py_path), manifest["graphics_generator_sha256"], "Graphics generator script modified")
+
+        # Dynamically compile and execute C++ generator into temporary directory and verify byte-for-byte identity
+        with tempfile.TemporaryDirectory(prefix="superrtp_fixture_check_2k3_") as gen_tmp:
+            compile_and_run_fixture_generator("rm2003", gen_tmp)
+            binary_files = ["Map0001.lmu", "RPG_RT.ini", "RPG_RT.ldb", "RPG_RT.lmt"]
+            for bf in binary_files:
+                gen_file = os.path.join(gen_tmp, bf)
+                committed_file = os.path.join(fixture_dir, bf)
+                self.assertTrue(os.path.exists(gen_file), f"Generator failed to produce {bf}")
+                self.assertEqual(
+                    compute_sha256(gen_file),
+                    compute_sha256(committed_file),
+                    f"Dynamic generator output diverged from committed {bf} in rm2003"
+                )
+                self.assertEqual(
+                    compute_sha256(gen_file),
+                    manifest["files"][bf],
+                    f"Dynamic generator output diverged from manifest hash for {bf} in rm2003"
+                )
 
         # Verify programmatic regeneration of ChipSet and System reproduces exact pinned hashes
         chipset_png_bytes = generate_minimal_chipset()

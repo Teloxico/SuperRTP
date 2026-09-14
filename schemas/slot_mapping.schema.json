@@ -33,6 +33,14 @@
             "type": "array",
             "items": { "type": "string" }
           },
+          "upstream_aliases": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "emitted_case_variants": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
           "format": { "type": "string" },
           "dimensions": {
             "type": "array",

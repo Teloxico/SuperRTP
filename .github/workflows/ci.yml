@@ -25,12 +25,16 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install system dependencies (EasyRPG Player, Xvfb, ffmpeg)
+      - name: Install system dependencies (EasyRPG Player, liblcf, Xvfb, ffmpeg)
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb ffmpeg libasound2 || sudo apt-get install -y xvfb ffmpeg libasound2t64
           curl -sL https://easyrpg.org/downloads/player/0.8.1.1/easyrpg-player-0.8.1.1-linux.tar.gz | sudo tar -xzf - -C /usr/local/bin
           easyrpg-player --version
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+          brew install liblcf
+          echo "PKG_CONFIG_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Build target packs (RM2000 & RM2003)
         run: |

@@ -1,62 +1,97 @@
 {
   "target": "rm2000",
+  "engine_mode": "rpg2k",
+  "requested_charset": "Actor1",
+  "canonical_asset_id": "test.calibration.walking-character",
+  "canonical_source_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
   "target_manifest_sha256": "ef851c6a476aca7d7f401e383ffb155e1fc4c467455f172d94a45654f90fef6f",
   "target_actor1_sha256": "7fde5157142d929404f3fc3b599cbd6c558ef74b2135ac1172db53dd88641ee6",
   "fixture_manifest_sha256": "f74dad75dfc5eeca49aae8df7319c616f3cf752c5ae821927e4f00cfd6e3cef4",
   "replay_input_sha256": "3ba0ca86afcc75d63ccc7440f3f7b4c289672b917db75355b1d1968d11a6f7b1",
   "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
-  "recorded_at": "2026-09-14T19:00:00Z",
+  "recorded_at": "2026-09-14T14:26:20.760586+00:00",
+  "negative_control": {
+    "status": "VERIFIED",
+    "expected_missing_asset": "CharSet/Actor1",
+    "diagnostic": "Image not found: CharSet/Actor1",
+    "screenshot": "rm2000_charset_negative_control.png",
+    "screenshot_sha256": "e44dc4e31e40bdd1a7503f14945f5351b225a75ce3266a647d43bc4d519cd0ea"
+  },
   "screenshots": {
-    "rm2000_charset_down.png": "014299975d2e5331437b19a2fd8d0cd70ab357618bcd8184ed600885d28d9f7d",
-    "rm2000_charset_left.png": "00855ef7dc56441bc78318bd887b5d84a36edda91945201d779ea107d24102c2",
-    "rm2000_charset_up.png": "a04d73c170ea4f3eeac575d1a30494654392717099ac0eb0c3dd3e886013423e",
-    "rm2000_charset_right.png": "2953091d4d5335e5d18b77dc642a23cc8a87925992de2b2e9544a77f9ec122de",
-    "rm2000_charset_negative_control.png": "b8c11be58866e881ecdf35255abf8edbd5da97df5775de68026f3afb27a119a8"
+    "rm2000_charset_down.png": "ed22b27bddfac24e500ac157a4b251bbb4442ca0477cdb576099575c158cdc9a",
+    "rm2000_charset_left.png": "85daa94c12e0ca9382de1dca9b2ff40385f823f514878ea69717b9bca73218ff",
+    "rm2000_charset_up.png": "2e1fe8bfde93ff8a6cffca4b4384e3d2b501d34db72fbf580b78f61419e9c1b3",
+    "rm2000_charset_right.png": "6c60d8a0a19e3eecc2acd9dd2c1f539ed1abb055d2edb52a5aa1b2e99369fc1e",
+    "rm2000_charset_negative_control.png": "e44dc4e31e40bdd1a7503f14945f5351b225a75ce3266a647d43bc4d519cd0ea"
   },
   "directional_evidence": {
     "down": {
       "status": "VERIFIED",
       "facing": "DOWN",
       "centroid": [
-        328.9,
-        212.9
+        335.5,
+        220.4
       ],
-      "cyan_pixel_count": 93,
-      "accent_pixel_count": 59
+      "shape_metrics": {
+        "top_w": 20,
+        "bot_w": 12,
+        "left_h": 10,
+        "right_h": 10
+      },
+      "cyan_pixel_count": 384,
+      "accent_pixel_count": 48
     },
     "left": {
       "status": "VERIFIED",
       "facing": "LEFT",
       "centroid": [
-        307.0,
-        218.2
+        305.0,
+        219.5
       ],
-      "cyan_pixel_count": 116,
-      "accent_pixel_count": 45
+      "shape_metrics": {
+        "top_w": 18,
+        "bot_w": 18,
+        "left_h": 12,
+        "right_h": 28
+      },
+      "cyan_pixel_count": 448,
+      "accent_pixel_count": 64
     },
     "up": {
       "status": "VERIFIED",
       "facing": "UP",
       "centroid": [
-        306.7,
-        195.0
+        303.5,
+        185.9
       ],
-      "cyan_pixel_count": 143,
-      "accent_pixel_count": 50
+      "shape_metrics": {
+        "top_w": 12,
+        "bot_w": 32,
+        "left_h": 18,
+        "right_h": 18
+      },
+      "cyan_pixel_count": 432,
+      "accent_pixel_count": 48
     },
     "right": {
       "status": "VERIFIED",
       "facing": "RIGHT",
       "centroid": [
-        329.2,
-        199.6
+        334.0,
+        187.5
       ],
-      "cyan_pixel_count": 116,
-      "accent_pixel_count": 53
+      "shape_metrics": {
+        "top_w": 18,
+        "bot_w": 18,
+        "left_h": 28,
+        "right_h": 12
+      },
+      "cyan_pixel_count": 448,
+      "accent_pixel_count": 64
     },
     "negative_control": {
       "status": "VERIFIED",
-      "error_text_pixels": 189
+      "error_text_pixels": 6125
     }
   }
 }

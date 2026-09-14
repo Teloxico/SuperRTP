@@ -23,8 +23,18 @@ import shutil
 import hashlib
 import argparse
 import subprocess
+from datetime import datetime, timezone
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def get_evidence_timestamp():
+    sde = os.environ.get("SOURCE_DATE_EPOCH")
+    if sde:
+        try:
+            return datetime.fromtimestamp(int(sde), tz=timezone.utc).isoformat()
+        except ValueError:
+            pass
+    return datetime.now(timezone.utc).isoformat()
 ARTIFACTS_DIR = os.path.join(REPO_ROOT, "artifacts", "runtime", "rm2000", "charset")
 EVIDENCE_PATH = os.path.join(ARTIFACTS_DIR, "verification_evidence.json")
 FIXTURE_DIR = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2000_min")
@@ -253,8 +263,45 @@ def verify_evidence_chain(target="rm2000"):
         evidence = json.load(ef)
 
     print(f"=== SuperRTP Runtime Verification Evidence Check ({target}) ===")
+    print(f"Target:          {evidence.get('target')}")
+    print(f"Engine Mode:     {evidence.get('engine_mode')}")
+    print(f"Requested Slot:  {evidence.get('requested_charset')}")
+    print(f"Canonical Asset: {evidence.get('canonical_asset_id')}")
     print(f"EasyRPG Version: {evidence.get('easyrpg_version')}")
     print(f"Recorded Date:   {evidence.get('recorded_at')}")
+
+    # Check target and engine mode
+    if evidence.get("target") != target:
+        raise ValueError(f"Evidence target mismatch: expected {target}, got {evidence.get('target')}")
+    if evidence.get("engine_mode") != cfg["engine"]:
+        raise ValueError(f"Evidence engine_mode mismatch: expected {cfg['engine']}, got {evidence.get('engine_mode')}")
+
+    # Check requested charset
+    expected_charset = "Hero1" if target == "rm2003" else "Actor1"
+    if evidence.get("requested_charset") != expected_charset:
+        raise ValueError(f"Evidence requested_charset mismatch: expected {expected_charset}, got {evidence.get('requested_charset')}")
+
+    # Check canonical asset and source hash
+    if evidence.get("canonical_asset_id") != "test.calibration.walking-character":
+        raise ValueError(f"Unexpected canonical_asset_id: {evidence.get('canonical_asset_id')}")
+    canonical_source_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character.rgba")
+    if not os.path.exists(canonical_source_path):
+        raise FileNotFoundError(f"Canonical source file missing: {canonical_source_path}")
+    actual_canonical_sha256 = compute_sha256(canonical_source_path)
+    if actual_canonical_sha256 != evidence.get("canonical_source_sha256"):
+        raise ValueError(f"Canonical source SHA-256 mismatch: expected {evidence.get('canonical_source_sha256')}, got {actual_canonical_sha256}")
+
+    # Check EasyRPG pinned version
+    ver = evidence.get("easyrpg_version", "")
+    if "0.8.1.1" not in ver:
+        raise ValueError(f"EasyRPG version pin violation: expected 0.8.1.1 in '{ver}'")
+
+    # Check recorded_at ISO-8601 validity
+    rec_at = evidence.get("recorded_at", "")
+    try:
+        datetime.fromisoformat(rec_at.replace("Z", "+00:00"))
+    except Exception as e:
+        raise ValueError(f"Invalid recorded_at ISO-8601 timestamp '{rec_at}': {e}")
 
     # Check target manifest
     target_manifest = os.path.join(target_dir, "manifest.json")
@@ -283,6 +330,24 @@ def verify_evidence_chain(target="rm2000"):
     if actual_replay_hash != evidence["replay_input_sha256"]:
         raise ValueError(f"Replay input hash mismatch with evidence: expected {evidence['replay_input_sha256']}, got {actual_replay_hash}")
 
+    # Check negative control evidence
+    neg = evidence.get("negative_control")
+    if not neg:
+        raise ValueError("Missing negative_control in verification evidence")
+    if neg.get("status") != "VERIFIED":
+        raise ValueError(f"Negative control status not verified: {neg.get('status')}")
+    expected_missing = f"CharSet/{expected_charset}"
+    if neg.get("expected_missing_asset") != expected_missing:
+        raise ValueError(f"Negative control expected_missing_asset mismatch: expected {expected_missing}, got {neg.get('expected_missing_asset')}")
+    expected_diag = f"Image not found: CharSet/{expected_charset}"
+    if neg.get("diagnostic") != expected_diag:
+        raise ValueError(f"Negative control diagnostic mismatch: expected '{expected_diag}', got '{neg.get('diagnostic')}'")
+    neg_shot = neg.get("screenshot")
+    if not neg_shot or neg_shot not in evidence.get("screenshots", {}):
+        raise ValueError(f"Negative control screenshot '{neg_shot}' not recorded in screenshots")
+    if neg.get("screenshot_sha256") != evidence["screenshots"][neg_shot]:
+        raise ValueError("Negative control screenshot hash mismatch")
+
     # Check screenshots and pixel content
     for name, expected_hash in evidence["screenshots"].items():
         shot_path = os.path.join(artifacts_dir, name)
@@ -306,7 +371,7 @@ def verify_evidence_chain(target="rm2000"):
         else:
             dir_name = "unknown"
 
-        result = verify_directional_screenshot(shot_path, dir_name)
+        result = verify_directional_screenshot(shot_path, dir_name, target=target)
         print(f"  [PASS] {name}: SHA-256 match, Visual content: {result['status']}")
 
     print(f"ALL RUNTIME EVIDENCE CHECKS PASSED ({target}): Evidence chain is durable and verified.")
@@ -367,7 +432,7 @@ def run_replay_and_record(target="rm2000"):
         subprocess.run(extract_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         h = compute_sha256(out_path)
         screenshot_hashes[name] = h
-        res = verify_directional_screenshot(out_path, direction)
+        res = verify_directional_screenshot(out_path, direction, target=target)
         directional_evidence[direction] = res
         print(f"Captured {name}: SHA-256 {h[:16]}... ({res['status']})")
 
@@ -385,7 +450,7 @@ def run_replay_and_record(target="rm2000"):
     subprocess.run(neg_cmd, shell=True, check=True)
     neg_hash = compute_sha256(neg_path)
     screenshot_hashes[neg_filename] = neg_hash
-    neg_res = verify_directional_screenshot(neg_path, "negative_control")
+    neg_res = verify_directional_screenshot(neg_path, "negative_control", target=target)
     directional_evidence["negative_control"] = neg_res
     print(f"Captured negative control: SHA-256 {neg_hash[:16]}... ({neg_res['status']})")
 
@@ -394,14 +459,27 @@ def run_replay_and_record(target="rm2000"):
         os.remove(video_tmp)
 
     # Build evidence dictionary
+    canonical_source_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character.rgba")
+    requested_charset = "Hero1" if target == "rm2003" else "Actor1"
     evidence = {
         "target": target,
+        "engine_mode": cfg["engine"],
+        "requested_charset": requested_charset,
+        "canonical_asset_id": "test.calibration.walking-character",
+        "canonical_source_sha256": compute_sha256(canonical_source_path),
         "target_manifest_sha256": compute_sha256(os.path.join(cfg["target_dir"], "manifest.json")),
         "target_actor1_sha256": compute_sha256(os.path.join(cfg["target_dir"], "CharSet", "Actor1.png")),
         "fixture_manifest_sha256": compute_sha256(os.path.join(cfg["fixture_dir"], "fixture_manifest.json")),
         "replay_input_sha256": compute_sha256(cfg["replay_path"]),
         "easyrpg_version": version_line,
-        "recorded_at": "1970-01-01T00:00:00Z" if os.environ.get("SOURCE_DATE_EPOCH") else "2026-09-14T19:00:00Z",
+        "recorded_at": get_evidence_timestamp(),
+        "negative_control": {
+            "status": neg_res["status"],
+            "expected_missing_asset": f"CharSet/{requested_charset}",
+            "diagnostic": f"Image not found: CharSet/{requested_charset}",
+            "screenshot": neg_filename,
+            "screenshot_sha256": neg_hash
+        },
         "screenshots": screenshot_hashes,
         "directional_evidence": directional_evidence
     }

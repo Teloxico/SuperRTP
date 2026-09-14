@@ -8,6 +8,14 @@
       "asset_id": "test.calibration.walking-character",
       "category": "CharSet",
       "slot_path": "CharSet/Actor1.png",
+      "upstream_aliases": [
+        "CharSet/actor1.png",
+        "CharSet/chara1.png",
+        "CharSet/主人公1.png"
+      ],
+      "emitted_case_variants": [
+        "CharSet/Chara1.png"
+      ],
       "aliases": [
         "CharSet/actor1.png",
         "CharSet/chara1.png",
