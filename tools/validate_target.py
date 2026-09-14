@@ -153,6 +153,23 @@ def validate_schemas(repo_root, target):
     for slot_key, slot_info in slots_data.get("slots", {}).items():
         asset_id = slot_info["asset_id"]
 
+        # Validate alias taxonomy and disjoint union
+        aliases = slot_info.get("aliases", [])
+        upstream = slot_info.get("upstream_aliases")
+        case_vars = slot_info.get("emitted_case_variants")
+        if upstream is not None or case_vars is not None:
+            up_set = set(upstream or [])
+            cv_set = set(case_vars or [])
+            alias_set = set(aliases)
+            if not up_set.isdisjoint(cv_set):
+                overlap = up_set & cv_set
+                raise ValueError(f"Slot '{slot_key}' has overlapping upstream and case variant aliases: {overlap}")
+            if up_set | cv_set != alias_set:
+                raise ValueError(f"Slot '{slot_key}' aliases union mismatch: (upstream | case_variants) != aliases")
+        slot_path = slot_info.get("slot_path", slot_key)
+        if slot_path in aliases:
+            raise ValueError(f"Slot '{slot_key}' aliases must not include primary slot_path '{slot_path}'")
+
         # Find and validate asset metadata against schema
         asset_file = None
         for fname in os.listdir(os.path.join(repo_root, "registry", "assets")):
