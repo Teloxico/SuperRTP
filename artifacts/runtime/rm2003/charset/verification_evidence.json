@@ -1,0 +1,86 @@
+{
+  "target": "rm2003",
+  "target_manifest_sha256": "c0782e586360c0f42a697987d7db58b83d9a537a795e5f8169e45bb93be72521",
+  "target_actor1_sha256": "7fde5157142d929404f3fc3b599cbd6c558ef74b2135ac1172db53dd88641ee6",
+  "fixture_manifest_sha256": "b28937e96c258646460b20bb4c418ef64edf04f38b403ac73227190236dc6d79",
+  "replay_input_sha256": "3ba0ca86afcc75d63ccc7440f3f7b4c289672b917db75355b1d1968d11a6f7b1",
+  "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
+  "recorded_at": "2026-09-14T19:00:00Z",
+  "screenshots": {
+    "rm2003_charset_down.png": "ed22b27bddfac24e500ac157a4b251bbb4442ca0477cdb576099575c158cdc9a",
+    "rm2003_charset_left.png": "cdc8a593f0f09b2d5b0004e63f733f1562a33ea3a74bc71ebcf492a02e9442e9",
+    "rm2003_charset_up.png": "e06d3fcb4131eaa1c2bc3ad24c2bc9287c333af81688b54341d2044730a790a3",
+    "rm2003_charset_right.png": "149de2ef0062b475aa805c0caef30b82172bcc35a64164c616a17f147c371e78",
+    "rm2003_charset_negative_control.png": "82d95b6bc87eb442f872a987752bfa6f646713d0fb302988f677abfce8c7e68a"
+  },
+  "directional_evidence": {
+    "down": {
+      "status": "VERIFIED",
+      "facing": "DOWN",
+      "centroid": [
+        335.5,
+        220.4
+      ],
+      "shape_metrics": {
+        "top_w": 20,
+        "bot_w": 12,
+        "left_h": 10,
+        "right_h": 10
+      },
+      "cyan_pixel_count": 384,
+      "accent_pixel_count": 48
+    },
+    "left": {
+      "status": "VERIFIED",
+      "facing": "LEFT",
+      "centroid": [
+        305.0,
+        219.5
+      ],
+      "shape_metrics": {
+        "top_w": 18,
+        "bot_w": 18,
+        "left_h": 12,
+        "right_h": 28
+      },
+      "cyan_pixel_count": 448,
+      "accent_pixel_count": 64
+    },
+    "up": {
+      "status": "VERIFIED",
+      "facing": "UP",
+      "centroid": [
+        303.5,
+        185.9
+      ],
+      "shape_metrics": {
+        "top_w": 12,
+        "bot_w": 32,
+        "left_h": 18,
+        "right_h": 18
+      },
+      "cyan_pixel_count": 432,
+      "accent_pixel_count": 48
+    },
+    "right": {
+      "status": "VERIFIED",
+      "facing": "RIGHT",
+      "centroid": [
+        334.0,
+        187.5
+      ],
+      "shape_metrics": {
+        "top_w": 18,
+        "bot_w": 18,
+        "left_h": 28,
+        "right_h": 12
+      },
+      "cyan_pixel_count": 448,
+      "accent_pixel_count": 64
+    },
+    "negative_control": {
+      "status": "VERIFIED",
+      "error_text_pixels": 6125
+    }
+  }
+}

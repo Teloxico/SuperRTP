@@ -2,7 +2,7 @@
   "target": "rm2000",
   "target_manifest_sha256": "ef851c6a476aca7d7f401e383ffb155e1fc4c467455f172d94a45654f90fef6f",
   "target_actor1_sha256": "7fde5157142d929404f3fc3b599cbd6c558ef74b2135ac1172db53dd88641ee6",
-  "fixture_manifest_sha256": "cc02f4bf86ddb02174c05843bc2e8ba190cb1ba02c29fa49599f29932ada8f9c",
+  "fixture_manifest_sha256": "f74dad75dfc5eeca49aae8df7319c616f3cf752c5ae821927e4f00cfd6e3cef4",
   "replay_input_sha256": "3ba0ca86afcc75d63ccc7440f3f7b4c289672b917db75355b1d1968d11a6f7b1",
   "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
   "recorded_at": "2026-09-14T19:00:00Z",

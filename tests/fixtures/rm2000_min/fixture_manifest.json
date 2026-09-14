@@ -1,8 +1,8 @@
 {
   "generator_source": "tools/generate_fixture.cpp",
-  "generator_sha256": "511c89727ab777b612ff14a372c1ee2449e3c87bb70d4e824caa756edfff82cc",
+  "generator_sha256": "d10128e7cb7849577d6189a5b08616bdec249dcecfcee4df25c2e7093566761c",
   "graphics_generator_source": "tools/generate_fixture_graphics.py",
-  "graphics_generator_sha256": "31b803ec124008ea4d63915da60ec815d0e7b4123a18f36fce4a575d0be5744f",
+  "graphics_generator_sha256": "fa43973d5ae481dbb37e5530ac3693cf1df8f785dbab03161b948a8645d12aa3",
   "liblcf_version": "0.8.1",
   "provenance_attestation": {
     "clean_room": true,

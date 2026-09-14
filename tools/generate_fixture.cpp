@@ -27,15 +27,30 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         out_dir = argv[1];
     }
+    std::string target = "rm2000";
+    if (argc > 2) {
+        target = argv[2];
+    }
+
+    bool is_2k3 = (target == "rm2003" || target == "2k3");
+    lcf::EngineVersion version = is_2k3 ? lcf::EngineVersion::e2k3 : lcf::EngineVersion::e2k;
 
     // 1. Database (RPG_RT.ldb)
     lcf::rpg::Database db;
+    if (is_2k3) {
+        db.system.ldb_id = 2003;
+    }
     
-    // Actor 1: References CharSet "Actor1", index 0 (top-left character in 4x2 CharSet)
+    // Actor 1: References CharSet "Hero1" for RM2003 (exercising the engine-specific alias) or "Actor1" for RM2000
     lcf::rpg::Actor actor;
     actor.ID = 1;
-    actor.name = "Hero";
-    actor.character_name = "Actor1";
+    if (is_2k3) {
+        actor.name = "Hero2k3";
+        actor.character_name = "Hero1";
+    } else {
+        actor.name = "Hero";
+        actor.character_name = "Actor1";
+    }
     actor.character_index = 0;
     db.actors.push_back(actor);
 
@@ -87,7 +102,7 @@ int main(int argc, char* argv[]) {
     tree.start.party_x = 10;
     tree.start.party_y = 7;
 
-    if (!lcf::LMT_Reader::Save(out_dir + "/RPG_RT.lmt", tree, lcf::EngineVersion::e2k)) {
+    if (!lcf::LMT_Reader::Save(out_dir + "/RPG_RT.lmt", tree, version)) {
         std::cerr << "Failed to save RPG_RT.lmt\n";
         return 1;
     }
@@ -100,7 +115,7 @@ int main(int argc, char* argv[]) {
     map.lower_layer.resize(20 * 15, 0);
     map.upper_layer.resize(20 * 15, 0);
 
-    if (!lcf::LMU_Reader::Save(out_dir + "/Map0001.lmu", map, lcf::EngineVersion::e2k)) {
+    if (!lcf::LMU_Reader::Save(out_dir + "/Map0001.lmu", map, version)) {
         std::cerr << "Failed to save Map0001.lmu\n";
         return 1;
     }
@@ -108,12 +123,12 @@ int main(int argc, char* argv[]) {
     // 4. INI configuration (RPG_RT.ini)
     std::ofstream ini(out_dir + "/RPG_RT.ini");
     ini << "[RPG_RT]\n";
-    ini << "GameTitle=SuperRTP_Fixture\n";
+    ini << "GameTitle=" << (is_2k3 ? "SuperRTP_Fixture_2k3" : "SuperRTP_Fixture") << "\n";
     ini << "MapEditMode=2\n";
     ini << "MapEditZoom=0\n";
     ini << "FullPackageFlag=0\n"; // 0 = depends on external RTP
     ini.close();
 
-    std::cout << "Clean-room RM2000 fixture successfully generated in " << out_dir << std::endl;
+    std::cout << "Clean-room " << (is_2k3 ? "RM2003" : "RM2000") << " fixture successfully generated in " << out_dir << std::endl;
     return 0;
 }
