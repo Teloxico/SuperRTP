@@ -15,9 +15,9 @@
     "notes": "Generated exclusively from mathematical polygon coordinates, directional arrows, and step indicators using Python standard library struct/zlib."
   },
   "specification": {
-    "rpg_engine": "RPG Maker 2000 / EasyRPG Player",
+    "rpg_engine": "RPG Maker 2000 / RPG Maker 2003 / EasyRPG Player",
     "asset_class": "CharSet",
-    "notes": "Test-only compatibility calibration fixture for Phase 1 vertical slice."
+    "notes": "Test-only compatibility calibration fixture for 2k family vertical slice."
   },
   "test_only": true
 }

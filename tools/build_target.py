@@ -61,9 +61,9 @@ def create_indexed_png(width, height, palette, pixel_indices, has_trns=True):
 
     return png_sig + ihdr_chunk + plte_chunk + trns_chunk + idat_chunk + iend_chunk
 
-def transform_rgba_to_rm2000_indexed_png(rgba_bytes, width=288, height=256):
+def transform_rgba_to_indexed_png(rgba_bytes, width=288, height=256):
     """
-    Transforms neutral 32-bit RGBA pixels into RM2000-compliant 8-bit indexed PNG.
+    Transforms neutral 32-bit RGBA pixels into 2k-family compliant 8-bit indexed PNG (RM2000/RM2003).
     - Deterministically builds a <= 256 color palette.
     - Guarantees palette index 0 is transparent (RGB 0,0,0, alpha 0).
     - Encodes IHDR (type 3), PLTE, tRNS, IDAT, and IEND chunks.
@@ -99,6 +99,8 @@ def transform_rgba_to_rm2000_indexed_png(rgba_bytes, width=288, height=256):
             pixel_indices[i] = color_to_index[rgb]
 
     return create_indexed_png(width, height, palette, pixel_indices, has_trns=True)
+ 
+transform_rgba_to_rm2000_indexed_png = transform_rgba_to_indexed_png
 
 def get_reproducible_timestamp():
     """Returns a deterministic ISO-8601 timestamp based on SOURCE_DATE_EPOCH if set."""
@@ -181,8 +183,8 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
 
         # Perform target-specific transformation
         category = slot_info.get("category", "").lower()
-        if target == "rm2000" and category == "charset":
-            target_png = transform_rgba_to_rm2000_indexed_png(source_bytes, 288, 256)
+        if target in ("rm2000", "rm2003") and category == "charset":
+            target_png = transform_rgba_to_indexed_png(source_bytes, 288, 256)
         else:
             raise NotImplementedError(f"Target transformation for {target}/{category} is not yet implemented")
 

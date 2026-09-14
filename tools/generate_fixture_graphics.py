@@ -118,10 +118,7 @@ def generate_minimal_system():
 
     return create_indexed_png(width, height, palette, pixels, has_trns=True)
 
-def main():
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    fixture_dir = os.path.join(repo_root, "tests", "fixtures", "rm2000_min")
-
+def generate_for_fixture(fixture_dir):
     chipset_dir = os.path.join(fixture_dir, "ChipSet")
     system_dir = os.path.join(fixture_dir, "System")
     os.makedirs(chipset_dir, exist_ok=True)
@@ -141,6 +138,12 @@ def main():
 
     print(f"Generated ChipSet: {chipset_path} (SHA-256: {chipset_hash})")
     print(f"Generated System:  {system_path} (SHA-256: {system_hash})")
+
+def main():
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for target in ["rm2000", "rm2003"]:
+        fixture_dir = os.path.join(repo_root, "tests", "fixtures", f"{target}_min")
+        generate_for_fixture(fixture_dir)
 
 if __name__ == "__main__":
     main()

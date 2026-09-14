@@ -12,7 +12,13 @@ Tests:
   7. Clean-room fixture manifest & programmatic graphics generator integrity
   8. Real EasyRPG Player headless RTP resolution (positive control, clean logs)
   9. Real EasyRPG Player missing-asset fallback (negative control, exact failure isolation)
-  10. Four-direction runtime verification evidence chain & directional pixel assertions
+  10. Four-direction runtime verification evidence chain & directional pixel assertions (RM2000)
+  11. Sprite arrow shape orientation and directional asymmetry verification (RM2000)
+  12. RM2003 target builder, cross-target byte determinism with RM2000, and Hero1 alias inclusion
+  13. RM2003 clean-room test fixture manifest & programmatic graphics integrity
+  14. Real EasyRPG Player headless RM2003 RTP resolution (positive control, clean logs)
+  15. Real EasyRPG Player headless RM2003 missing-asset fallback (negative control, exact failure isolation)
+  16. RM2003 four-direction runtime verification evidence chain & directional arrow assertions
 """
 
 import os
@@ -370,6 +376,189 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         with self.assertRaises(ValueError):
             # Checking LEFT screenshot with RIGHT expectation must fail
             verify_directional_screenshot(os.path.join(artifact_dir, "rm2000_charset_left.png"), "right")
+
+    def test_12_rm2003_target_builder_and_cross_target_determinism(self):
+        """Verify RM2003 builds deterministically, shares identical Actor1.png with RM2000, and includes Hero1 alias."""
+        temp_dir_2k = tempfile.mkdtemp(prefix="superrtp_build2k_")
+        temp_dir_2k3 = tempfile.mkdtemp(prefix="superrtp_build2k3_")
+        try:
+            build_target("rm2000", output_dir=temp_dir_2k, clean=True, timestamp=0)
+            build_target("rm2003", output_dir=temp_dir_2k3, clean=True, timestamp=0)
+
+            # 1. Primary Actor1.png must be byte-for-byte identical across RM2000 and RM2003 targets
+            p2k_actor1 = os.path.join(temp_dir_2k, "CharSet", "Actor1.png")
+            p2k3_actor1 = os.path.join(temp_dir_2k3, "CharSet", "Actor1.png")
+            self.assertEqual(compute_sha256(p2k_actor1), compute_sha256(p2k3_actor1),
+                             "Actor1.png must be byte-identical between RM2000 and RM2003 builds")
+
+            # 2. Check RM2003-specific aliases: Hero1 must exist in RM2003 but not in RM2000
+            self.assertTrue(os.path.exists(os.path.join(temp_dir_2k3, "CharSet", "Hero1.png")),
+                            "RM2003 must contain Hero1.png")
+            self.assertFalse(os.path.exists(os.path.join(temp_dir_2k, "CharSet", "Hero1.png")),
+                             "RM2000 must NOT contain Hero1.png")
+
+            # 3. Check RM2003 manifest entries
+            manifest_path = os.path.join(temp_dir_2k3, "manifest.json")
+            with open(manifest_path, "r") as f:
+                manifest = json.load(f)
+            self.assertEqual(manifest["target"], "rm2003")
+            entries = {e["slot"]: e for e in manifest["entries"]}
+            self.assertIn("CharSet/Hero1.png", entries)
+            self.assertFalse(entries["CharSet/Hero1.png"]["is_primary"])
+            self.assertEqual(entries["CharSet/Hero1.png"]["primary_slot"], "CharSet/Actor1.png")
+
+            # 4. Target validator passes on RM2003
+            exit_code = validate_target("rm2003", target_dir=temp_dir_2k3)
+            self.assertEqual(exit_code, 0)
+        finally:
+            shutil.rmtree(temp_dir_2k, ignore_errors=True)
+            shutil.rmtree(temp_dir_2k3, ignore_errors=True)
+
+    def test_13_rm2003_clean_room_fixture_integrity(self):
+        """Verify RM2003 clean-room test fixture binaries, source generators, and programmatic graphics match manifest."""
+        manifest_path = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2003_min", "fixture_manifest.json")
+        self.assertTrue(os.path.exists(manifest_path), "RM2003 fixture manifest must exist")
+        with open(manifest_path, "r") as f:
+            manifest = json.load(f)
+
+        fixture_dir = os.path.dirname(manifest_path)
+
+        # Check generator sources
+        gen_cpp_path = os.path.join(REPO_ROOT, manifest["generator_source"])
+        self.assertEqual(compute_sha256(gen_cpp_path), manifest["generator_sha256"], "Generator C++ source modified")
+        gen_py_path = os.path.join(REPO_ROOT, manifest["graphics_generator_source"])
+        self.assertEqual(compute_sha256(gen_py_path), manifest["graphics_generator_sha256"], "Graphics generator script modified")
+
+        # Verify programmatic regeneration of ChipSet and System reproduces exact pinned hashes
+        chipset_png_bytes = generate_minimal_chipset()
+        system_png_bytes = generate_minimal_system()
+        self.assertEqual(hashlib.sha256(chipset_png_bytes).hexdigest(), manifest["files"]["ChipSet/ChipSet.png"])
+        self.assertEqual(hashlib.sha256(system_png_bytes).hexdigest(), manifest["files"]["System/System.png"])
+
+        # Check each fixture file on disk
+        for rel_file, expected_hash in manifest["files"].items():
+            full_path = os.path.join(fixture_dir, rel_file)
+            self.assertTrue(os.path.exists(full_path), f"Missing RM2003 fixture file: {rel_file}")
+            self.assertEqual(compute_sha256(full_path), expected_hash, f"Hash mismatch for fixture {rel_file}")
+
+    def test_14_rm2003_easyrpg_rtp_positive_control(self):
+        """Verify real EasyRPG Player resolves Hero1 from RM2003 target pack with zero missing asset warnings."""
+        player_bin = shutil.which("easyrpg-player")
+        require_runtime = os.environ.get("SUPERRTP_REQUIRE_RUNTIME") == "1"
+
+        if not player_bin:
+            if require_runtime:
+                self.fail("easyrpg-player is required by SUPERRTP_REQUIRE_RUNTIME=1 but was not found on PATH")
+            self.skipTest("easyrpg-player not found on PATH")
+
+        fixture_dir = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2003_min")
+        rtp_dir = os.path.join(REPO_ROOT, "generated", "rm2003")
+
+        if not os.path.exists(os.path.join(rtp_dir, "CharSet", "Actor1.png")):
+            build_target("rm2003", output_dir=rtp_dir, clean=True)
+
+        env = os.environ.copy()
+        env["SDL_VIDEODRIVER"] = "dummy"
+        env["SDL_AUDIODRIVER"] = "dummy"
+
+        cmd = [
+            player_bin,
+            "--project-path", fixture_dir,
+            "--rtp-path", rtp_dir,
+            "--engine", "rpg2k3",
+            "--new-game",
+            "--disable-audio",
+            "--no-pause-focus-lost",
+            "--no-log-color"
+        ]
+
+        try:
+            res = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=3.5)
+            output = res.stdout + res.stderr
+        except subprocess.TimeoutExpired as e:
+            out = (e.stdout or b'').decode('utf-8', errors='replace') if isinstance(e.stdout, bytes) else (e.stdout or '')
+            err = (e.stderr or b'').decode('utf-8', errors='replace') if isinstance(e.stderr, bytes) else (e.stderr or '')
+            output = out + err
+
+        # RTP recognized
+        self.assertIn("Adding", output)
+        self.assertIn("to RTP path", output)
+
+        # Hero1 resolved from RM2003 RTP
+        self.assertNotIn("Image not found: CharSet/Hero1", output)
+        # Bundled clean-room fixture assets resolved
+        self.assertNotIn("Image not found: ChipSet", output)
+        self.assertNotIn("Image not found: System", output)
+
+    def test_15_rm2003_easyrpg_negative_control(self):
+        """Verify real EasyRPG Player fails cleanly on Hero1 in RM2003 fixture when RTP is disabled."""
+        player_bin = shutil.which("easyrpg-player")
+        require_runtime = os.environ.get("SUPERRTP_REQUIRE_RUNTIME") == "1"
+
+        if not player_bin:
+            if require_runtime:
+                self.fail("easyrpg-player is required by SUPERRTP_REQUIRE_RUNTIME=1 but was not found on PATH")
+            self.skipTest("easyrpg-player not found on PATH")
+
+        fixture_dir = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2003_min")
+
+        env = os.environ.copy()
+        env["SDL_VIDEODRIVER"] = "dummy"
+        env["SDL_AUDIODRIVER"] = "dummy"
+
+        cmd = [
+            player_bin,
+            "--project-path", fixture_dir,
+            "--no-rtp",
+            "--engine", "rpg2k3",
+            "--new-game",
+            "--disable-audio",
+            "--no-pause-focus-lost",
+            "--no-log-color"
+        ]
+
+        try:
+            res = subprocess.run(cmd, env=env, capture_output=True, text=True, timeout=3.5)
+            output = res.stdout + res.stderr
+        except subprocess.TimeoutExpired as e:
+            out = (e.stdout or b'').decode('utf-8', errors='replace') if isinstance(e.stdout, bytes) else (e.stdout or '')
+            err = (e.stderr or b'').decode('utf-8', errors='replace') if isinstance(e.stderr, bytes) else (e.stderr or '')
+            output = out + err
+
+        self.assertIn("RTP support is disabled", output)
+        self.assertIn("Image not found: CharSet/Hero1", output)
+        # Clean isolation: ChipSet and System still resolve
+        self.assertNotIn("Image not found: ChipSet", output)
+        self.assertNotIn("Image not found: System", output)
+
+    def test_16_rm2003_directional_runtime_evidence_chain(self):
+        """Verify RM2003 runtime evidence chain, hashes, and directional arrow assertions."""
+        if os.environ.get("SUPERRTP_RUN_REPLAY") == "1":
+            run_replay_and_record("rm2003")
+
+        self.assertTrue(verify_evidence_chain("rm2003"), "RM2003 runtime verification evidence chain validation failed")
+
+        artifact_dir = os.path.join(REPO_ROOT, "artifacts", "runtime", "rm2003", "charset")
+
+        down_res = verify_directional_screenshot(os.path.join(artifact_dir, "rm2003_charset_down.png"), "down", target="rm2003")
+        self.assertEqual(down_res["status"], "VERIFIED")
+        self.assertGreater(down_res["shape_metrics"]["top_w"], down_res["shape_metrics"]["bot_w"])
+
+        up_res = verify_directional_screenshot(os.path.join(artifact_dir, "rm2003_charset_up.png"), "up", target="rm2003")
+        self.assertEqual(up_res["status"], "VERIFIED")
+        self.assertLess(up_res["shape_metrics"]["top_w"], up_res["shape_metrics"]["bot_w"])
+
+        left_res = verify_directional_screenshot(os.path.join(artifact_dir, "rm2003_charset_left.png"), "left", target="rm2003")
+        self.assertEqual(left_res["status"], "VERIFIED")
+        self.assertLess(left_res["shape_metrics"]["left_h"], left_res["shape_metrics"]["right_h"])
+
+        right_res = verify_directional_screenshot(os.path.join(artifact_dir, "rm2003_charset_right.png"), "right", target="rm2003")
+        self.assertEqual(right_res["status"], "VERIFIED")
+        self.assertGreater(right_res["shape_metrics"]["left_h"], right_res["shape_metrics"]["right_h"])
+
+        # Adversarial check: inverted direction expectation must fail
+        with self.assertRaises(ValueError):
+            verify_directional_screenshot(os.path.join(artifact_dir, "rm2003_charset_up.png"), "down", target="rm2003")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

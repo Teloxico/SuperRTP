@@ -1,7 +1,7 @@
 {
   "id": "test.calibration.walking-character",
-  "name": "RM2000 Calibration Walking Character Sprite Sheet",
-  "description": "Synthetic clean-room geometric calibration sprite sheet for RPG Maker 2000 CharSet verification",
+  "name": "2k-Family Calibration Walking Character Sprite Sheet (RM2000 / RM2003)",
+  "description": "Synthetic clean-room geometric calibration sprite sheet for RPG Maker 2000 and 2003 CharSet verification",
   "type": "charset",
   "format": "image/x-rgba-raw; 32-bit",
   "dimensions": {

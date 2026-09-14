@@ -32,9 +32,10 @@ jobs:
           curl -sL https://easyrpg.org/downloads/player/0.8.1.1/easyrpg-player-0.8.1.1-linux.tar.gz | sudo tar -xzf - -C /usr/local/bin
           easyrpg-player --version
 
-      - name: Build target pack (RM2000)
+      - name: Build target packs (RM2000 & RM2003)
         run: |
           python3 tools/build_target.py --target rm2000 --clean
+          python3 tools/build_target.py --target rm2003 --clean
 
       - name: Run automated test suite on committed repository state
         env:
@@ -48,16 +49,17 @@ jobs:
           python3 tools/generate_calibration_charset.py
           git diff --exit-code
 
-      - name: Validate target pack
+      - name: Validate target packs
         run: |
           python3 tools/validate_target.py --target rm2000
+          python3 tools/validate_target.py --target rm2003
 
       - name: Verify runtime evidence chain
         run: |
-          python3 tools/verify_runtime.py --verify
+          python3 tools/verify_runtime.py --target all --verify
 
       - name: Optional full visual replay (manual dispatch)
         if: ${{ inputs.run_full_replay == true }}
         run: |
-          python3 tools/verify_runtime.py --run-replay
+          python3 tools/verify_runtime.py --target all --run-replay
 

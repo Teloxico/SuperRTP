@@ -103,12 +103,15 @@ def decode_png_rgb(filepath):
         pixels.append(row)
     return w, h, pixels
 
-def verify_directional_screenshot(filepath, expected_direction):
+def verify_directional_screenshot(filepath, expected_direction, target=None):
     """
     Mechanically inspects screenshot pixels to verify directional visual correctness:
     1. Centroid world position.
     2. Character arrow shape orientation (tip vs wings) to prevent row-order inversion bugs.
     """
+    if target is None:
+        target = "rm2003" if "rm2003" in filepath else "rm2000"
+
     w, h, pixels = decode_png_rgb(filepath)
     if (w, h) != (640, 480):
         raise ValueError(f"Unexpected image dimensions {w}x{h} in {filepath}, expected 640x480")
@@ -159,7 +162,7 @@ def verify_directional_screenshot(filepath, expected_direction):
     exp = expected_ranges[expected_direction]
     if not (exp["x"][0] <= c_x <= exp["x"][1]) or not (exp["y"][0] <= c_y <= exp["y"][1]):
         raise ValueError(
-            f"Direction position mismatch for '{expected_direction}': center is ({c_x:.1f}, {c_y:.1f}), "
+            f"Direction position mismatch for '{expected_direction}' ({target}): center is ({c_x:.1f}, {c_y:.1f}), "
             f"expected x in {exp['x']}, y in {exp['y']}"
         )
 
@@ -215,22 +218,46 @@ def verify_directional_screenshot(filepath, expected_direction):
         "accent_pixel_count": len(yellows)
     }
 
-def verify_evidence_chain():
+def get_target_config(target="rm2000"):
+    artifacts_dir = os.path.join(REPO_ROOT, "artifacts", "runtime", target, "charset")
+    evidence_path = os.path.join(artifacts_dir, "verification_evidence.json")
+    fixture_dir = os.path.join(REPO_ROOT, "tests", "fixtures", f"{target}_min")
+    target_dir = os.path.join(REPO_ROOT, "generated", target)
+    replay_path = os.path.join(fixture_dir, "replay_turn_directions.input")
+    engine = "rpg2k3" if target in ("rm2003", "2k3") else "rpg2k"
+    return {
+        "target": target,
+        "engine": engine,
+        "artifacts_dir": artifacts_dir,
+        "evidence_path": evidence_path,
+        "fixture_dir": fixture_dir,
+        "target_dir": target_dir,
+        "replay_path": replay_path,
+    }
+
+def verify_evidence_chain(target="rm2000"):
     """
     Verifies that the recorded verification_evidence.json matches current files, target Actor1.png, and hashes.
     """
-    if not os.path.exists(EVIDENCE_PATH):
-        raise FileNotFoundError(f"Verification evidence file not found: {EVIDENCE_PATH}")
+    cfg = get_target_config(target)
+    evidence_path = cfg["evidence_path"]
+    target_dir = cfg["target_dir"]
+    fixture_dir = cfg["fixture_dir"]
+    replay_path = cfg["replay_path"]
+    artifacts_dir = cfg["artifacts_dir"]
 
-    with open(EVIDENCE_PATH, "r", encoding="utf-8") as ef:
+    if not os.path.exists(evidence_path):
+        raise FileNotFoundError(f"Verification evidence file not found: {evidence_path}")
+
+    with open(evidence_path, "r", encoding="utf-8") as ef:
         evidence = json.load(ef)
 
-    print("=== SuperRTP Runtime Verification Evidence Check ===")
+    print(f"=== SuperRTP Runtime Verification Evidence Check ({target}) ===")
     print(f"EasyRPG Version: {evidence.get('easyrpg_version')}")
     print(f"Recorded Date:   {evidence.get('recorded_at')}")
 
     # Check target manifest
-    target_manifest = os.path.join(TARGET_DIR, "manifest.json")
+    target_manifest = os.path.join(target_dir, "manifest.json")
     if not os.path.exists(target_manifest):
         raise FileNotFoundError(f"Target manifest not found: {target_manifest}")
     actual_target_manifest_hash = compute_sha256(target_manifest)
@@ -238,7 +265,7 @@ def verify_evidence_chain():
         raise ValueError(f"Target manifest hash mismatch with evidence: expected {evidence['target_manifest_sha256']}, got {actual_target_manifest_hash}")
 
     # Check target Actor1.png binary against evidence
-    target_actor1 = os.path.join(TARGET_DIR, "CharSet", "Actor1.png")
+    target_actor1 = os.path.join(target_dir, "CharSet", "Actor1.png")
     if not os.path.exists(target_actor1):
         raise FileNotFoundError(f"Target Actor1.png not found: {target_actor1}")
     actual_actor1_hash = compute_sha256(target_actor1)
@@ -246,19 +273,19 @@ def verify_evidence_chain():
         raise ValueError(f"Target Actor1.png hash mismatch with evidence: expected {evidence['target_actor1_sha256']}, got {actual_actor1_hash}")
 
     # Check fixture manifest
-    fixture_manifest = os.path.join(FIXTURE_DIR, "fixture_manifest.json")
+    fixture_manifest = os.path.join(fixture_dir, "fixture_manifest.json")
     actual_fixture_hash = compute_sha256(fixture_manifest)
     if actual_fixture_hash != evidence["fixture_manifest_sha256"]:
         raise ValueError(f"Fixture manifest hash mismatch with evidence: expected {evidence['fixture_manifest_sha256']}, got {actual_fixture_hash}")
 
     # Check replay file
-    actual_replay_hash = compute_sha256(REPLAY_PATH)
+    actual_replay_hash = compute_sha256(replay_path)
     if actual_replay_hash != evidence["replay_input_sha256"]:
         raise ValueError(f"Replay input hash mismatch with evidence: expected {evidence['replay_input_sha256']}, got {actual_replay_hash}")
 
     # Check screenshots and pixel content
     for name, expected_hash in evidence["screenshots"].items():
-        shot_path = os.path.join(ARTIFACTS_DIR, name)
+        shot_path = os.path.join(artifacts_dir, name)
         if not os.path.exists(shot_path):
             raise FileNotFoundError(f"Missing screenshot: {shot_path}")
         actual_hash = compute_sha256(shot_path)
@@ -282,14 +309,15 @@ def verify_evidence_chain():
         result = verify_directional_screenshot(shot_path, dir_name)
         print(f"  [PASS] {name}: SHA-256 match, Visual content: {result['status']}")
 
-    print("ALL RUNTIME EVIDENCE CHECKS PASSED: Evidence chain is durable and verified.")
+    print(f"ALL RUNTIME EVIDENCE CHECKS PASSED ({target}): Evidence chain is durable and verified.")
     return True
 
-def run_replay_and_record():
+def run_replay_and_record(target="rm2000"):
     """
     Executes EasyRPG Player with --replay-input, extracts directional frames,
-    and updates verification_evidence.json.
+    and updates verification_evidence.json for the specified target.
     """
+    cfg = get_target_config(target)
     player_bin = shutil.which("easyrpg-player")
     if not player_bin:
         raise RuntimeError("easyrpg-player not found on PATH")
@@ -299,42 +327,42 @@ def run_replay_and_record():
         raise RuntimeError("ffmpeg not found on PATH")
 
     # Ensure target is built
-    if not os.path.exists(os.path.join(TARGET_DIR, "CharSet", "Actor1.png")):
+    if not os.path.exists(os.path.join(cfg["target_dir"], "CharSet", "Actor1.png")):
         from build_target import build_target
-        build_target("rm2000", output_dir=TARGET_DIR, clean=True)
+        build_target(target, output_dir=cfg["target_dir"], clean=True)
 
     # Get EasyRPG version
     ver_res = subprocess.run([player_bin, "--version"], capture_output=True, text=True)
     version_line = ver_res.stdout.splitlines()[0] if ver_res.stdout else "unknown"
 
-    video_tmp = "/tmp/easyrpg_replay_capture.mp4"
+    video_tmp = f"/tmp/easyrpg_replay_capture_{target}.mp4"
     record_cmd = (
         f"xvfb-run -s '-screen 0 640x480x24' bash -c '"
         f"ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i :99.0 -t 11 {video_tmp} & "
         f"FFMPEG_PID=$! ; sleep 0.3 ; "
-        f"SDL_VIDEODRIVER=x11 {player_bin} --project-path {FIXTURE_DIR} --rtp-path {TARGET_DIR} "
-        f"--engine rpg2k --new-game --disable-audio --no-pause-focus-lost --fullscreen "
-        f"--replay-input {REPLAY_PATH} & "
+        f"SDL_VIDEODRIVER=x11 {player_bin} --project-path {cfg['fixture_dir']} --rtp-path {cfg['target_dir']} "
+        f"--engine {cfg['engine']} --new-game --disable-audio --no-pause-focus-lost --fullscreen "
+        f"--replay-input {cfg['replay_path']} & "
         f"PLAYER_PID=$! ; wait $FFMPEG_PID ; kill $PLAYER_PID 2>/dev/null || true'"
     )
 
-    print("Executing EasyRPG replay under xvfb...")
+    print(f"Executing EasyRPG replay for {target} under xvfb...")
     subprocess.run(record_cmd, shell=True, check=True)
 
     # Extract frames:
     # 4.5s -> Down, 5.5s -> Left, 6.5s -> Up, 7.5s -> Right
-    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
+    os.makedirs(cfg["artifacts_dir"], exist_ok=True)
     frames = [
-        ("rm2000_charset_down.png", "00:00:04.5", "down"),
-        ("rm2000_charset_left.png", "00:00:05.5", "left"),
-        ("rm2000_charset_up.png", "00:00:06.5", "up"),
-        ("rm2000_charset_right.png", "00:00:07.5", "right"),
+        (f"{target}_charset_down.png", "00:00:04.5", "down"),
+        (f"{target}_charset_left.png", "00:00:05.5", "left"),
+        (f"{target}_charset_up.png", "00:00:06.5", "up"),
+        (f"{target}_charset_right.png", "00:00:07.5", "right"),
     ]
     screenshot_hashes = {}
     directional_evidence = {}
 
     for name, ts, direction in frames:
-        out_path = os.path.join(ARTIFACTS_DIR, name)
+        out_path = os.path.join(cfg["artifacts_dir"], name)
         extract_cmd = ["ffmpeg", "-y", "-ss", ts, "-i", video_tmp, "-vframes", "1", out_path]
         subprocess.run(extract_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
         h = compute_sha256(out_path)
@@ -344,18 +372,19 @@ def run_replay_and_record():
         print(f"Captured {name}: SHA-256 {h[:16]}... ({res['status']})")
 
     # Negative control capture
-    neg_path = os.path.join(ARTIFACTS_DIR, "rm2000_charset_negative_control.png")
+    neg_filename = f"{target}_charset_negative_control.png"
+    neg_path = os.path.join(cfg["artifacts_dir"], neg_filename)
     neg_cmd = (
         f"xvfb-run -s '-screen 0 640x480x24' bash -c '"
-        f"SDL_VIDEODRIVER=x11 {player_bin} --project-path {FIXTURE_DIR} --no-rtp "
-        f"--engine rpg2k --new-game --disable-audio --no-pause-focus-lost --fullscreen & "
+        f"SDL_VIDEODRIVER=x11 {player_bin} --project-path {cfg['fixture_dir']} --no-rtp "
+        f"--engine {cfg['engine']} --new-game --disable-audio --no-pause-focus-lost --fullscreen & "
         f"PLAYER_PID=$! ; sleep 2.5 ; "
         f"ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i :99.0 -vframes 1 {neg_path} ; "
         f"kill $PLAYER_PID 2>/dev/null || true'"
     )
     subprocess.run(neg_cmd, shell=True, check=True)
     neg_hash = compute_sha256(neg_path)
-    screenshot_hashes["rm2000_charset_negative_control.png"] = neg_hash
+    screenshot_hashes[neg_filename] = neg_hash
     neg_res = verify_directional_screenshot(neg_path, "negative_control")
     directional_evidence["negative_control"] = neg_res
     print(f"Captured negative control: SHA-256 {neg_hash[:16]}... ({neg_res['status']})")
@@ -366,32 +395,37 @@ def run_replay_and_record():
 
     # Build evidence dictionary
     evidence = {
-        "target": "rm2000",
-        "target_manifest_sha256": compute_sha256(os.path.join(TARGET_DIR, "manifest.json")),
-        "target_actor1_sha256": compute_sha256(os.path.join(TARGET_DIR, "CharSet", "Actor1.png")),
-        "fixture_manifest_sha256": compute_sha256(os.path.join(FIXTURE_DIR, "fixture_manifest.json")),
-        "replay_input_sha256": compute_sha256(REPLAY_PATH),
+        "target": target,
+        "target_manifest_sha256": compute_sha256(os.path.join(cfg["target_dir"], "manifest.json")),
+        "target_actor1_sha256": compute_sha256(os.path.join(cfg["target_dir"], "CharSet", "Actor1.png")),
+        "fixture_manifest_sha256": compute_sha256(os.path.join(cfg["fixture_dir"], "fixture_manifest.json")),
+        "replay_input_sha256": compute_sha256(cfg["replay_path"]),
         "easyrpg_version": version_line,
         "recorded_at": "1970-01-01T00:00:00Z" if os.environ.get("SOURCE_DATE_EPOCH") else "2026-09-14T19:00:00Z",
         "screenshots": screenshot_hashes,
         "directional_evidence": directional_evidence
     }
 
-    with open(EVIDENCE_PATH, "w", encoding="utf-8") as ef:
+    with open(cfg["evidence_path"], "w", encoding="utf-8") as ef:
         json.dump(evidence, ef, indent=2)
 
-    print(f"Evidence recorded in {EVIDENCE_PATH}")
+    print(f"Evidence recorded in {cfg['evidence_path']}")
     return evidence
 
 def main():
     parser = argparse.ArgumentParser(description="SuperRTP Runtime Verification Tool")
+    parser.add_argument("--target", default="rm2000", choices=["rm2000", "rm2003", "all"], help="Target RTP (rm2000, rm2003, or all)")
     parser.add_argument("--verify", action="store_true", default=True, help="Verify existing evidence and screenshot assertions")
     parser.add_argument("--run-replay", action="store_true", help="Execute live EasyRPG Player replay and update evidence")
     args = parser.parse_args()
 
+    targets = ["rm2000", "rm2003"] if args.target == "all" else [args.target]
+
     if args.run_replay:
-        run_replay_and_record()
-    verify_evidence_chain()
+        for t in targets:
+            run_replay_and_record(t)
+    for t in targets:
+        verify_evidence_chain(t)
 
 if __name__ == "__main__":
     main()

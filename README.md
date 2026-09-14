@@ -42,35 +42,35 @@ Runtime Verification (EasyRPG Player, mkxp-z, WOLF tools)
 
 See [docs/architecture.md](docs/architecture.md) for full architectural specifications and compatibility models.
 
-## Current Status: Phase 1 Vertical Slice (Hardened)
+## Current Status: Phase 1 & 2 Cross-Target Vertical Slice (Hardened)
 
-The Phase 1 vertical slice is implemented, hardened, and verified for **RPG Maker 2000 CharSet** compatibility:
-- **Canonical Asset:** `test.calibration.walking-character`
+The vertical slice is implemented, hardened, and verified for **cross-target compatibility** across both **RPG Maker 2000 (`rm2000`)** and **RPG Maker 2003 (`rm2003`)** CharSet targets from a single canonical source asset:
+- **Single Canonical Asset:** `test.calibration.walking-character`
   - Neutral 32-bit RGBA source ([`registry/assets/test_calibration_walking_character.rgba`](registry/assets/test_calibration_walking_character.rgba)) and preview ([`test_calibration_walking_character_master.png`](registry/assets/test_calibration_walking_character_master.png)).
   - 100% synthetic geometric primitives (directional chevrons, step markers, frame boundary calibration ticks).
 - **Physical CharSet Geometry & Direction Rows:**
-  - Strict RM2000 layout: 288×256 pixels, 4×2 character grid (8 characters, 72×128 px), 3×4 frame cells (24×32 px).
+  - Strict 2k-family layout: 288×256 pixels, 4×2 character grid (8 characters, 72×128 px), 3×4 frame cells (24×32 px).
   - Physical row ordering (verified against EasyRPG upstream `game_character.h` enum `Up=0, Right=1, Down=2, Left=3`):
     - **Row 0**: Facing **Up** (`^`)
     - **Row 1**: Facing **Right** (`>`)
     - **Row 2**: Facing **Down** (`v`)
     - **Row 3**: Facing **Left** (`<`)
-- **Deterministic Transformation:**
+- **Deterministic Cross-Target Transformation:**
   - `tools/build_target.py` transforms canonical neutral RGBA into strict 8-bit indexed PNG (Color Type 3, $\le 256$ colors).
+  - Produces bit-for-bit identical primary `Actor1.png` across both `rm2000` and `rm2003` targets.
   - Preserves index 0 as transparent background color, and includes `tRNS` chunk for modern tool compatibility.
   - Generates byte-for-byte reproducible targets (`SOURCE_DATE_EPOCH` supported, static default timestamp).
-- **Slot Mapping:**
-  - Maps to `CharSet/Actor1.png` with official aliases derived from EasyRPG `rtp_table.cpp` (`actor1.png`, `Chara1.png`, `chara1.png`, `主人公1.png`).
-  - RM2003-only alias (`Hero1.png`) is correctly excluded from RM2000 mapping.
+- **Engine-Specific Slot Mappings:**
+  - `rm2000`: Maps to `CharSet/Actor1.png` with upstream `rtp_table_2k` aliases (`actor1.png`, `Chara1.png`, `chara1.png`, `主人公1.png`). Strictly **excludes** `Hero1.png`.
+  - `rm2003`: Maps to `CharSet/Actor1.png` with upstream `rtp_table_2k3` aliases (`actor1.png`, `hero1.png`, `Hero1.png`, `Chara1.png`, `chara1.png`, `protagonist1.png`, `Protagonist1.png`, `主人公1.png`, `주인공1.png`, `主角1.png`).
 - **Runtime & Visual Verification:**
-  - Executed in EasyRPG Player 0.8.1.1 against a minimal clean-room game fixture ([`tests/fixtures/rm2000_min/`](tests/fixtures/rm2000_min)).
+  - Executed in EasyRPG Player 0.8.1.1 against distinct clean-room game fixtures ([`tests/fixtures/rm2000_min/`](tests/fixtures/rm2000_min) and [`tests/fixtures/rm2003_min/`](tests/fixtures/rm2003_min)).
+  - RM2003 fixture explicitly requests `Hero1` to test the engine-specific alias boundary.
   - Replayed deterministic turning input across all 4 directions with verified clean logs.
-  - All 4 directional runtime states visually inspected and verified in [`artifacts/runtime/rm2000/charset/`](artifacts/runtime/rm2000/charset/):
-    - `rm2000_charset_down.png`: Character facing Down (`v`)
-    - `rm2000_charset_left.png`: Character facing Left (`<`)
-    - `rm2000_charset_up.png`: Character facing Up (`^`)
-    - `rm2000_charset_right.png`: Character facing Right (`>`)
-  - Isolated negative control verified (`rm2000_charset_negative_control.png` logs exactly `Image not found: CharSet/Actor1`).
+  - Directional runtime states visually inspected and verified in:
+    - [`artifacts/runtime/rm2000/charset/`](artifacts/runtime/rm2000/charset/) (`rm2000_charset_down.png`, `left`, `up`, `right`, and `negative_control.png`)
+    - [`artifacts/runtime/rm2003/charset/`](artifacts/runtime/rm2003/charset/) (`rm2003_charset_down.png`, `left`, `up`, `right`, and `negative_control.png`)
+  - Isolated negative controls verified (`Image not found: CharSet/Actor1` for RM2000; `Image not found: CharSet/Hero1` for RM2003).
 
 ## Repository Layout
 
@@ -98,48 +98,56 @@ The Phase 1 vertical slice is implemented, hardened, and verified for **RPG Make
 ```bash
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_vertical_slice.py
 ```
-Executes 10 mechanical checks:
+Executes 16 mechanical checks:
 1. Canonical master RGBA and preview deterministic reproducibility
 2. Target PNG structural compliance (288×256, 8-bit indexed, color type 3, index 0 transparent)
 3. Provenance schema completeness and clean-room attestations
 4. Target builder byte-for-byte reproducibility across clean runs and RM2000 slot accuracy
 5. Validator aggressive rejection of corrupted / invalid assets
 6. JSON schema validation on all registry metadata
-7. Clean-room fixture binary and source hash integrity against `fixture_manifest.json`
-8. Headless EasyRPG Player positive control (clean resolution without missing asset warnings)
-9. Headless EasyRPG Player negative control (isolated `Image not found: CharSet/Actor1` failure)
-10. Evidence chain cryptographic integrity and 4-direction runtime verification screenshots
+7. RM2000 clean-room fixture binary and source hash integrity against `fixture_manifest.json`
+8. Headless EasyRPG Player RM2000 positive control (clean resolution without missing asset warnings)
+9. Headless EasyRPG Player RM2000 negative control (isolated `Image not found: CharSet/Actor1` failure)
+10. RM2000 evidence chain cryptographic integrity and 4-direction runtime verification screenshots
+11. RM2000 sprite arrow shape orientation and directional asymmetry verification
+12. RM2003 target builder, cross-target byte determinism with RM2000, and Hero1 alias inclusion
+13. RM2003 clean-room test fixture manifest & programmatic graphics integrity
+14. Real EasyRPG Player headless RM2003 RTP resolution (positive control, clean logs)
+15. Real EasyRPG Player headless RM2003 missing-asset fallback (negative control, exact failure isolation)
+16. RM2003 four-direction runtime verification evidence chain & directional arrow assertions
 
 ### 2. Generate Clean-Room Fixture Graphics
 ```bash
 python3 tools/generate_fixture_graphics.py
 ```
-Deterministically generates fallback `ChipSet.png` and `System.png` for the test fixture from geometric primitives using pure Python standard library.
+Deterministically generates fallback `ChipSet.png` and `System.png` for both RM2000 and RM2003 test fixtures from geometric primitives using pure Python standard library.
 
 ### 3. Generate Canonical Asset
 ```bash
 python3 tools/generate_calibration_charset.py
 ```
 
-### 4. Build RM2000 Target Pack
+### 4. Build Target Packs (RM2000 & RM2003)
 ```bash
 python3 tools/build_target.py --target rm2000 --clean
+python3 tools/build_target.py --target rm2003 --clean
 ```
 
-### 5. Validate Target Pack
+### 5. Validate Target Packs
 ```bash
 python3 tools/validate_target.py --target rm2000
+python3 tools/validate_target.py --target rm2003
 ```
 
 ### 6. Runtime Verification & Evidence Verification (EasyRPG Player)
 ```bash
-# Verify existing evidence chain, screenshot hashes, and logs:
-python3 tools/verify_runtime.py --verify
+# Verify existing evidence chains, screenshot hashes, and logs for both targets:
+python3 tools/verify_runtime.py --target all --verify
 
 # Or execute full live replay in EasyRPG under virtual X11, capture screenshots, and regenerate evidence:
-python3 tools/verify_runtime.py --run-replay
+python3 tools/verify_runtime.py --target all --run-replay
 ```
-Generates [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json) cryptographically binding engine version, target manifest hash, fixture manifest hash, replay file hash, and screenshot hashes.
+Generates [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json) and [`artifacts/runtime/rm2003/charset/verification_evidence.json`](artifacts/runtime/rm2003/charset/verification_evidence.json) cryptographically binding engine version, target manifest hash, fixture manifest hash, replay file hash, and screenshot hashes.
 
 ## Clean-Room Policy & Licensing
 
