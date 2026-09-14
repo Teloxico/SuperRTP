@@ -7,7 +7,7 @@ engine-compliant runtime packages:
   canonical source (neutral RGBA)
     -> provenance verification
     -> slot mapping
-    -> target transformation (palette quantization, index-0 transparency, chunk encoding)
+    -> target transformation (exact palette extraction and indexing, index-0 transparency, chunk encoding)
     -> target output (generated/<target>/)
     -> reproducible manifest
 

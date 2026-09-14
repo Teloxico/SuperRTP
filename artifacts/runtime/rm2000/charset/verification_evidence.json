@@ -1,0 +1,62 @@
+{
+  "target": "rm2000",
+  "target_manifest_sha256": "21da56387181a663a4f262fa9eb2739540687bafb470aae44af9f8bd9ae90e66",
+  "target_actor1_sha256": "50274c482569a6faa55249e3cbaa92496c61482a3512c0f578d9f40e2daee18d",
+  "fixture_manifest_sha256": "91edab4469cdadf2bcf578abaf793cda84d97942f69ef82944fd6c9913ccb334",
+  "replay_input_sha256": "3ba0ca86afcc75d63ccc7440f3f7b4c289672b917db75355b1d1968d11a6f7b1",
+  "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
+  "recorded_at": "2026-09-14T19:00:00Z",
+  "screenshots": {
+    "rm2000_charset_down.png": "014299975d2e5331437b19a2fd8d0cd70ab357618bcd8184ed600885d28d9f7d",
+    "rm2000_charset_left.png": "8d6a736228c0d904f3efca4f2f30b35d8afb1a71278cf2ec207ac617d6029ec5",
+    "rm2000_charset_up.png": "39300c52b8676212e3097717a2c0b8d183ab50bf9fca691860f16536d333e897",
+    "rm2000_charset_right.png": "e944e1e45e30a6e5500683c88c21dbd71c29758790681448c0176ff0e7e41e2f",
+    "rm2000_charset_negative_control.png": "e44dc4e31e40bdd1a7503f14945f5351b225a75ce3266a647d43bc4d519cd0ea"
+  },
+  "directional_evidence": {
+    "down": {
+      "status": "VERIFIED",
+      "facing": "DOWN",
+      "centroid": [
+        328.9,
+        212.9
+      ],
+      "cyan_pixel_count": 93,
+      "accent_pixel_count": 59
+    },
+    "left": {
+      "status": "VERIFIED",
+      "facing": "LEFT",
+      "centroid": [
+        308.0,
+        217.6
+      ],
+      "cyan_pixel_count": 142,
+      "accent_pixel_count": 59
+    },
+    "up": {
+      "status": "VERIFIED",
+      "facing": "UP",
+      "centroid": [
+        310.1,
+        195.4
+      ],
+      "cyan_pixel_count": 137,
+      "accent_pixel_count": 56
+    },
+    "right": {
+      "status": "VERIFIED",
+      "facing": "RIGHT",
+      "centroid": [
+        330.5,
+        196.8
+      ],
+      "cyan_pixel_count": 160,
+      "accent_pixel_count": 52
+    },
+    "negative_control": {
+      "status": "VERIFIED",
+      "error_text_pixels": 189
+    }
+  }
+}

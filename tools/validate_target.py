@@ -209,9 +209,42 @@ def validate_provenance(repo_root, asset_id, source_sha256):
     if attestation.get("openrtp_derived") is not False:
         raise ValueError("Provenance violation: openrtp_derived must be false")
 
+    # Source-type-aware validation and evidence checks
+    source_type = prov.get("source_type")
+    valid_source_types = {"project_synthetic", "externally_licensed", "ai_generated"}
+    if source_type not in valid_source_types:
+        raise ValueError(f"Invalid source_type: {source_type}. Must be one of {valid_source_types}")
+
     license_str = prov.get("license")
-    if license_str != "CC0-1.0":
-        raise ValueError(f"Unexpected license: expected CC0-1.0, got {license_str}")
+    permitted_licenses = {
+        "CC0-1.0", "CC-BY-4.0", "CC-BY-3.0", "CC-BY-SA-4.0",
+        "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "OFL-1.1", "Public Domain"
+    }
+    if license_str not in permitted_licenses:
+        raise ValueError(f"Provenance license violation: '{license_str}' is not an approved redistribution license: {permitted_licenses}")
+
+    if source_type == "project_synthetic":
+        creation_tool = prov.get("creation_tool")
+        if not creation_tool or not isinstance(creation_tool, str):
+            raise ValueError("Provenance violation: source_type 'project_synthetic' requires non-empty 'creation_tool'")
+        if prov.get("test_only") and license_str != "CC0-1.0":
+            raise ValueError(f"Provenance violation: test_only synthetic asset must be CC0-1.0, got {license_str}")
+
+    elif source_type == "externally_licensed":
+        upstream = prov.get("upstream_source")
+        if not upstream or not isinstance(upstream, dict):
+            raise ValueError("Provenance violation: source_type 'externally_licensed' requires 'upstream_source' object")
+        for field in ["author", "url", "license_evidence"]:
+            if not upstream.get(field):
+                raise ValueError(f"Provenance violation: externally_licensed requires non-empty upstream_source.{field}")
+
+    elif source_type == "ai_generated":
+        gen_meta = prov.get("generation_metadata")
+        if not gen_meta or not isinstance(gen_meta, dict):
+            raise ValueError("Provenance violation: source_type 'ai_generated' requires 'generation_metadata' object")
+        for field in ["model", "provider", "prompt", "parameters", "date"]:
+            if not gen_meta.get(field):
+                raise ValueError(f"Provenance violation: ai_generated requires non-empty generation_metadata.{field}")
 
     return prov
 

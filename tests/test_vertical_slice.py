@@ -3,16 +3,16 @@
 Automated Test Suite for SuperRTP Phase 1 Vertical Slice.
 
 Tests:
-  1. Canonical asset generation & deterministic reproducibility (raw RGBA + preview)
+  1. Canonical asset generation & deterministic reproducibility (raw RGBA + master PNG preview)
   2. PNG structure & RM2000 CharSet compliance (288x256, 8-bit indexed, index 0 transparent)
-  3. Clean-room provenance attestation & generalized schema adherence
+  3. Clean-room provenance attestation & source-type-aware validation
   4. Target builder, byte-for-byte reproducibility across runs, and slot alias correctness
   5. Target validator positive verification & rejection of corrupted/invalid assets
-  6. Schema validation using schema_validator (assets & provenance)
-  7. Clean-room fixture manifest hash verification
+  6. Schema validation using schema_validator (assets & provenance conditional rules)
+  7. Clean-room fixture manifest & programmatic graphics generator integrity
   8. Real EasyRPG Player headless RTP resolution (positive control, clean logs)
   9. Real EasyRPG Player missing-asset fallback (negative control, exact failure isolation)
-  10. Four-direction runtime verification artifacts presence & geometry
+  10. Four-direction runtime verification evidence chain & directional pixel assertions
 """
 
 import os
@@ -30,7 +30,9 @@ sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
 from generate_calibration_charset import generate_calibration_charset
 from build_target import build_target, compute_sha256, create_indexed_png as create_png
 from validate_target import validate_png_charset, validate_provenance, validate_target
-from schema_validator import validate_schema
+from schema_validator import validate_schema, SchemaValidationError
+from generate_fixture_graphics import generate_minimal_chipset, generate_minimal_system
+from verify_runtime import verify_evidence_chain, run_replay_and_record
 
 class TestSuperRTPVerticalSlice(unittest.TestCase):
 
@@ -45,13 +47,16 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         self.assertTrue(os.path.exists(rgba_path), f"Canonical raw RGBA not found at {rgba_path}")
         self.assertEqual(compute_sha256(rgba_path), hashlib.sha256(raw1).hexdigest())
 
+        master_png_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character_master.png")
+        self.assertTrue(os.path.exists(master_png_path), f"Master preview PNG not found at {master_png_path}")
+        self.assertEqual(compute_sha256(master_png_path), hashlib.sha256(png1).hexdigest(), "Master preview PNG hash mismatch")
+
         with open(os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character.json"), "r") as f:
             meta = json.load(f)
         self.assertEqual(meta["sha256"], compute_sha256(rgba_path))
 
     def test_02_png_structural_compliance(self):
         """Verify built target PNG conforms to strict RM2000 CharSet specification."""
-        # Ensure target pack is built
         rtp_dir = os.path.join(REPO_ROOT, "generated", "rm2000")
         target_png = os.path.join(rtp_dir, "CharSet", "Actor1.png")
         if not os.path.exists(target_png):
@@ -68,12 +73,13 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         self.assertEqual(specs["frame_cell"], "24x32")
 
     def test_03_clean_room_provenance_attestation(self):
-        """Verify clean-room attestations and license metadata under generalized provenance schema."""
+        """Verify clean-room attestations and source-type-aware validation."""
         rgba_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character.rgba")
         sha256 = compute_sha256(rgba_path)
         prov = validate_provenance(REPO_ROOT, "test.calibration.walking-character", sha256)
 
         self.assertEqual(prov["source_type"], "project_synthetic")
+        self.assertTrue(prov.get("creation_tool"))
         att = prov["clean_room_attestation"]
         self.assertFalse(att["proprietary_rtp_derived"])
         self.assertFalse(att["openrtp_derived"])
@@ -142,7 +148,7 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
             os.unlink(temp_bad.name)
 
     def test_06_schema_validation(self):
-        """Verify JSON schemas and registry instances validate cleanly."""
+        """Verify JSON schemas and registry instances validate cleanly, including source-type rules."""
         asset_schema_path = os.path.join(REPO_ROOT, "schemas", "asset.schema.json")
         prov_schema_path = os.path.join(REPO_ROOT, "schemas", "provenance.schema.json")
 
@@ -159,29 +165,77 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         with open(prov_inst_path, "r") as f:
             prov_inst = json.load(f)
 
-        # Valid instances must pass
+        # 1. Valid instances must pass
         validate_schema(asset_inst, asset_schema)
         validate_schema(prov_inst, prov_schema)
 
-        # Invalid provenance instance must fail
+        # 2. Invalid provenance clean-room attestation must fail
         bad_prov = json.loads(json.dumps(prov_inst))
         bad_prov["clean_room_attestation"]["proprietary_rtp_derived"] = True
-        with self.assertRaises(ValueError):
+        with self.assertRaises((ValueError, SchemaValidationError)):
             validate_schema(bad_prov, prov_schema)
 
+        # 3. project_synthetic missing creation_tool must fail
+        bad_synth = json.loads(json.dumps(prov_inst))
+        del bad_synth["creation_tool"]
+        with self.assertRaises((ValueError, SchemaValidationError)):
+            validate_schema(bad_synth, prov_schema)
+
+        # 4. externally_licensed missing upstream_source must fail
+        ext_prov = json.loads(json.dumps(prov_inst))
+        ext_prov["source_type"] = "externally_licensed"
+        ext_prov["license"] = "CC-BY-4.0"
+        with self.assertRaises((ValueError, SchemaValidationError)):
+            validate_schema(ext_prov, prov_schema)
+
+        # 5. Valid externally_licensed record must pass
+        ext_prov["upstream_source"] = {
+            "author": "OpenGameArt Contributor",
+            "url": "https://opengameart.org/content/example",
+            "license_evidence": "CC-BY-4.0 license grant"
+        }
+        validate_schema(ext_prov, prov_schema)
+
+        # 6. ai_generated missing generation_metadata must fail
+        ai_prov = json.loads(json.dumps(prov_inst))
+        ai_prov["source_type"] = "ai_generated"
+        with self.assertRaises((ValueError, SchemaValidationError)):
+            validate_schema(ai_prov, prov_schema)
+
+        # 7. Valid ai_generated record must pass
+        ai_prov["generation_metadata"] = {
+            "model": "SDXL-Turbo",
+            "provider": "Local",
+            "prompt": "pixel art character walking",
+            "parameters": {"steps": 20, "seed": 42},
+            "date": "2026-09-14"
+        }
+        validate_schema(ai_prov, prov_schema)
+
     def test_07_clean_room_fixture_manifest_integrity(self):
-        """Verify clean-room test fixture binaries and source match fixture_manifest.json."""
+        """Verify clean-room test fixture binaries, source generators, and programmatic graphics match manifest."""
         manifest_path = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2000_min", "fixture_manifest.json")
         self.assertTrue(os.path.exists(manifest_path), "Fixture manifest must exist")
         with open(manifest_path, "r") as f:
             manifest = json.load(f)
 
         fixture_dir = os.path.dirname(manifest_path)
-        # Check source generator
-        gen_cpp_path = os.path.join(REPO_ROOT, manifest["generator_source"])
-        self.assertEqual(compute_sha256(gen_cpp_path), manifest["generator_sha256"], "Generator source modified")
 
-        # Check each fixture file
+        # Check C++ LCF generator source
+        gen_cpp_path = os.path.join(REPO_ROOT, manifest["generator_source"])
+        self.assertEqual(compute_sha256(gen_cpp_path), manifest["generator_sha256"], "Generator C++ source modified")
+
+        # Check Python graphics generator source
+        gen_py_path = os.path.join(REPO_ROOT, manifest["graphics_generator_source"])
+        self.assertEqual(compute_sha256(gen_py_path), manifest["graphics_generator_sha256"], "Graphics generator script modified")
+
+        # Verify programmatic regeneration of ChipSet and System reproduces exact pinned hashes
+        chipset_png_bytes = generate_minimal_chipset()
+        system_png_bytes = generate_minimal_system()
+        self.assertEqual(hashlib.sha256(chipset_png_bytes).hexdigest(), manifest["files"]["ChipSet/ChipSet.png"])
+        self.assertEqual(hashlib.sha256(system_png_bytes).hexdigest(), manifest["files"]["System/System.png"])
+
+        # Check each fixture file on disk
         for rel_file, expected_hash in manifest["files"].items():
             full_path = os.path.join(fixture_dir, rel_file)
             self.assertTrue(os.path.exists(full_path), f"Missing fixture file: {rel_file}")
@@ -278,27 +332,13 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         self.assertNotIn("Image not found: ChipSet", output)
         self.assertNotIn("Image not found: System", output)
 
-    def test_10_directional_runtime_artifacts(self):
-        """Verify all 4 directional runtime verification screenshots and negative control exist with proper geometry."""
-        artifact_dir = os.path.join(REPO_ROOT, "artifacts", "runtime", "rm2000", "charset")
-        required_artifacts = [
-            "rm2000_charset_down.png",
-            "rm2000_charset_left.png",
-            "rm2000_charset_up.png",
-            "rm2000_charset_right.png",
-            "rm2000_charset_negative_control.png"
-        ]
-        for name in required_artifacts:
-            path = os.path.join(artifact_dir, name)
-            self.assertTrue(os.path.exists(path), f"Missing runtime verification artifact: {name}")
-            with open(path, "rb") as f:
-                header = f.read(24)
-            # PNG signature
-            self.assertEqual(header[:8], b"\x89PNG\r\n\x1a\n")
-            # Width and height in IHDR (bytes 16..24)
-            w = int.from_bytes(header[16:20], "big")
-            h = int.from_bytes(header[20:24], "big")
-            self.assertEqual((w, h), (640, 480), f"Unexpected screenshot dimensions for {name}: {w}x{h}")
+    def test_10_directional_runtime_evidence_chain(self):
+        """Verify durable runtime verification evidence chain, hashes, and directional pixel assertions."""
+        if os.environ.get("SUPERRTP_RUN_REPLAY") == "1":
+            run_replay_and_record()
+
+        # Check evidence chain and directional visual assertions
+        self.assertTrue(verify_evidence_chain(), "Runtime verification evidence chain validation failed")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

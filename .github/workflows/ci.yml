@@ -1,0 +1,53 @@
+name: SuperRTP CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    name: Verify Vertical Slice
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies (EasyRPG Player, Xvfb, ffmpeg)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb ffmpeg libasound2 || sudo apt-get install -y xvfb ffmpeg libasound2t64
+          curl -sL https://easyrpg.org/downloads/player/0.8.1.1/easyrpg-player-0.8.1.1-linux.tar.gz | sudo tar -xzf - -C /usr/local/bin
+          easyrpg-player --version
+
+      - name: Verify fixture graphics generation
+        run: |
+          python3 tools/generate_fixture_graphics.py
+
+      - name: Generate canonical calibration charset
+        run: |
+          python3 tools/generate_calibration_charset.py
+
+      - name: Build target pack (RM2000)
+        run: |
+          python3 tools/build_target.py --target rm2000 --clean
+
+      - name: Validate target pack
+        run: |
+          python3 tools/validate_target.py --target rm2000
+
+      - name: Run automated test suite (mandatory runtime)
+        env:
+          SUPERRTP_REQUIRE_RUNTIME: "1"
+        run: |
+          python3 tests/test_vertical_slice.py
+
+      - name: Verify runtime evidence chain
+        run: |
+          python3 tools/verify_runtime.py --verify
