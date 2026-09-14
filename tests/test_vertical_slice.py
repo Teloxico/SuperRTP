@@ -35,13 +35,15 @@ sys.path.insert(0, REPO_ROOT)
 sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
 
 from generate_calibration_charset import generate_calibration_charset
+from generate_calibration_chipset import generate_chipset as generate_calibration_chipset, WIDTH as CHIPSET_WIDTH, HEIGHT as CHIPSET_HEIGHT
 from build_target import build_target, compute_sha256, create_indexed_png as create_png
-from validate_target import validate_png_charset, validate_provenance, validate_target
+from validate_target import validate_png_charset, validate_png_chipset, validate_provenance, validate_target
 from schema_validator import validate_schema, SchemaValidationError
-from generate_fixture_graphics import generate_minimal_chipset, generate_minimal_system
+from generate_fixture_graphics import generate_minimal_chipset, generate_minimal_system, generate_minimal_charset
 from verify_runtime import verify_evidence_chain, run_replay_and_record, verify_directional_screenshot
+from verify_chipset_runtime import verify_evidence_chain as verify_chipset_evidence_chain, verify_chipset_screenshot
 
-def compile_and_run_fixture_generator(target, output_dir):
+def compile_and_run_fixture_generator(target, output_dir, fixture_type="charset"):
     """
     Compiles tools/generate_fixture.cpp against pinned liblcf 0.8.1 and generates
     the minimal game fixture into output_dir.
@@ -69,8 +71,10 @@ def compile_and_run_fixture_generator(target, output_dir):
             raise RuntimeError(f"liblcf required by SUPERRTP_REQUIRE_RUNTIME=1 but pkg-config failed: {e}")
         raise unittest.SkipTest(f"liblcf not found via pkg-config: {e}")
 
-    if not modver.startswith("0.8.1"):
-        raise ValueError(f"liblcf version pin violation: expected 0.8.1, got {modver}")
+    import re
+    # Strictly require exact semantic version 0.8.1 (or package revisions like 0.8.1_1), rejecting 0.8.10 or 0.8.2
+    if not re.match(r"^0\.8\.1(_\d+)?(-.*)?$", modver):
+        raise ValueError(f"liblcf version pin violation: expected 0.8.1 (or packaging revision), got {modver}")
 
     cflags_res = subprocess.run(["pkg-config", "--cflags", "liblcf"], env=env, capture_output=True, text=True, check=True)
     libs_res = subprocess.run(["pkg-config", "--libs", "liblcf"], env=env, capture_output=True, text=True, check=True)
@@ -86,7 +90,7 @@ def compile_and_run_fixture_generator(target, output_dir):
         compile_cmd = [cxx, "-O2", "-std=c++17", src_cpp] + cflags + libs + rpath_flags + ["-o", bin_path]
         subprocess.run(compile_cmd, env=env, capture_output=True, text=True, check=True)
 
-        run_cmd = [bin_path, output_dir, target]
+        run_cmd = [bin_path, output_dir, target, fixture_type]
         subprocess.run(run_cmd, env=env, capture_output=True, text=True, check=True)
 
 class TestSuperRTPVerticalSlice(unittest.TestCase):
@@ -667,6 +671,298 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         # Adversarial check: inverted direction expectation must fail
         with self.assertRaises(ValueError):
             verify_directional_screenshot(os.path.join(artifact_dir, "rm2003_charset_up.png"), "down", target="rm2003")
+
+    def test_17_chipset_canonical_asset_and_slot_mappings(self):
+        """Verify ChipSet canonical asset reproducibility, schemas, and engine-specific slot mappings."""
+        raw1, png1 = generate_calibration_chipset()
+        raw2, png2 = generate_calibration_chipset()
+        self.assertEqual(raw1, raw2, "Raw RGBA ChipSet generator must be deterministic")
+        self.assertEqual(png1, png2, "Master preview ChipSet generator must be deterministic")
+
+        rgba_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_map_chipset.rgba")
+        self.assertTrue(os.path.exists(rgba_path), f"Canonical ChipSet RGBA not found at {rgba_path}")
+        self.assertEqual(compute_sha256(rgba_path), hashlib.sha256(raw1).hexdigest())
+
+        master_png_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_map_chipset.master.png")
+        self.assertTrue(os.path.exists(master_png_path))
+        self.assertEqual(compute_sha256(master_png_path), hashlib.sha256(png1).hexdigest())
+
+        meta_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_map_chipset.json")
+        with open(meta_path, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+        self.assertEqual(meta["sha256"], compute_sha256(rgba_path))
+        self.assertEqual(meta["type"], "chipset")
+        self.assertEqual(meta["dimensions"], {"width": 480, "height": 256})
+
+        # Validate asset & provenance schemas
+        asset_schema_path = os.path.join(REPO_ROOT, "schemas", "asset.schema.json")
+        with open(asset_schema_path, "r", encoding="utf-8") as asf:
+            asset_schema = json.load(asf)
+        validate_schema(meta, asset_schema)
+
+        prov = validate_provenance(REPO_ROOT, "test.calibration.map-chipset", compute_sha256(rgba_path))
+        self.assertEqual(prov["source_type"], "project_synthetic")
+        self.assertEqual(prov["license"], "CC0-1.0")
+
+        # Slot mapping validations: RM2000 vs RM2003 taxonomy
+        with open(os.path.join(REPO_ROOT, "registry", "slots", "rm2000.json"), "r", encoding="utf-8") as f2k:
+            slots_2k = json.load(f2k)
+        with open(os.path.join(REPO_ROOT, "registry", "slots", "rm2003.json"), "r", encoding="utf-8") as f2k3:
+            slots_2k3 = json.load(f2k3)
+
+        self.assertIn("ChipSet/World.png", slots_2k["slots"])
+        self.assertIn("ChipSet/World.png", slots_2k3["slots"])
+
+        cs_2k = slots_2k["slots"]["ChipSet/World.png"]
+        cs_2k3 = slots_2k3["slots"]["ChipSet/World.png"]
+
+        # RM2000 has Basis, but strictly NO Main or Basic
+        self.assertIn("ChipSet/basis.png", cs_2k["upstream_aliases"])
+        self.assertIn("ChipSet/Basis.png", cs_2k["emitted_case_variants"])
+        self.assertNotIn("ChipSet/Main.png", cs_2k["emitted_case_variants"])
+        self.assertNotIn("ChipSet/Basic.png", cs_2k["emitted_case_variants"])
+
+        # RM2003 has Main and Basic, but strictly NO Basis
+        self.assertIn("ChipSet/main.png", cs_2k3["upstream_aliases"])
+        self.assertIn("ChipSet/basic.png", cs_2k3["upstream_aliases"])
+        self.assertIn("ChipSet/Main.png", cs_2k3["emitted_case_variants"])
+        self.assertIn("ChipSet/Basic.png", cs_2k3["emitted_case_variants"])
+        self.assertNotIn("ChipSet/Basis.png", cs_2k3["emitted_case_variants"])
+
+    def test_18_chipset_target_build_and_validation(self):
+        """Verify ChipSet target building, cross-target byte determinism, and validator compliance."""
+        temp_dir_2k = tempfile.mkdtemp(prefix="superrtp_test_build_cs2k_")
+        temp_dir_2k3 = tempfile.mkdtemp(prefix="superrtp_test_build_cs2k3_")
+        try:
+            build_target("rm2000", output_dir=temp_dir_2k, clean=True)
+            build_target("rm2003", output_dir=temp_dir_2k3, clean=True)
+
+            world_2k = os.path.join(temp_dir_2k, "ChipSet", "World.png")
+            world_2k3 = os.path.join(temp_dir_2k3, "ChipSet", "World.png")
+            self.assertTrue(os.path.exists(world_2k))
+            self.assertTrue(os.path.exists(world_2k3))
+
+            # Cross-target byte determinism: identical canonical asset yields bit-for-bit identical World.png
+            self.assertEqual(compute_sha256(world_2k), compute_sha256(world_2k3))
+
+            # RM2000 has Basis.png, NO Main.png
+            self.assertTrue(os.path.exists(os.path.join(temp_dir_2k, "ChipSet", "Basis.png")))
+            self.assertFalse(os.path.exists(os.path.join(temp_dir_2k, "ChipSet", "Main.png")))
+
+            # RM2003 has Main.png and Basic.png, NO Basis.png
+            self.assertTrue(os.path.exists(os.path.join(temp_dir_2k3, "ChipSet", "Main.png")))
+            self.assertTrue(os.path.exists(os.path.join(temp_dir_2k3, "ChipSet", "Basic.png")))
+            self.assertFalse(os.path.exists(os.path.join(temp_dir_2k3, "ChipSet", "Basis.png")))
+
+            # Structural validation of generated ChipSet PNG
+            validate_png_chipset(world_2k)
+
+            # Full target validation passes
+            self.assertEqual(validate_target("rm2000", target_dir=temp_dir_2k), 0)
+            self.assertEqual(validate_target("rm2003", target_dir=temp_dir_2k3), 0)
+        finally:
+            shutil.rmtree(temp_dir_2k, ignore_errors=True)
+            shutil.rmtree(temp_dir_2k3, ignore_errors=True)
+
+    def test_19_chipset_clean_room_fixtures_integrity(self):
+        """Verify RM2000 and RM2003 clean-room ChipSet fixture manifests, dynamic LCF regeneration, and bundled graphics."""
+        for target in ["rm2000", "rm2003"]:
+            f_dir = os.path.join(REPO_ROOT, "tests", "fixtures", f"{target}_chipset_min")
+            man_path = os.path.join(f_dir, "fixture_manifest.json")
+            self.assertTrue(os.path.exists(man_path), f"Fixture manifest missing: {man_path}")
+            with open(man_path, "r") as f:
+                manifest = json.load(f)
+
+            # Check generators
+            gen_cpp_path = os.path.join(REPO_ROOT, manifest["generator_source"])
+            self.assertEqual(compute_sha256(gen_cpp_path), manifest["generator_sha256"])
+            gen_py_path = os.path.join(REPO_ROOT, manifest["graphics_generator_source"])
+            self.assertEqual(compute_sha256(gen_py_path), manifest["graphics_generator_sha256"])
+
+            # Dynamically compile and execute C++ generator into temporary directory and verify byte identity
+            with tempfile.TemporaryDirectory(prefix=f"superrtp_fixcheck_{target}_cs_") as gen_tmp:
+                compile_and_run_fixture_generator(target, gen_tmp, fixture_type="chipset")
+                binary_files = ["Map0001.lmu", "RPG_RT.ini", "RPG_RT.ldb", "RPG_RT.lmt"]
+                for bf in binary_files:
+                    gen_file = os.path.join(gen_tmp, bf)
+                    committed_file = os.path.join(f_dir, bf)
+                    self.assertTrue(os.path.exists(gen_file))
+                    self.assertEqual(compute_sha256(gen_file), compute_sha256(committed_file))
+                    self.assertEqual(compute_sha256(gen_file), manifest["files"][bf])
+
+            # Verify programmatic regeneration of System and CharSet
+            system_bytes = generate_minimal_system()
+            charset_bytes = generate_minimal_charset()
+            self.assertEqual(hashlib.sha256(system_bytes).hexdigest(), manifest["files"]["System/System.png"])
+            self.assertEqual(hashlib.sha256(charset_bytes).hexdigest(), manifest["files"]["CharSet/Actor1.png"])
+            if target == "rm2003":
+                self.assertEqual(hashlib.sha256(charset_bytes).hexdigest(), manifest["files"]["CharSet/Hero1.png"])
+
+            # ZERO ChipSet in fixture directory
+            self.assertFalse(os.path.exists(os.path.join(f_dir, "ChipSet")), f"Fixture must NOT contain ChipSet: {f_dir}")
+
+    def test_20_rm2000_chipset_easyrpg_runtime_controls(self):
+        """Verify real EasyRPG Player resolves Basis from RM2000 target pack, and isolates missing ChipSet/Basis without RTP."""
+        player_bin = shutil.which("easyrpg-player")
+        require_runtime = os.environ.get("SUPERRTP_REQUIRE_RUNTIME") == "1"
+        if not player_bin:
+            if require_runtime:
+                self.fail("easyrpg-player is required by SUPERRTP_REQUIRE_RUNTIME=1 but was not found on PATH")
+            self.skipTest("easyrpg-player not found on PATH")
+
+        fixture_dir = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2000_chipset_min")
+        rtp_dir = os.path.join(REPO_ROOT, "generated", "rm2000")
+        if not os.path.exists(os.path.join(rtp_dir, "ChipSet", "World.png")):
+            build_target("rm2000", output_dir=rtp_dir, clean=False)
+
+        env = os.environ.copy()
+        env["SDL_VIDEODRIVER"] = "dummy"
+        env["SDL_AUDIODRIVER"] = "dummy"
+
+        # 1. Positive control
+        cmd_pos = [
+            player_bin,
+            "--project-path", fixture_dir,
+            "--rtp-path", rtp_dir,
+            "--engine", "rpg2k",
+            "--new-game",
+            "--disable-audio",
+            "--no-pause-focus-lost",
+            "--no-log-color"
+        ]
+        try:
+            res = subprocess.run(cmd_pos, env=env, capture_output=True, text=True, timeout=3.5)
+            out_pos = res.stdout + res.stderr
+        except subprocess.TimeoutExpired as e:
+            out_pos = (e.stdout or b'').decode('utf-8', errors='replace') + (e.stderr or b'').decode('utf-8', errors='replace')
+
+        self.assertIn("Adding", out_pos)
+        self.assertIn("to RTP path", out_pos)
+        self.assertNotIn("Image not found: ChipSet", out_pos)
+        self.assertNotIn("Image not found: CharSet", out_pos)
+        self.assertNotIn("Image not found: System", out_pos)
+
+        # 2. Negative control
+        cmd_neg = [
+            player_bin,
+            "--project-path", fixture_dir,
+            "--no-rtp",
+            "--engine", "rpg2k",
+            "--new-game",
+            "--disable-audio",
+            "--no-pause-focus-lost",
+            "--no-log-color"
+        ]
+        try:
+            res = subprocess.run(cmd_neg, env=env, capture_output=True, text=True, timeout=3.5)
+            out_neg = res.stdout + res.stderr
+        except subprocess.TimeoutExpired as e:
+            out_neg = (e.stdout or b'').decode('utf-8', errors='replace') + (e.stderr or b'').decode('utf-8', errors='replace')
+
+        self.assertIn("RTP support is disabled", out_neg)
+        self.assertIn("Image not found: ChipSet/Basis", out_neg)
+        self.assertNotIn("Image not found: CharSet", out_neg)
+        self.assertNotIn("Image not found: System", out_neg)
+
+    def test_21_rm2003_chipset_easyrpg_runtime_controls(self):
+        """Verify real EasyRPG Player resolves Main from RM2003 target pack, and isolates missing ChipSet/Main without RTP."""
+        player_bin = shutil.which("easyrpg-player")
+        require_runtime = os.environ.get("SUPERRTP_REQUIRE_RUNTIME") == "1"
+        if not player_bin:
+            if require_runtime:
+                self.fail("easyrpg-player is required by SUPERRTP_REQUIRE_RUNTIME=1 but was not found on PATH")
+            self.skipTest("easyrpg-player not found on PATH")
+
+        fixture_dir = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2003_chipset_min")
+        rtp_dir = os.path.join(REPO_ROOT, "generated", "rm2003")
+        if not os.path.exists(os.path.join(rtp_dir, "ChipSet", "World.png")):
+            build_target("rm2003", output_dir=rtp_dir, clean=False)
+
+        env = os.environ.copy()
+        env["SDL_VIDEODRIVER"] = "dummy"
+        env["SDL_AUDIODRIVER"] = "dummy"
+
+        # 1. Positive control
+        cmd_pos = [
+            player_bin,
+            "--project-path", fixture_dir,
+            "--rtp-path", rtp_dir,
+            "--engine", "rpg2k3",
+            "--new-game",
+            "--disable-audio",
+            "--no-pause-focus-lost",
+            "--no-log-color"
+        ]
+        try:
+            res = subprocess.run(cmd_pos, env=env, capture_output=True, text=True, timeout=3.5)
+            out_pos = res.stdout + res.stderr
+        except subprocess.TimeoutExpired as e:
+            out_pos = (e.stdout or b'').decode('utf-8', errors='replace') + (e.stderr or b'').decode('utf-8', errors='replace')
+
+        self.assertIn("Adding", out_pos)
+        self.assertIn("to RTP path", out_pos)
+        self.assertNotIn("Image not found: ChipSet", out_pos)
+        self.assertNotIn("Image not found: CharSet", out_pos)
+        self.assertNotIn("Image not found: System", out_pos)
+
+        # 2. Negative control
+        cmd_neg = [
+            player_bin,
+            "--project-path", fixture_dir,
+            "--no-rtp",
+            "--engine", "rpg2k3",
+            "--new-game",
+            "--disable-audio",
+            "--no-pause-focus-lost",
+            "--no-log-color"
+        ]
+        try:
+            res = subprocess.run(cmd_neg, env=env, capture_output=True, text=True, timeout=3.5)
+            out_neg = res.stdout + res.stderr
+        except subprocess.TimeoutExpired as e:
+            out_neg = (e.stdout or b'').decode('utf-8', errors='replace') + (e.stderr or b'').decode('utf-8', errors='replace')
+
+        self.assertIn("RTP support is disabled", out_neg)
+        self.assertIn("Image not found: ChipSet/Main", out_neg)
+        self.assertNotIn("Image not found: CharSet", out_neg)
+        self.assertNotIn("Image not found: System", out_neg)
+
+    def test_22_chipset_runtime_evidence_and_layer_transparency(self):
+        """Verify durable ChipSet runtime verification evidence chain, hashes, and layer transparency composition."""
+        for target in ["rm2000", "rm2003"]:
+            self.assertTrue(verify_chipset_evidence_chain(target))
+
+            artifact_dir = os.path.join(REPO_ROOT, "artifacts", "runtime", target, "chipset")
+            pos_shot = os.path.join(artifact_dir, f"{target}_chipset_positive.png")
+            res = verify_chipset_screenshot(pos_shot, mode="positive", target=target)
+            self.assertEqual(res["status"], "VERIFIED")
+
+            # Assert exact mechanical colors:
+            # 1. Block E Bank 1 lower tile 5000: Yellow center, Cyan border, Blue bg
+            self.assertEqual(res["tile_5000"]["center"], [255, 220, 30])
+            self.assertEqual(res["tile_5000"]["border"], [0, 240, 255])
+            self.assertEqual(res["tile_5000"]["bg"], [12, 48, 160])
+
+            # 2. Block E Bank 2 lower tile 5096: Magenta center, Lime border, Green bg
+            self.assertEqual(res["tile_5096"]["center"], [250, 40, 200])
+            self.assertEqual(res["tile_5096"]["border"], [50, 255, 80])
+            self.assertEqual(res["tile_5096"]["bg"], [15, 120, 45])
+
+            # 3. Block F Bank 2 upper tile 10048: Orange center
+            self.assertEqual(res["tile_10048"]["center"], [255, 130, 10])
+
+            # 4. Upper/lower layer transparency composition: Tile 10000 over Tile 5000
+            # Red cross at center
+            self.assertEqual(res["tile_10000_over_5000"]["upper_center_cross"], [230, 30, 30])
+            # Lower tile border visible through upper transparent corner
+            self.assertEqual(res["tile_10000_over_5000"]["lower_border_through_transparency"], [0, 240, 255])
+            # Lower tile bg visible through upper transparent interior
+            self.assertEqual(res["tile_10000_over_5000"]["lower_bg_through_transparency"], [12, 48, 160])
+
+            # Adversarial check: verify negative control fails if evaluated as positive
+            neg_shot = os.path.join(artifact_dir, f"{target}_chipset_negative_control.png")
+            with self.assertRaises(ValueError):
+                verify_chipset_screenshot(neg_shot, mode="positive", target=target)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

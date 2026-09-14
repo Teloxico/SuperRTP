@@ -1,0 +1,24 @@
+{
+  "generator_source": "tools/generate_fixture.cpp",
+  "generator_sha256": "6d59cbd8f8f7d3d5f131bf453b4ccb3124450d58e3dc3868cb1b4d47f2fe2c48",
+  "graphics_generator_source": "tools/generate_fixture_graphics.py",
+  "graphics_generator_sha256": "901f46e45b9bd30f83da18aebaa5929126f0b0d7819a9d4d47aedc29fc8ad886",
+  "liblcf_version": "0.8.1",
+  "fixture_type": "chipset",
+  "provenance_attestation": {
+    "clean_room": true,
+    "proprietary_rtp_derived": false,
+    "openrtp_derived": false,
+    "external_art_used": false,
+    "geometric_primitives_only": true,
+    "license": "CC0-1.0"
+  },
+  "files": {
+    "Map0001.lmu": "a0d5b3fa3a85159a4b7fcbe86b2227e6c1f31e2a51aed557a7363764fb2eb74a",
+    "RPG_RT.ini": "6bb824d19ff62f25c2bdd20bcb0613a7eb0854232ac0b653e89ff60d667aebd7",
+    "RPG_RT.ldb": "0c2a931b5adc35accbdee0d3b8d89d2ffb1b4ef45b906f69432b893c04612e9a",
+    "RPG_RT.lmt": "3c0c09fb85ed55c7c7667bca8606a47ed0df963606e38d8787e8b0d0ba3a20cd",
+    "CharSet/Actor1.png": "08c8e644d86a1bdbfafa3f3667cd321d8ff9e8e851fbbfe7f47382d6939ec5f9",
+    "System/System.png": "edd44515072f92e8d19abbfcb60a5779e8b96a32b36e1e7a71701580e8211c1c"
+  }
+}

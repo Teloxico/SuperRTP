@@ -4,25 +4,29 @@
   "requested_charset": "Actor1",
   "canonical_asset_id": "test.calibration.walking-character",
   "canonical_source_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
-  "target_manifest_sha256": "ef851c6a476aca7d7f401e383ffb155e1fc4c467455f172d94a45654f90fef6f",
+  "target_manifest_sha256": "c5d1ceb33e44ea37f1fe3eea2a69c62d3f94af84a1aba1b4ef34cbd374ef2801",
   "target_actor1_sha256": "7fde5157142d929404f3fc3b599cbd6c558ef74b2135ac1172db53dd88641ee6",
-  "fixture_manifest_sha256": "f74dad75dfc5eeca49aae8df7319c616f3cf752c5ae821927e4f00cfd6e3cef4",
+  "fixture_manifest_sha256": "a95f8d8ed6edfac0da5abf6c2506e4cd28c71b984c1430c97ed09733128ac611",
   "replay_input_sha256": "3ba0ca86afcc75d63ccc7440f3f7b4c289672b917db75355b1d1968d11a6f7b1",
+  "positive_runtime_log": "positive_runtime.log",
+  "positive_runtime_log_sha256": "5c95d5647556b43d39e8f0d99b4d771855e093eb568b39ee41621827a60bb2de",
+  "negative_runtime_log": "negative_runtime.log",
+  "negative_runtime_log_sha256": "44efdb32a606ce119c5ca6fd9eaa9fbc1f93fa1f8a843887e6bf96764ec3e0e0",
   "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
-  "recorded_at": "2026-09-14T14:26:20.760586+00:00",
+  "recorded_at": "2026-09-14T23:35:09.560831+00:00",
   "negative_control": {
     "status": "VERIFIED",
     "expected_missing_asset": "CharSet/Actor1",
     "diagnostic": "Image not found: CharSet/Actor1",
     "screenshot": "rm2000_charset_negative_control.png",
-    "screenshot_sha256": "e44dc4e31e40bdd1a7503f14945f5351b225a75ce3266a647d43bc4d519cd0ea"
+    "screenshot_sha256": "ceaf57e9cec5d456ca0aa1ece18a51bc9fe17fde3d50c8759eb859b7904aaeb2"
   },
   "screenshots": {
     "rm2000_charset_down.png": "ed22b27bddfac24e500ac157a4b251bbb4442ca0477cdb576099575c158cdc9a",
-    "rm2000_charset_left.png": "85daa94c12e0ca9382de1dca9b2ff40385f823f514878ea69717b9bca73218ff",
-    "rm2000_charset_up.png": "2e1fe8bfde93ff8a6cffca4b4384e3d2b501d34db72fbf580b78f61419e9c1b3",
-    "rm2000_charset_right.png": "6c60d8a0a19e3eecc2acd9dd2c1f539ed1abb055d2edb52a5aa1b2e99369fc1e",
-    "rm2000_charset_negative_control.png": "e44dc4e31e40bdd1a7503f14945f5351b225a75ce3266a647d43bc4d519cd0ea"
+    "rm2000_charset_left.png": "cdc8a593f0f09b2d5b0004e63f733f1562a33ea3a74bc71ebcf492a02e9442e9",
+    "rm2000_charset_up.png": "e06d3fcb4131eaa1c2bc3ad24c2bc9287c333af81688b54341d2044730a790a3",
+    "rm2000_charset_right.png": "149de2ef0062b475aa805c0caef30b82172bcc35a64164c616a17f147c371e78",
+    "rm2000_charset_negative_control.png": "ceaf57e9cec5d456ca0aa1ece18a51bc9fe17fde3d50c8759eb859b7904aaeb2"
   },
   "directional_evidence": {
     "down": {

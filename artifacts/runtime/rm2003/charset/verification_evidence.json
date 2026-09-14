@@ -4,9 +4,9 @@
   "requested_charset": "Hero1",
   "canonical_asset_id": "test.calibration.walking-character",
   "canonical_source_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
-  "target_manifest_sha256": "c0782e586360c0f42a697987d7db58b83d9a537a795e5f8169e45bb93be72521",
+  "target_manifest_sha256": "86c78f37e35b65be077574956f8698973f5b040b5d7e037ea2e0771833088e52",
   "target_actor1_sha256": "7fde5157142d929404f3fc3b599cbd6c558ef74b2135ac1172db53dd88641ee6",
-  "fixture_manifest_sha256": "b28937e96c258646460b20bb4c418ef64edf04f38b403ac73227190236dc6d79",
+  "fixture_manifest_sha256": "93e903f8506462d94e492d9a92fec20f50b3c7053e46e851e6aabf1af66bd5ab",
   "replay_input_sha256": "3ba0ca86afcc75d63ccc7440f3f7b4c289672b917db75355b1d1968d11a6f7b1",
   "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
   "recorded_at": "2026-09-14T14:26:35.970695+00:00",
@@ -93,5 +93,9 @@
       "status": "VERIFIED",
       "error_text_pixels": 6125
     }
-  }
+  },
+  "positive_runtime_log": "positive_runtime.log",
+  "positive_runtime_log_sha256": "9ba289ed64f9f65a73e872531774d6ebbca931fbac11ff43c6e498a240df6029",
+  "negative_runtime_log": "negative_runtime.log",
+  "negative_runtime_log_sha256": "0dee2d389041f98ca5001014b1c6136e2bd2eceeafb95cec6cad81c66187cd25"
 }

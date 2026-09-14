@@ -1,0 +1,23 @@
+{
+  "asset_id": "test.calibration.map-chipset",
+  "canonical_path": "registry/assets/test_calibration_map_chipset.rgba",
+  "sha256": "4a4f5bdf6dbbbd12b23e358d1780eb8c3163ac81b25f4b2e3b366f50ab54454f",
+  "license": "CC0-1.0",
+  "source_type": "project_synthetic",
+  "creator": "SuperRTP Project",
+  "creation_tool": "tools/generate_calibration_chipset.py",
+  "clean_room_attestation": {
+    "proprietary_rtp_derived": false,
+    "openrtp_derived": false,
+    "external_art_used": false,
+    "ai_generation_used": false,
+    "geometric_primitives_only": true,
+    "notes": "100% project-owned synthetic clean-room calibration ChipSet generated deterministically from geometric code. Contains verified test patterns for Block E (IDs 5000, 5096) and Block F (IDs 10000, 10048) with transparency composition."
+  },
+  "specification": {
+    "rpg_engine": "RPG Maker 2000 / RPG Maker 2003 / EasyRPG Player",
+    "asset_class": "ChipSet",
+    "notes": "Test-only compatibility calibration fixture for 2k family ChipSet fixed-tile vertical slice (Blocks E & F)."
+  },
+  "test_only": true
+}

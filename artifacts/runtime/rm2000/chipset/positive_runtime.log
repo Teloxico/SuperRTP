@@ -1,0 +1,31 @@
+Debug: EasyRPG Player 0.8.1.1 (2025-06-02) started
+Debug: ===========================================
+Debug: CLI: --project-path /home/manc/Documents/SuperRTP/tests/fixtures/rm2000_chipset_min --rtp-path /home/manc/Documents/SuperRTP/generated/rm2000 --engine rpg2k --new-game --disable-audio --no-pause-focus-lost --no-log-color --seed 42 
+Debug: Clock: StdSteady steady=true period=ns (1 / 1000000000)
+Debug: Seeded the RNG with 42.
+Debug: SDL2: RendererInfo hw=false sw=true vsync=true
+Debug: SDL2: Detected format (1) SDL_PIXELFORMAT_ARGB8888 : rank=(2)
+Debug: SDL2: Selected Pixel Format SDL_PIXELFORMAT_ARGB8888
+Debug: Detected encoding: ibm-5348_P100-1997
+Debug: Game and Save Directory:
+Debug: 1: [Native]  -> /home/manc/Documents/SuperRTP/tests/fixtures/rm2000_chipset_min
+Debug: Loading game SuperRTP_ChipSet_Fixture
+Debug: Cannot find RPG_RT
+Debug: Engine configured as: 2k=true 2k3=false MajorUpdated=false Eng=false
+Debug: wine prefix not found: "/home/manc/.wine"
+Debug: wine prefix not found: "/home/manc/.wine"
+Debug: wine prefix not found: "/home/manc/.wine"
+Debug: wine prefix not found: "/home/manc/.wine"
+Debug: wine prefix not found: "/home/manc/.wine"
+Debug: wine prefix not found: "/home/manc/.wine"
+Debug: Adding /home/manc/Documents/SuperRTP/generated/rm2000 to RTP path
+Debug: RTP is "Official Japanese" (2/465)
+Debug: RTP is "Official English" (2/465)
+Debug: Patch configuration: None
+Debug: Cannot find: Font/Font
+Debug: Cannot find: Font/Font2
+Debug: Cannot find: Logo/LOGO1
+Debug: Resolution changed to 320x240
+Debug: Loaded Map Map0001.lmu
+Debug: Tree: Map0001
+Debug: Game uses RTP "Don Miguel English Translation"

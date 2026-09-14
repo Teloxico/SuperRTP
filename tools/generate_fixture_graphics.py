@@ -118,6 +118,44 @@ def generate_minimal_system():
 
     return create_indexed_png(width, height, palette, pixels, has_trns=True)
 
+def generate_minimal_charset():
+    """
+    Generates minimal 288x256 CharSet graphic.
+    Consists of 8 character blocks (72x128 each).
+    Fills character 0 (top-left) with clean geometric avatar shapes.
+    Index 0 is 100% transparent.
+    """
+    width = 288
+    height = 256
+    palette = [
+        (0, 0, 0),        # Index 0: Transparent
+        (70, 130, 180),   # Index 1: SteelBlue body
+        (220, 20, 60),    # Index 2: Crimson head
+        (255, 215, 0),    # Index 3: Gold border
+    ]
+    pixels = bytearray(width * height)
+
+    # Populate character 0 (3 columns x 4 rows of 24x32 frames)
+    # Character 0 bounds: x in 0..71, y in 0..127
+    for row in range(4):
+        for col in range(3):
+            fx = col * 24
+            fy = row * 32
+            # Draw head (center x=12, y=8)
+            for py in range(4, 12):
+                for px in range(8, 16):
+                    pixels[(fy + py) * width + (fx + px)] = 2
+            # Draw body (x=6..18, y=12..26)
+            for py in range(12, 26):
+                for px in range(6, 18):
+                    pixels[(fy + py) * width + (fx + px)] = 1
+            # Outline
+            for py in range(4, 26):
+                pixels[(fy + py) * width + (fx + 6)] = 3
+                pixels[(fy + py) * width + (fx + 17)] = 3
+
+    return create_indexed_png(width, height, palette, pixels, has_trns=True)
+
 def generate_for_fixture(fixture_dir):
     chipset_dir = os.path.join(fixture_dir, "ChipSet")
     system_dir = os.path.join(fixture_dir, "System")
@@ -139,11 +177,43 @@ def generate_for_fixture(fixture_dir):
     print(f"Generated ChipSet: {chipset_path} (SHA-256: {chipset_hash})")
     print(f"Generated System:  {system_path} (SHA-256: {system_hash})")
 
+def generate_for_chipset_fixture(fixture_dir, target="rm2000"):
+    system_dir = os.path.join(fixture_dir, "System")
+    charset_dir = os.path.join(fixture_dir, "CharSet")
+    os.makedirs(system_dir, exist_ok=True)
+    os.makedirs(charset_dir, exist_ok=True)
+
+    system_bytes = generate_minimal_system()
+    system_path = os.path.join(system_dir, "System.png")
+    with open(system_path, "wb") as f:
+        f.write(system_bytes)
+
+    charset_bytes = generate_minimal_charset()
+    if target in ("rm2003", "2k3"):
+        hero1_path = os.path.join(charset_dir, "Hero1.png")
+        actor1_path = os.path.join(charset_dir, "Actor1.png")
+        with open(hero1_path, "wb") as f:
+            f.write(charset_bytes)
+        with open(actor1_path, "wb") as f:
+            f.write(charset_bytes)
+        print(f"Generated System:  {system_path}")
+        print(f"Generated CharSet: {hero1_path} and {actor1_path}")
+    else:
+        actor1_path = os.path.join(charset_dir, "Actor1.png")
+        with open(actor1_path, "wb") as f:
+            f.write(charset_bytes)
+        print(f"Generated System:  {system_path}")
+        print(f"Generated CharSet: {actor1_path}")
+
 def main():
     repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     for target in ["rm2000", "rm2003"]:
         fixture_dir = os.path.join(repo_root, "tests", "fixtures", f"{target}_min")
         generate_for_fixture(fixture_dir)
+
+    for target in ["rm2000", "rm2003"]:
+        cs_fixture_dir = os.path.join(repo_root, "tests", "fixtures", f"{target}_chipset_min")
+        generate_for_chipset_fixture(cs_fixture_dir, target)
 
 if __name__ == "__main__":
     main()

@@ -31,8 +31,13 @@ int main(int argc, char* argv[]) {
     if (argc > 2) {
         target = argv[2];
     }
+    std::string fixture_type = "charset";
+    if (argc > 3) {
+        fixture_type = argv[3];
+    }
 
     bool is_2k3 = (target == "rm2003" || target == "2k3");
+    bool is_chipset = (fixture_type == "chipset");
     lcf::EngineVersion version = is_2k3 ? lcf::EngineVersion::e2k3 : lcf::EngineVersion::e2k;
 
     // 1. Database (RPG_RT.ldb)
@@ -41,7 +46,7 @@ int main(int argc, char* argv[]) {
         db.system.ldb_id = 2003;
     }
     
-    // Actor 1: References CharSet "Hero1" for RM2003 (exercising the engine-specific alias) or "Actor1" for RM2000
+    // Actor 1
     lcf::rpg::Actor actor;
     actor.ID = 1;
     if (is_2k3) {
@@ -65,11 +70,20 @@ int main(int argc, char* argv[]) {
     db.system.party = {1};
     db.system.system_name = "System";
 
-    // Chipset 1: Minimal chipset definition referencing bundled ChipSet
+    // Chipset 1
     lcf::rpg::Chipset chipset;
     chipset.ID = 1;
     chipset.name = "Basic";
-    chipset.chipset_name = "ChipSet";
+    if (is_chipset) {
+        // Exercise engine-specific RTP alias lookup (Basis for 2k, Main for 2k3)
+        if (is_2k3) {
+            chipset.chipset_name = "Main";
+        } else {
+            chipset.chipset_name = "Basis";
+        }
+    } else {
+        chipset.chipset_name = "ChipSet";
+    }
     chipset.terrain_data.resize(162, 1); // Default all tiles to Terrain ID 1
     db.chipsets.push_back(chipset);
 
@@ -97,10 +111,16 @@ int main(int argc, char* argv[]) {
     tree.maps.push_back(mapinfo);
     tree.tree_order = {1};
 
-    // Place party at center of 20x15 map (x=10, y=7)
     tree.start.party_map_id = 1;
-    tree.start.party_x = 10;
-    tree.start.party_y = 7;
+    if (is_chipset) {
+        // Place party at top-left corner (0,0) so test tiles at (2,2), (4,2), (6,2), (8,2) are unobstructed
+        tree.start.party_x = 0;
+        tree.start.party_y = 0;
+    } else {
+        // Place party at center of 20x15 map (x=10, y=7)
+        tree.start.party_x = 10;
+        tree.start.party_y = 7;
+    }
 
     if (!lcf::LMT_Reader::Save(out_dir + "/RPG_RT.lmt", tree, version)) {
         std::cerr << "Failed to save RPG_RT.lmt\n";
@@ -115,6 +135,19 @@ int main(int argc, char* argv[]) {
     map.lower_layer.resize(20 * 15, 0);
     map.upper_layer.resize(20 * 15, 0);
 
+    if (is_chipset) {
+        // Place fixed lower and upper tiles for verification
+        // (2, 2): Tile 5000 (Block E Bank 1 lower layer)
+        map.lower_layer[2 * 20 + 2] = 5000;
+        // (4, 2): Tile 5096 (Block E Bank 2 lower layer)
+        map.lower_layer[2 * 20 + 4] = 5096;
+        // (6, 2): Tile 10048 (Block F Bank 2 upper layer)
+        map.upper_layer[2 * 20 + 6] = 10048;
+        // (8, 2): Tile 10000 on upper layer over Tile 5000 on lower layer (transparency & composition test)
+        map.lower_layer[2 * 20 + 8] = 5000;
+        map.upper_layer[2 * 20 + 8] = 10000;
+    }
+
     if (!lcf::LMU_Reader::Save(out_dir + "/Map0001.lmu", map, version)) {
         std::cerr << "Failed to save Map0001.lmu\n";
         return 1;
@@ -123,12 +156,18 @@ int main(int argc, char* argv[]) {
     // 4. INI configuration (RPG_RT.ini)
     std::ofstream ini(out_dir + "/RPG_RT.ini");
     ini << "[RPG_RT]\n";
-    ini << "GameTitle=" << (is_2k3 ? "SuperRTP_Fixture_2k3" : "SuperRTP_Fixture") << "\n";
+    if (is_chipset) {
+        ini << "GameTitle=" << (is_2k3 ? "SuperRTP_ChipSet_Fixture_2k3" : "SuperRTP_ChipSet_Fixture") << "\n";
+    } else {
+        ini << "GameTitle=" << (is_2k3 ? "SuperRTP_Fixture_2k3" : "SuperRTP_Fixture") << "\n";
+    }
     ini << "MapEditMode=2\n";
     ini << "MapEditZoom=0\n";
     ini << "FullPackageFlag=0\n"; // 0 = depends on external RTP
     ini.close();
 
-    std::cout << "Clean-room " << (is_2k3 ? "RM2003" : "RM2000") << " fixture successfully generated in " << out_dir << std::endl;
+    std::cout << "Clean-room " << (is_2k3 ? "RM2003" : "RM2000") << " "
+              << (is_chipset ? "chipset" : "charset")
+              << " fixture successfully generated in " << out_dir << std::endl;
     return 0;
 }
