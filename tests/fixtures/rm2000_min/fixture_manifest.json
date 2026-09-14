@@ -2,7 +2,7 @@
   "generator_source": "tools/generate_fixture.cpp",
   "generator_sha256": "511c89727ab777b612ff14a372c1ee2449e3c87bb70d4e824caa756edfff82cc",
   "graphics_generator_source": "tools/generate_fixture_graphics.py",
-  "graphics_generator_sha256": "4e88fe905ed9da82cc4ac0b21007f4a2409075e5673b63c6673a1e947f552bef",
+  "graphics_generator_sha256": "31b803ec124008ea4d63915da60ec815d0e7b4123a18f36fce4a575d0be5744f",
   "liblcf_version": "0.8.1",
   "provenance_attestation": {
     "clean_room": true,
@@ -17,7 +17,7 @@
     "RPG_RT.ini": "3151b17d356609fcd18845e8c3912a70c8214ffb2c062b6cd5d1f5aee91efa88",
     "RPG_RT.ldb": "ad99a8d5b7841a18f229e13980634298fdf0dd1326d0e9472ef39240dc130b50",
     "RPG_RT.lmt": "3003381ff8059dc0544d01fe1a7ed204060e9fb82f8e94d3e22b5f35ac4fc0ca",
-    "ChipSet/ChipSet.png": "d49aecd0662071c8aed34002f7f34ece5f40393edc909717d8970571c50ee32f",
-    "System/System.png": "5c3641fd2406643c47a4ed36f0d69374cf25f1357752eff622c864954dc1676b"
+    "ChipSet/ChipSet.png": "9d54d27bf04a190e753802ffaaffb4dd8f8f1533e7259a7d3b7a28092f74a2b5",
+    "System/System.png": "edd44515072f92e8d19abbfcb60a5779e8b96a32b36e1e7a71701580e8211c1c"
   }
 }

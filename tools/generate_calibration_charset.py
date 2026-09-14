@@ -24,17 +24,15 @@ import zlib
 import hashlib
 import json
 
-def create_rgba_png(width, height, rgba_bytes):
-    """Encodes 32-bit RGBA pixels into standard 32-bit PNG."""
-    def chunk(chunk_type, data):
-        c_type = chunk_type.encode('ascii')
-        crc = zlib.crc32(c_type + data) & 0xffffffff
-        return struct.pack('>I', len(data)) + c_type + data + struct.pack('>I', crc)
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from png_utils import deterministic_zlib_compress, make_png_chunk
 
+def create_rgba_png(width, height, rgba_bytes):
+    """Encodes 32-bit RGBA pixels into standard 32-bit PNG using deterministic compression."""
     png_sig = b'\x89PNG\r\n\x1a\n'
     # IHDR: width, height, bit depth (8), color type (6 = RGBA), compression (0), filter (0), interlace (0)
     ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)
-    ihdr_chunk = chunk('IHDR', ihdr_data)
+    ihdr_chunk = make_png_chunk('IHDR', ihdr_data)
 
     raw_data = bytearray()
     row_bytes = width * 4
@@ -43,9 +41,9 @@ def create_rgba_png(width, height, rgba_bytes):
         start = y * row_bytes
         raw_data.extend(rgba_bytes[start:start + row_bytes])
 
-    compressed_idat = zlib.compress(bytes(raw_data), level=9)
-    idat_chunk = chunk('IDAT', compressed_idat)
-    iend_chunk = chunk('IEND', b'')
+    compressed_idat = deterministic_zlib_compress(bytes(raw_data))
+    idat_chunk = make_png_chunk('IDAT', compressed_idat)
+    iend_chunk = make_png_chunk('IEND', b'')
 
     return png_sig + ihdr_chunk + idat_chunk + iend_chunk
 
