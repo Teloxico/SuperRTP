@@ -25,6 +25,7 @@ import hashlib
 import unittest
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, REPO_ROOT)
 sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
 
 from generate_calibration_charset import generate_calibration_charset
@@ -32,7 +33,7 @@ from build_target import build_target, compute_sha256, create_indexed_png as cre
 from validate_target import validate_png_charset, validate_provenance, validate_target
 from schema_validator import validate_schema, SchemaValidationError
 from generate_fixture_graphics import generate_minimal_chipset, generate_minimal_system
-from verify_runtime import verify_evidence_chain, run_replay_and_record
+from verify_runtime import verify_evidence_chain, run_replay_and_record, verify_directional_screenshot
 
 class TestSuperRTPVerticalSlice(unittest.TestCase):
 
@@ -339,6 +340,36 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
 
         # Check evidence chain and directional visual assertions
         self.assertTrue(verify_evidence_chain(), "Runtime verification evidence chain validation failed")
+
+    def test_11_sprite_shape_orientation_and_evidence_hardening(self):
+        """Verify directional arrow shape orientation checks and closed Actor1.png evidence validation."""
+        artifact_dir = os.path.join(REPO_ROOT, "artifacts", "runtime", "rm2000", "charset")
+
+        # 1. Verify correct shape orientation passes on genuine artifacts
+        down_res = verify_directional_screenshot(os.path.join(artifact_dir, "rm2000_charset_down.png"), "down")
+        self.assertEqual(down_res["status"], "VERIFIED")
+        self.assertGreater(down_res["shape_metrics"]["top_w"], down_res["shape_metrics"]["bot_w"])
+
+        up_res = verify_directional_screenshot(os.path.join(artifact_dir, "rm2000_charset_up.png"), "up")
+        self.assertEqual(up_res["status"], "VERIFIED")
+        self.assertLess(up_res["shape_metrics"]["top_w"], up_res["shape_metrics"]["bot_w"])
+
+        left_res = verify_directional_screenshot(os.path.join(artifact_dir, "rm2000_charset_left.png"), "left")
+        self.assertEqual(left_res["status"], "VERIFIED")
+        self.assertLess(left_res["shape_metrics"]["left_h"], left_res["shape_metrics"]["right_h"])
+
+        right_res = verify_directional_screenshot(os.path.join(artifact_dir, "rm2000_charset_right.png"), "right")
+        self.assertEqual(right_res["status"], "VERIFIED")
+        self.assertGreater(right_res["shape_metrics"]["left_h"], right_res["shape_metrics"]["right_h"])
+
+        # 2. Adversarial test: verify that swapped/inverted arrow expectations are strictly rejected
+        with self.assertRaises(ValueError):
+            # Checking UP screenshot with DOWN expectation must fail on position or shape
+            verify_directional_screenshot(os.path.join(artifact_dir, "rm2000_charset_up.png"), "down")
+
+        with self.assertRaises(ValueError):
+            # Checking LEFT screenshot with RIGHT expectation must fail
+            verify_directional_screenshot(os.path.join(artifact_dir, "rm2000_charset_left.png"), "right")
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
