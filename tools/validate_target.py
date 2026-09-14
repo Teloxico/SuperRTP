@@ -132,6 +132,70 @@ def validate_png_charset(filepath):
         "frame_cell": f"{frame_w}x{frame_h}"
     }
 
+def validate_png_chipset(filepath):
+    """Validates RM2000/RM2003 ChipSet technical specifications."""
+    with open(filepath, "rb") as f:
+        data = f.read()
+
+    chunks = parse_png_chunks(data)
+    chunk_types = [c[0] for c in chunks]
+
+    # Required chunks in order
+    if not chunk_types or chunk_types[0] != "IHDR":
+        raise ValueError("PNG must start with IHDR chunk")
+    if "PLTE" not in chunk_types:
+        raise ValueError("Missing required PLTE (Palette) chunk for indexed ChipSet")
+    if "IDAT" not in chunk_types:
+        raise ValueError("Missing IDAT chunk")
+    if chunk_types[-1] != "IEND":
+        raise ValueError("PNG must terminate with IEND chunk")
+
+    # Inspect IHDR
+    ihdr_data = next(c[1] for c in chunks if c[0] == "IHDR")
+    width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
+
+    if width != 480 or height != 256:
+        raise ValueError(f"Invalid ChipSet dimensions: expected 480x256, got {width}x{height}")
+    if bit_depth != 8:
+        raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
+    if color_type != 3:
+        raise ValueError(f"Invalid color type: expected 3 (indexed-color), got {color_type}")
+    if compression != 0 or filter_method != 0 or interlace != 0:
+        raise ValueError("Unsupported compression/filter/interlace method")
+
+    # Inspect PLTE (Palette index 0 is the engine compatibility transparent color)
+    plte_data = next(c[1] for c in chunks if c[0] == "PLTE")
+    if len(plte_data) % 3 != 0:
+        raise ValueError(f"PLTE data length ({len(plte_data)}) is not a multiple of 3")
+    num_colors = len(plte_data) // 3
+    if num_colors > 256:
+        raise ValueError(f"Palette exceeds 256 colors: {num_colors}")
+
+    # Inspect tRNS if present
+    has_trns = "tRNS" in chunk_types
+    if has_trns:
+        trns_data = next(c[1] for c in chunks if c[0] == "tRNS")
+        if len(trns_data) > 0 and trns_data[0] != 0:
+            raise ValueError(f"Transparency index 0 in tRNS has non-zero alpha ({trns_data[0]})")
+
+    # Check tile divisibility (30 columns x 16 rows of 16x16 tiles)
+    cols = width // 16
+    rows = height // 16
+    if cols != 30 or rows != 16:
+        raise ValueError(f"Invalid tile grid: expected 30x16 tiles (16x16), got {cols}x{rows}")
+
+    return {
+        "width": width,
+        "height": height,
+        "bit_depth": bit_depth,
+        "color_type": color_type,
+        "num_colors": num_colors,
+        "transparent_index": 0,
+        "has_trns": has_trns,
+        "tile_grid": f"{cols}x{rows}",
+        "tile_size": "16x16"
+    }
+
 def validate_schemas(repo_root, target):
     """Enforces JSON Schema validation on registry files."""
     slots_path = os.path.join(repo_root, "registry", "slots", f"{target}.json")
@@ -321,7 +385,10 @@ def validate_target(target, target_dir=None):
 
         # PNG Specification check
         try:
-            specs = validate_png_charset(filepath)
+            if slot.lower().startswith("chipset/"):
+                specs = validate_png_chipset(filepath)
+            else:
+                specs = validate_png_charset(filepath)
             print(f"  PASSED PNG specs: {specs['width']}x{specs['height']}, {specs['num_colors']} colors, indexed-8, index 0 transparent (tRNS={specs['has_trns']})")
         except Exception as e:
             print(f"  FAILED PNG validation: {e}")

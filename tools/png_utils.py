@@ -35,3 +35,68 @@ def make_png_chunk(chunk_type: str, data: bytes) -> bytes:
     c_type = chunk_type.encode('ascii')
     crc = zlib.crc32(c_type + data) & 0xffffffff
     return struct.pack('>I', len(data)) + c_type + data + struct.pack('>I', crc)
+
+def decode_png_rgb(filepath):
+    """
+    Decodes a standard 24-bit PNG file into width, height, and a 2D list of (R, G, B) tuples,
+    implementing standard PNG unfiltering (None, Sub, Up, Average, Paeth) per RFC 2083.
+    """
+    with open(filepath, "rb") as f:
+        data = f.read()
+    if data[:8] != b"\x89PNG\r\n\x1a\n":
+        raise ValueError(f"Not a valid PNG file: {filepath}")
+
+    w, h = struct.unpack(">II", data[16:24])
+    pos = 8
+    idat = bytearray()
+    while pos < len(data):
+        length = struct.unpack(">I", data[pos:pos+4])[0]
+        ctype = data[pos+4:pos+8]
+        if ctype == b"IDAT":
+            idat.extend(data[pos+8:pos+8+length])
+        pos += 12 + length
+
+    raw = bytearray(zlib.decompress(bytes(idat)))
+    bpp = 3  # Standard 24-bit RGB
+    stride = 1 + w * bpp
+    recon = bytearray(w * h * bpp)
+    prior = bytearray(w * bpp)
+
+    for y in range(h):
+        filter_type = raw[y * stride]
+        filt = raw[y * stride + 1 : (y + 1) * stride]
+        line = bytearray(w * bpp)
+
+        if filter_type == 0:  # None
+            line[:] = filt
+        elif filter_type == 1:  # Sub
+            for x in range(w * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                line[x] = (filt[x] + a) & 0xff
+        elif filter_type == 2:  # Up
+            for x in range(w * bpp):
+                line[x] = (filt[x] + prior[x]) & 0xff
+        elif filter_type == 3:  # Average
+            for x in range(w * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                line[x] = (filt[x] + ((a + prior[x]) >> 1)) & 0xff
+        elif filter_type == 4:  # Paeth
+            for x in range(w * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                b = prior[x]
+                c = prior[x - bpp] if x >= bpp else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+                line[x] = (filt[x] + pr) & 0xff
+        else:
+            raise ValueError(f"Unknown PNG filter type {filter_type}")
+
+        prior[:] = line
+        recon[y * w * bpp : (y + 1) * w * bpp] = line
+
+    pixels = []
+    for y in range(h):
+        row = [(recon[y*w*3 + x*3], recon[y*w*3 + x*3 + 1], recon[y*w*3 + x*3 + 2]) for x in range(w)]
+        pixels.append(row)
+    return w, h, pixels

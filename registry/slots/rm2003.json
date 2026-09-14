@@ -37,6 +37,34 @@
       "format": "indexed-png",
       "dimensions": [288, 256],
       "test_only": true
+    },
+    "ChipSet/World.png": {
+      "asset_id": "test.calibration.map-chipset",
+      "category": "ChipSet",
+      "slot_path": "ChipSet/World.png",
+      "upstream_aliases": [
+        "ChipSet/world.png",
+        "ChipSet/main.png",
+        "ChipSet/basic.png",
+        "ChipSet/기본.png",
+        "ChipSet/基本.png"
+      ],
+      "emitted_case_variants": [
+        "ChipSet/Main.png",
+        "ChipSet/Basic.png"
+      ],
+      "aliases": [
+        "ChipSet/world.png",
+        "ChipSet/main.png",
+        "ChipSet/Main.png",
+        "ChipSet/basic.png",
+        "ChipSet/Basic.png",
+        "ChipSet/기본.png",
+        "ChipSet/基本.png"
+      ],
+      "format": "indexed-png",
+      "dimensions": [480, 256],
+      "test_only": true
     }
   }
 }

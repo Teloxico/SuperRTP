@@ -1,0 +1,89 @@
+{
+  "target": "rm2000",
+  "engine_mode": "rpg2k",
+  "requested_chipset": "Basis",
+  "canonical_asset_id": "test.calibration.map-chipset",
+  "canonical_source_sha256": "4a4f5bdf6dbbbd12b23e358d1780eb8c3163ac81b25f4b2e3b366f50ab54454f",
+  "target_manifest_sha256": "c5d1ceb33e44ea37f1fe3eea2a69c62d3f94af84a1aba1b4ef34cbd374ef2801",
+  "target_world_sha256": "8a1c5552c544fb5195a92ab8f2f0e84b11d95fa3929250aa74b69630067fe137",
+  "fixture_manifest_sha256": "054e281371aee1158d2fed15af2050fbd6fa3f3455a7ace9253a7f04cd4fed18",
+  "positive_runtime_log": "positive_runtime.log",
+  "positive_runtime_log_sha256": "62e403196d6797a97ea2631a849ff37f8fbf77b1318f6ccc3ce298c1e341a8e2",
+  "negative_runtime_log": "negative_runtime.log",
+  "negative_runtime_log_sha256": "914400b63b2d871618bbfb07937972bbc3eb8352d50a3e28b5652717abf327db",
+  "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
+  "recorded_at": "2026-09-14T23:48:22.110713+00:00",
+  "negative_control": {
+    "status": "VERIFIED",
+    "expected_missing_asset": "ChipSet/Basis",
+    "diagnostic": "Image not found: ChipSet/Basis",
+    "screenshot": "rm2000_chipset_negative_control.png",
+    "screenshot_sha256": "72a73bba77986d6f94550e895ed6cfd9ea1f1c5675bd2ed3294551dd44007db9"
+  },
+  "screenshots": {
+    "rm2000_chipset_positive.png": "df5d9bb9b141a2a5162ec657fd5d0cdb0e9b05ae1818b8addf90146e6bf99b54",
+    "rm2000_chipset_negative_control.png": "72a73bba77986d6f94550e895ed6cfd9ea1f1c5675bd2ed3294551dd44007db9"
+  },
+  "tile_evidence": {
+    "status": "VERIFIED",
+    "mode": "positive",
+    "tile_5000": {
+      "center": [
+        255,
+        220,
+        30
+      ],
+      "border": [
+        0,
+        240,
+        255
+      ],
+      "bg": [
+        12,
+        48,
+        160
+      ]
+    },
+    "tile_5096": {
+      "center": [
+        250,
+        40,
+        200
+      ],
+      "border": [
+        50,
+        255,
+        80
+      ],
+      "bg": [
+        15,
+        120,
+        45
+      ]
+    },
+    "tile_10048": {
+      "center": [
+        255,
+        130,
+        10
+      ]
+    },
+    "tile_10000_over_5000": {
+      "upper_center_cross": [
+        230,
+        30,
+        30
+      ],
+      "lower_border_through_transparency": [
+        0,
+        240,
+        255
+      ],
+      "lower_bg_through_transparency": [
+        12,
+        48,
+        160
+      ]
+    }
+  }
+}

@@ -23,6 +23,7 @@ import shutil
 import hashlib
 import argparse
 import subprocess
+import re
 from datetime import datetime, timezone
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -330,16 +331,37 @@ def verify_evidence_chain(target="rm2000"):
     if actual_replay_hash != evidence["replay_input_sha256"]:
         raise ValueError(f"Replay input hash mismatch with evidence: expected {evidence['replay_input_sha256']}, got {actual_replay_hash}")
 
+    # Check runtime logs
+    pos_log = os.path.join(artifacts_dir, evidence.get("positive_runtime_log", "positive_runtime.log"))
+    if not os.path.exists(pos_log):
+        raise FileNotFoundError(f"Missing positive runtime log: {pos_log}")
+    actual_pos_log_hash = compute_sha256(pos_log)
+    if actual_pos_log_hash != evidence.get("positive_runtime_log_sha256"):
+        raise ValueError(f"Positive runtime log hash mismatch: expected {evidence.get('positive_runtime_log_sha256')}, got {actual_pos_log_hash}")
+
+    neg_log = os.path.join(artifacts_dir, evidence.get("negative_runtime_log", "negative_runtime.log"))
+    if not os.path.exists(neg_log):
+        raise FileNotFoundError(f"Missing negative runtime log: {neg_log}")
+    actual_neg_log_hash = compute_sha256(neg_log)
+    if actual_neg_log_hash != evidence.get("negative_runtime_log_sha256"):
+        raise ValueError(f"Negative runtime log hash mismatch: expected {evidence.get('negative_runtime_log_sha256')}, got {actual_neg_log_hash}")
+
+    expected_missing = f"CharSet/{expected_charset}"
+    expected_diag = f"Image not found: CharSet/{expected_charset}"
+
+    with open(neg_log, "r", encoding="utf-8", errors="replace") as nlf:
+        neg_log_text = nlf.read()
+    if expected_diag not in neg_log_text:
+        raise ValueError(f"Expected diagnostic '{expected_diag}' not found in negative runtime log")
+
     # Check negative control evidence
     neg = evidence.get("negative_control")
     if not neg:
         raise ValueError("Missing negative_control in verification evidence")
     if neg.get("status") != "VERIFIED":
         raise ValueError(f"Negative control status not verified: {neg.get('status')}")
-    expected_missing = f"CharSet/{expected_charset}"
     if neg.get("expected_missing_asset") != expected_missing:
         raise ValueError(f"Negative control expected_missing_asset mismatch: expected {expected_missing}, got {neg.get('expected_missing_asset')}")
-    expected_diag = f"Image not found: CharSet/{expected_charset}"
     if neg.get("diagnostic") != expected_diag:
         raise ValueError(f"Negative control diagnostic mismatch: expected '{expected_diag}', got '{neg.get('diagnostic')}'")
     neg_shot = neg.get("screenshot")
@@ -400,6 +422,9 @@ def run_replay_and_record(target="rm2000"):
     ver_res = subprocess.run([player_bin, "--version"], capture_output=True, text=True)
     version_line = ver_res.stdout.splitlines()[0] if ver_res.stdout else "unknown"
 
+    pos_log_path = os.path.join(cfg["artifacts_dir"], "positive_runtime.log")
+    neg_log_path = os.path.join(cfg["artifacts_dir"], "negative_runtime.log")
+
     video_tmp = f"/tmp/easyrpg_replay_capture_{target}.mp4"
     record_cmd = (
         f"xvfb-run -s '-screen 0 640x480x24' bash -c '"
@@ -407,12 +432,14 @@ def run_replay_and_record(target="rm2000"):
         f"FFMPEG_PID=$! ; sleep 0.3 ; "
         f"SDL_VIDEODRIVER=x11 {player_bin} --project-path {cfg['fixture_dir']} --rtp-path {cfg['target_dir']} "
         f"--engine {cfg['engine']} --new-game --disable-audio --no-pause-focus-lost --fullscreen "
-        f"--replay-input {cfg['replay_path']} & "
-        f"PLAYER_PID=$! ; wait $FFMPEG_PID ; kill $PLAYER_PID 2>/dev/null || true'"
+        f"--log-file {pos_log_path} --replay-input {cfg['replay_path']} & "
+        f"PLAYER_PID=$! ; wait $FFMPEG_PID ; kill $PLAYER_PID 2>/dev/null || true ; wait $PLAYER_PID 2>/dev/null || true'"
     )
 
     print(f"Executing EasyRPG replay for {target} under xvfb...")
     subprocess.run(record_cmd, shell=True, check=True)
+    pos_log_hash = compute_sha256(pos_log_path)
+    print(f"Captured positive runtime log: SHA-256 {pos_log_hash[:16]}...")
 
     # Extract frames:
     # 4.5s -> Down, 5.5s -> Left, 6.5s -> Up, 7.5s -> Right
@@ -442,17 +469,28 @@ def run_replay_and_record(target="rm2000"):
     neg_cmd = (
         f"xvfb-run -s '-screen 0 640x480x24' bash -c '"
         f"SDL_VIDEODRIVER=x11 {player_bin} --project-path {cfg['fixture_dir']} --no-rtp "
-        f"--engine {cfg['engine']} --new-game --disable-audio --no-pause-focus-lost --fullscreen & "
-        f"PLAYER_PID=$! ; sleep 2.5 ; "
+        f"--engine {cfg['engine']} --new-game --disable-audio --no-pause-focus-lost --fullscreen "
+        f"--log-file {neg_log_path} & "
+        f"PLAYER_PID=$! ; sleep 3.5 ; "
         f"ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i :99.0 -vframes 1 {neg_path} ; "
-        f"kill $PLAYER_PID 2>/dev/null || true'"
+        f"kill $PLAYER_PID 2>/dev/null || true ; wait $PLAYER_PID 2>/dev/null || true'"
     )
     subprocess.run(neg_cmd, shell=True, check=True)
     neg_hash = compute_sha256(neg_path)
+    neg_log_hash = compute_sha256(neg_log_path)
     screenshot_hashes[neg_filename] = neg_hash
     neg_res = verify_directional_screenshot(neg_path, "negative_control", target=target)
     directional_evidence["negative_control"] = neg_res
     print(f"Captured negative control: SHA-256 {neg_hash[:16]}... ({neg_res['status']})")
+    print(f"Captured negative runtime log: SHA-256 {neg_log_hash[:16]}...")
+
+    # Extract diagnostic from negative runtime log
+    with open(neg_log_path, "r", encoding="utf-8", errors="replace") as nlf:
+        neg_log_text = nlf.read()
+    diag_match = re.search(r"Image not found: ([^\r\n]+)", neg_log_text)
+    if not diag_match:
+        raise ValueError(f"Could not extract 'Image not found' diagnostic from negative control log: {neg_log_path}")
+    extracted_diagnostic = f"Image not found: {diag_match.group(1).strip()}"
 
     # Clean up tmp video
     if os.path.exists(video_tmp):
@@ -471,12 +509,16 @@ def run_replay_and_record(target="rm2000"):
         "target_actor1_sha256": compute_sha256(os.path.join(cfg["target_dir"], "CharSet", "Actor1.png")),
         "fixture_manifest_sha256": compute_sha256(os.path.join(cfg["fixture_dir"], "fixture_manifest.json")),
         "replay_input_sha256": compute_sha256(cfg["replay_path"]),
+        "positive_runtime_log": "positive_runtime.log",
+        "positive_runtime_log_sha256": pos_log_hash,
+        "negative_runtime_log": "negative_runtime.log",
+        "negative_runtime_log_sha256": neg_log_hash,
         "easyrpg_version": version_line,
         "recorded_at": get_evidence_timestamp(),
         "negative_control": {
             "status": neg_res["status"],
             "expected_missing_asset": f"CharSet/{requested_charset}",
-            "diagnostic": f"Image not found: CharSet/{requested_charset}",
+            "diagnostic": extracted_diagnostic,
             "screenshot": neg_filename,
             "screenshot_sha256": neg_hash
         },

@@ -185,6 +185,8 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
         category = slot_info.get("category", "").lower()
         if target in ("rm2000", "rm2003") and category == "charset":
             target_png = transform_rgba_to_indexed_png(source_bytes, 288, 256)
+        elif target in ("rm2000", "rm2003") and category == "chipset":
+            target_png = transform_rgba_to_indexed_png(source_bytes, 480, 256)
         else:
             raise NotImplementedError(f"Target transformation for {target}/{category} is not yet implemented")
 

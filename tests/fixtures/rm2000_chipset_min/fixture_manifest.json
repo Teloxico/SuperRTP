@@ -4,6 +4,7 @@
   "graphics_generator_source": "tools/generate_fixture_graphics.py",
   "graphics_generator_sha256": "901f46e45b9bd30f83da18aebaa5929126f0b0d7819a9d4d47aedc29fc8ad886",
   "liblcf_version": "0.8.1",
+  "fixture_type": "chipset",
   "provenance_attestation": {
     "clean_room": true,
     "proprietary_rtp_derived": false,
@@ -13,11 +14,11 @@
     "license": "CC0-1.0"
   },
   "files": {
-    "Map0001.lmu": "a287e32f88a5838366b8710c545b678ac31ec3c2450c7f322297006542f9f768",
-    "RPG_RT.ini": "3151b17d356609fcd18845e8c3912a70c8214ffb2c062b6cd5d1f5aee91efa88",
-    "RPG_RT.ldb": "ad99a8d5b7841a18f229e13980634298fdf0dd1326d0e9472ef39240dc130b50",
-    "RPG_RT.lmt": "3003381ff8059dc0544d01fe1a7ed204060e9fb82f8e94d3e22b5f35ac4fc0ca",
-    "ChipSet/ChipSet.png": "9d54d27bf04a190e753802ffaaffb4dd8f8f1533e7259a7d3b7a28092f74a2b5",
+    "Map0001.lmu": "a0d5b3fa3a85159a4b7fcbe86b2227e6c1f31e2a51aed557a7363764fb2eb74a",
+    "RPG_RT.ini": "6bb824d19ff62f25c2bdd20bcb0613a7eb0854232ac0b653e89ff60d667aebd7",
+    "RPG_RT.ldb": "0c2a931b5adc35accbdee0d3b8d89d2ffb1b4ef45b906f69432b893c04612e9a",
+    "RPG_RT.lmt": "3c0c09fb85ed55c7c7667bca8606a47ed0df963606e38d8787e8b0d0ba3a20cd",
+    "CharSet/Actor1.png": "08c8e644d86a1bdbfafa3f3667cd321d8ff9e8e851fbbfe7f47382d6939ec5f9",
     "System/System.png": "edd44515072f92e8d19abbfcb60a5779e8b96a32b36e1e7a71701580e8211c1c"
   }
 }

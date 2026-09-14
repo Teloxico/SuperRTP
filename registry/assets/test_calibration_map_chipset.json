@@ -1,0 +1,20 @@
+{
+  "id": "test.calibration.map-chipset",
+  "name": "Calibration Map ChipSet (Fixed-Tile)",
+  "description": "Project-owned clean-room geometric calibration tileset for RM2000/RM2003 ChipSet compatibility testing (Blocks E & F fixed tiles).",
+  "type": "chipset",
+  "format": "rgba32",
+  "dimensions": {
+    "width": 480,
+    "height": 256
+  },
+  "palette": {
+    "max_colors": 256,
+    "transparent_index": 0
+  },
+  "test_only": true,
+  "license": "CC0-1.0",
+  "file": "registry/assets/test_calibration_map_chipset.rgba",
+  "master_png": "registry/assets/test_calibration_map_chipset.master.png",
+  "sha256": "4a4f5bdf6dbbbd12b23e358d1780eb8c3163ac81b25f4b2e3b366f50ab54454f"
+}
