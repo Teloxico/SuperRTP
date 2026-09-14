@@ -24,6 +24,9 @@ import hashlib
 import argparse
 from datetime import datetime, timezone
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from png_utils import deterministic_zlib_compress, make_png_chunk
+
 def compute_sha256(filepath):
     h = hashlib.sha256()
     with open(filepath, "rb") as f:
@@ -33,23 +36,18 @@ def compute_sha256(filepath):
 
 def create_indexed_png(width, height, palette, pixel_indices, has_trns=True):
     """
-    Low-level encoder for standard 8-bit indexed PNG with optional tRNS chunk.
+    Low-level encoder for standard 8-bit indexed PNG with optional tRNS chunk using deterministic compression.
     """
-    def chunk(chunk_type, data):
-        c_type = chunk_type.encode('ascii')
-        crc = zlib.crc32(c_type + data) & 0xffffffff
-        return struct.pack('>I', len(data)) + c_type + data + struct.pack('>I', crc)
-
     png_sig = b'\x89PNG\r\n\x1a\n'
     ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 3, 0, 0, 0)
-    ihdr_chunk = chunk('IHDR', ihdr_data)
+    ihdr_chunk = make_png_chunk('IHDR', ihdr_data)
 
     plte_data = bytearray()
     for r, g, b in palette:
         plte_data.extend([r, g, b])
-    plte_chunk = chunk('PLTE', bytes(plte_data))
+    plte_chunk = make_png_chunk('PLTE', bytes(plte_data))
 
-    trns_chunk = chunk('tRNS', b'\x00') if has_trns else b''
+    trns_chunk = make_png_chunk('tRNS', b'\x00') if has_trns else b''
 
     raw_scanlines = bytearray()
     for y in range(height):
@@ -57,9 +55,9 @@ def create_indexed_png(width, height, palette, pixel_indices, has_trns=True):
         start = y * width
         raw_scanlines.extend(pixel_indices[start:start + width])
 
-    compressed_idat = zlib.compress(bytes(raw_scanlines), level=9)
-    idat_chunk = chunk('IDAT', compressed_idat)
-    iend_chunk = chunk('IEND', b'')
+    compressed_idat = deterministic_zlib_compress(bytes(raw_scanlines))
+    idat_chunk = make_png_chunk('IDAT', compressed_idat)
+    iend_chunk = make_png_chunk('IEND', b'')
 
     return png_sig + ihdr_chunk + plte_chunk + trns_chunk + idat_chunk + iend_chunk
 
