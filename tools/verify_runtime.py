@@ -39,15 +39,18 @@ def compute_sha256(filepath):
     return h.hexdigest()
 
 def decode_png_rgb(filepath):
-    """Decodes a PNG file and returns width, height, and a 2D list of (R, G, B) tuples."""
+    """
+    Decodes a standard 24-bit PNG file into width, height, and a 2D list of (R, G, B) tuples,
+    implementing standard PNG unfiltering (None, Sub, Up, Average, Paeth) per RFC 2083.
+    """
     with open(filepath, "rb") as f:
         data = f.read()
     if data[:8] != b"\x89PNG\r\n\x1a\n":
         raise ValueError(f"Not a valid PNG file: {filepath}")
 
     w, h = struct.unpack(">II", data[16:24])
-    idat = bytearray()
     pos = 8
+    idat = bytearray()
     while pos < len(data):
         length = struct.unpack(">I", data[pos:pos+4])[0]
         ctype = data[pos+4:pos+8]
@@ -55,18 +58,56 @@ def decode_png_rgb(filepath):
             idat.extend(data[pos+8:pos+8+length])
         pos += 12 + length
 
-    raw = zlib.decompress(bytes(idat))
-    stride = 1 + w * 3  # Standard 24-bit RGB scanline
+    raw = bytearray(zlib.decompress(bytes(idat)))
+    bpp = 3  # Standard 24-bit RGB
+    stride = 1 + w * bpp
+    recon = bytearray(w * h * bpp)
+    prior = bytearray(w * bpp)
+
+    for y in range(h):
+        filter_type = raw[y * stride]
+        filt = raw[y * stride + 1 : (y + 1) * stride]
+        line = bytearray(w * bpp)
+
+        if filter_type == 0:  # None
+            line[:] = filt
+        elif filter_type == 1:  # Sub
+            for x in range(w * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                line[x] = (filt[x] + a) & 0xff
+        elif filter_type == 2:  # Up
+            for x in range(w * bpp):
+                line[x] = (filt[x] + prior[x]) & 0xff
+        elif filter_type == 3:  # Average
+            for x in range(w * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                line[x] = (filt[x] + ((a + prior[x]) >> 1)) & 0xff
+        elif filter_type == 4:  # Paeth
+            for x in range(w * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                b = prior[x]
+                c = prior[x - bpp] if x >= bpp else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+                line[x] = (filt[x] + pr) & 0xff
+        else:
+            raise ValueError(f"Unknown PNG filter type {filter_type}")
+
+        prior[:] = line
+        recon[y * w * bpp : (y + 1) * w * bpp] = line
+
     pixels = []
     for y in range(h):
-        line = raw[y * stride + 1 : (y + 1) * stride]
-        row = [(line[x * 3], line[x * 3 + 1], line[x * 3 + 2]) for x in range(w)]
+        row = [(recon[y*w*3 + x*3], recon[y*w*3 + x*3 + 1], recon[y*w*3 + x*3 + 2]) for x in range(w)]
         pixels.append(row)
     return w, h, pixels
 
 def verify_directional_screenshot(filepath, expected_direction):
     """
-    Mechanically inspects screenshot pixels to verify directional visual correctness.
+    Mechanically inspects screenshot pixels to verify directional visual correctness:
+    1. Centroid world position.
+    2. Character arrow shape orientation (tip vs wings) to prevent row-order inversion bugs.
     """
     w, h, pixels = decode_png_rgb(filepath)
     if (w, h) != (640, 480):
@@ -90,11 +131,11 @@ def verify_directional_screenshot(filepath, expected_direction):
         return {"status": "VERIFIED", "error_text_pixels": len(text_pixels)}
 
     # For directional character states: find character cyan body and gold accent pixels
-    # Cyan body: R < 50, G > 180, B > 200
+    # Cyan body: R < 50, G > 180, B > 180
     # Gold accent: R > 200, G > 180, B < 100
     cyans = [
         (x, y) for y in range(160, 260) for x in range(270, 370)
-        if pixels[y][x][0] < 50 and pixels[y][x][1] > 180 and pixels[y][x][2] > 200
+        if pixels[y][x][0] < 50 and pixels[y][x][1] > 180 and pixels[y][x][2] > 180
     ]
     yellows = [
         (x, y) for y in range(160, 260) for x in range(270, 370)
@@ -104,10 +145,10 @@ def verify_directional_screenshot(filepath, expected_direction):
     if len(cyans) < 30 or len(yellows) < 10:
         raise ValueError(f"Character sprite not found in expected center region for {filepath} (cyans={len(cyans)}, yellows={len(yellows)})")
 
+    # 1. Screen-space centroid verification
     c_x = sum(x for x, y in cyans) / len(cyans)
     c_y = sum(y for x, y in cyans) / len(cyans)
 
-    # Direction-specific coordinate ranges (due to 1-tile walking square)
     expected_ranges = {
         "down":  {"x": (320, 345), "y": (210, 230)},
         "left":  {"x": (295, 315), "y": (215, 230)},
@@ -122,17 +163,61 @@ def verify_directional_screenshot(filepath, expected_direction):
             f"expected x in {exp['x']}, y in {exp['y']}"
         )
 
+    # 2. Sprite shape orientation verification (arrow geometry inspection)
+    min_x = min(x for x, y in cyans)
+    max_x = max(x for x, y in cyans)
+    min_y = min(y for x, y in cyans)
+    max_y = max(y for x, y in cyans)
+
+    top_span_xs = [x for x, y in cyans if y <= min_y + 4]
+    bot_span_xs = [x for x, y in cyans if y >= max_y - 4]
+    top_w = max(top_span_xs) - min(top_span_xs) + 1
+    bot_w = max(bot_span_xs) - min(bot_span_xs) + 1
+
+    left_span_ys = [y for x, y in cyans if x <= min_x + 4]
+    right_span_ys = [y for x, y in cyans if x >= max_x - 4]
+    left_h = max(left_span_ys) - min(left_span_ys) + 1
+    right_h = max(right_span_ys) - min(right_span_ys) + 1
+
+    if expected_direction == "down":
+        # Arrow pointing down: wide wings at top, narrow tip at bottom
+        if top_w <= bot_w:
+            raise ValueError(f"Sprite arrow shape mismatch: expected DOWN (top_w > bot_w), got top_w={top_w}, bot_w={bot_w}")
+        if abs(left_h - right_h) > 6:
+            raise ValueError(f"Sprite arrow shape asymmetry for DOWN: left_h={left_h}, right_h={right_h}")
+
+    elif expected_direction == "up":
+        # Arrow pointing up: narrow tip at top, wide wings at bottom
+        if top_w >= bot_w:
+            raise ValueError(f"Sprite arrow shape mismatch: expected UP (top_w < bot_w), got top_w={top_w}, bot_w={bot_w}")
+        if abs(left_h - right_h) > 6:
+            raise ValueError(f"Sprite arrow shape asymmetry for UP: left_h={left_h}, right_h={right_h}")
+
+    elif expected_direction == "left":
+        # Arrow pointing left: narrow tip at left, wide wings on right
+        if left_h >= right_h:
+            raise ValueError(f"Sprite arrow shape mismatch: expected LEFT (left_h < right_h), got left_h={left_h}, right_h={right_h}")
+
+    elif expected_direction == "right":
+        # Arrow pointing right: wide wings on left, narrow tip at right
+        if right_h >= left_h:
+            raise ValueError(f"Sprite arrow shape mismatch: expected RIGHT (right_h < left_h), got left_h={left_h}, right_h={right_h}")
+
     return {
         "status": "VERIFIED",
         "facing": expected_direction.upper(),
         "centroid": [round(c_x, 1), round(c_y, 1)],
+        "shape_metrics": {
+            "top_w": top_w, "bot_w": bot_w,
+            "left_h": left_h, "right_h": right_h
+        },
         "cyan_pixel_count": len(cyans),
         "accent_pixel_count": len(yellows)
     }
 
 def verify_evidence_chain():
     """
-    Verifies that the recorded verification_evidence.json matches current files and hashes.
+    Verifies that the recorded verification_evidence.json matches current files, target Actor1.png, and hashes.
     """
     if not os.path.exists(EVIDENCE_PATH):
         raise FileNotFoundError(f"Verification evidence file not found: {EVIDENCE_PATH}")
@@ -151,6 +236,14 @@ def verify_evidence_chain():
     actual_target_manifest_hash = compute_sha256(target_manifest)
     if actual_target_manifest_hash != evidence["target_manifest_sha256"]:
         raise ValueError(f"Target manifest hash mismatch with evidence: expected {evidence['target_manifest_sha256']}, got {actual_target_manifest_hash}")
+
+    # Check target Actor1.png binary against evidence
+    target_actor1 = os.path.join(TARGET_DIR, "CharSet", "Actor1.png")
+    if not os.path.exists(target_actor1):
+        raise FileNotFoundError(f"Target Actor1.png not found: {target_actor1}")
+    actual_actor1_hash = compute_sha256(target_actor1)
+    if actual_actor1_hash != evidence["target_actor1_sha256"]:
+        raise ValueError(f"Target Actor1.png hash mismatch with evidence: expected {evidence['target_actor1_sha256']}, got {actual_actor1_hash}")
 
     # Check fixture manifest
     fixture_manifest = os.path.join(FIXTURE_DIR, "fixture_manifest.json")
