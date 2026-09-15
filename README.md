@@ -187,13 +187,13 @@ SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_vertical_slice.py
 # Task 4: RPG Maker XP / RGSS1 Character test suite (12 tests)
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmxp_vertical_slice.py
 
-# Task 5: RPG Maker VX / RGSS2 Character test suite (12 tests)
+# Task 5: RPG Maker VX / RGSS2 Character test suite (14 tests)
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmvx_vertical_slice.py
 ```
-Executes 47 mechanical checks across all targets:
+Executes 49 mechanical checks across all targets:
 - **Tasks 1–3 Suite (23 tests)**: Canonical master RGBA/PNG reproducibility, 8-bit indexed format compliance, provenance schemas, deterministic target builder, validator rejections, liblcf fixture generation, headless EasyRPG positive/negative controls, 4-direction turning verification, ChipSet fixed-tile geometry (Blocks E/F), layer transparency composition, and adversarial evidence tamper suites.
 - **Task 4 Suite (12 tests)**: Deterministic truecolor RGBA PNG encoding with full alpha range, semantic walking frame extraction, 4×4 RGSS1 packing and direction remapping from canonical sheet, RMXP target build reproducibility, frozen baseline regression integrity across all 3 engines, target validation for RMXP, validator rejections (bad dimensions, paletted PNG, missing alpha, idle column mismatch), clean-room RGSS1 fixture manifest integrity, live headless mkxp-z positive resolution, live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and 20+ field adversarial tamper rejection.
-- **Task 5 Suite (12 tests)**: Canonical walking character asset integrity, semantic 8-character extraction, RGSS2 standard $4\times 2$ character sheet packing geometry, 96-cell exact byte equality against semantic source frames, character index permutation and non-scrambling test, adversarial packer validation (truncated frames, missing directions), RMVX target build reproducibility, frozen baseline regression integrity across all 4 targets, live headless mkxp-z RGSS2 positive resolution ($544\times 416$), live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and 22-field adversarial tamper rejection.
+- **Task 5 Suite (14 tests)**: Canonical walking character asset integrity, semantic 8-character extraction against independent physical crop oracle, RGSS2 standard $4\times 2$ character sheet packing geometry, 96-cell exact byte equality directly against independent physical source crops, single-frame mutation locality (one cell mutation alters only that target cell and leaves all 95 others 100% byte-identical), character index preservation and non-scrambling test, adversarial packer validation, RMVX target build reproducibility, frozen baseline regression integrity across all 4 targets, RMVX target validator adversarial rejections (wrong source indices, missing/wrong transform policy, wrong category, wrong target hash, directional-row permutation), live headless mkxp-z RGSS2 positive resolution ($544\times 416$), live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and expanded adversarial tamper rejection including build config options, diagnostics, and actual screenshot pixel corruption.
 
 ### 2. Generate Clean-Room Fixture Graphics
 ```bash

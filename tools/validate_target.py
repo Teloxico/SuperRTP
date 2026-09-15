@@ -678,6 +678,20 @@ def validate_target(target, target_dir=None):
             all_passed = False
             continue
 
+        # Transformation metadata validation: cross-check with registry
+        transform_meta_fields = ["character_index", "source_character_indices", "transform_policy"]
+        meta_mismatch = False
+        for field in transform_meta_fields:
+            reg_val = slot_lookup[slot].get(field)
+            man_val = entry.get(field)
+            if reg_val != man_val:
+                print(f"  FAILED: Transformation metadata mismatch for slot '{slot}' field '{field}': manifest has {man_val!r}, registry has {reg_val!r}")
+                all_passed = False
+                meta_mismatch = True
+                break
+        if meta_mismatch:
+            continue
+
         if not os.path.exists(filepath):
             print(f"  FAILED: File missing at {filepath}")
             all_passed = False
