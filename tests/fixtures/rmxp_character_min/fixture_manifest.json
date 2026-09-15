@@ -1,0 +1,17 @@
+{
+  "fixture_name": "rmxp_character_min",
+  "engine": "RPG Maker XP",
+  "rgss_version": 1,
+  "description": "Minimal clean-room RGSS1 test fixture for mkxp-z character loading and rendering",
+  "clean_room_attestation": "All fixture scripts and configurations are written from scratch without proprietary creative assets.",
+  "files": {
+    "fixture.rb": {
+      "sha256": "5c54a4f265724b10656c746c4df1ad50b0f13bc95eb8bb07884047c96054a47b",
+      "purpose": "Harness script for loading Graphics/Characters/001-Fighter01 and rendering"
+    },
+    "mkxp.json": {
+      "sha256": "f287a5d5aa3cb75b6ac5caae29af32a1055b401148a694dd848343387a85796d",
+      "purpose": "Configuration specifying RGSS1 and customScript execution"
+    }
+  }
+}

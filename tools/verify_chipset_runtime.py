@@ -21,6 +21,7 @@ import shutil
 import hashlib
 import argparse
 import subprocess
+import re
 from datetime import datetime, timezone
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -218,7 +219,7 @@ def verify_evidence_chain(target="rm2000", evidence_path=None, artifacts_dir=Non
 
     # Check EasyRPG pinned version
     ver = evidence.get("easyrpg_version", "")
-    if "0.8.1.1" not in ver:
+    if not re.search(r'\b0\.8\.1\.1\b', ver):
         raise ValueError(f"EasyRPG version pin violation: expected 0.8.1.1 in '{ver}'")
 
     # Check recorded_at ISO-8601 validity

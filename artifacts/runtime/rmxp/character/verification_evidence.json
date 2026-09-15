@@ -1,0 +1,103 @@
+{
+  "target": "rmxp",
+  "engine_mode": "rgss1",
+  "requested_character": "001-Fighter01",
+  "canonical_asset_id": "test.calibration.walking-character",
+  "canonical_source_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
+  "target_manifest_sha256": "8e16c1b2837587e76a074f0e2a9f8e4a6f82ce96b86d746a40766c75662d14c7",
+  "target_character_sha256": "b4e81694247632b5580b5eef55a17e61c6afd709092de0e574aed70b41759743",
+  "fixture_manifest_sha256": "56cafb5894ce9cc23ca3eaa1a51f34c1359537d78d14964d311210602d06f703",
+  "positive_runtime_log": "positive_runtime.log",
+  "positive_runtime_log_sha256": "1e352510023a7083895f37221cb581b87a110ad63f76dbd3ae770dc7559ca644",
+  "negative_runtime_log": "negative_runtime.log",
+  "negative_runtime_log_sha256": "0aafed938b91ba575d507f9799b1d3e0dceb8f7a8c3074ca62f0e558107e7bb8",
+  "mkxp_z_version": "2.4.2/826929e",
+  "recorded_at": "2026-09-15T03:53:05.967542+00:00",
+  "negative_control": {
+    "status": "VERIFIED",
+    "expected_missing_asset": "Graphics/Characters/001-Fighter01",
+    "diagnostic": "SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01",
+    "screenshot": "rmxp_character_negative_control.png",
+    "screenshot_sha256": "10af4bf71edc4d1f367c6512109d9fd128bbaee16fc3141f38259317fd53c411"
+  },
+  "screenshots": {
+    "rmxp_character_positive.png": "e517ce00ab9c5ad9772e346f0d954dff6cd86873dba2e146a3731be25c29a46f",
+    "rmxp_character_negative_control.png": "10af4bf71edc4d1f367c6512109d9fd128bbaee16fc3141f38259317fd53c411"
+  },
+  "visual_evidence": {
+    "status": "VERIFIED",
+    "mode": "positive",
+    "pad_corners": {
+      "top_left": [
+        255,
+        60,
+        60
+      ],
+      "top_right": [
+        60,
+        255,
+        60
+      ],
+      "bottom_left": [
+        60,
+        60,
+        255
+      ],
+      "bottom_right": [
+        255,
+        255,
+        60
+      ]
+    },
+    "directional_arrows": {
+      "row_0_down": {
+        "tip": [
+          10,
+          40,
+          70
+        ],
+        "notch_transparency": [
+          210,
+          215,
+          220
+        ]
+      },
+      "row_1_left": {
+        "tip": [
+          10,
+          40,
+          70
+        ],
+        "notch_transparency": [
+          210,
+          215,
+          220
+        ]
+      },
+      "row_2_right": {
+        "tip": [
+          10,
+          40,
+          70
+        ],
+        "notch_transparency": [
+          210,
+          215,
+          220
+        ]
+      },
+      "row_3_up": {
+        "tip": [
+          10,
+          40,
+          70
+        ],
+        "notch_transparency": [
+          210,
+          215,
+          220
+        ]
+      }
+    }
+  }
+}

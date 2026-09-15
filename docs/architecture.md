@@ -103,3 +103,44 @@ Runtime verification is executed through `tools/verify_runtime.py` and `tools/ve
 - Performs mechanical pixel assertions on all key tile regions and layer composition transparency.
 - Generates `verification_evidence.json` under `artifacts/runtime/<target>/<category>/`, cryptographically binding canonical source SHA-256, target manifest hash, fixture manifest hash, EasyRPG pinned version (0.8.1.1), log hashes, negative control diagnostics, and screenshot hashes.
 - All recorded fields in `verification_evidence.json` are strictly enforced by `--verify` across both `verify_runtime.py` and `verify_chipset_runtime.py`. Automated adversarial tamper tests (`test_23`) deliberately corrupt each bound input and assert immediate rejection.
+
+## 8. RPG Maker XP (RGSS1) Character Architecture
+
+SuperRTP's single-source architecture enables generating RGSS1-compliant character sheets directly from the canonical walking-character source:
+
+1. **Extraction & Spatial Remapping:**
+   - Canonical walking-character sheet is 288×256 pixels containing 8 characters (4×2 grid of 72×128 px).
+   - Character 0 (top-left 72×128 px) is extracted, consisting of 3 columns × 4 rows of 24×32 frames.
+   - **Direction Row Remapping:**
+     - RM2000 physical rows: Row 0 (UP), Row 1 (RIGHT), Row 2 (DOWN), Row 3 (LEFT).
+     - RGSS1 physical rows: Row 0 (DOWN), Row 1 (LEFT), Row 2 (RIGHT), Row 3 (UP).
+   - **Animation Column Adaptation:**
+     - RM2000 uses 3 frame columns: Step Left (Col 0), Idle (Col 1), Step Right (Col 2).
+     - RGSS1 expects 4 frame columns: Step Left (Col 0), Idle (Col 1), Step Right (Col 2), Idle (Col 3).
+     - The transformation duplicates Col 1 into Col 3, producing a 96×128 pixel sheet (4 cols × 24 px, 4 rows × 32 px).
+
+2. **Deterministic Truecolor RGBA Encoding (Color Type 6):**
+   - RPG Maker XP and mkxp-z use full 32-bit RGBA PNGs rather than indexed palettes.
+   - `tools/png_utils.py` provides `create_rgba_png(width, height, rgba_bytes)`:
+     - Formats standard PNG chunks: `IHDR` (Color Type 6, bit depth 8, dimensions 96×128), `IDAT`, `IEND`.
+     - Strictly omits `PLTE` (palette) chunks.
+     - Compresses raw scanlines (with filter type 0 / None) using RFC 1951 uncompressed stored blocks via `deterministic_zlib_compress`. This guarantees byte-for-byte identical output regardless of system zlib implementation or platform differences.
+     - Preserves full alpha range ($0 \le \alpha \le 255$) without pre-multiplication.
+
+3. **Clean-Room RGSS1 Test Harness & mkxp-z Runtime Oracle:**
+   - Pinned runner: `mkxp-z` built from commit `826929eeb3ebc4b887c011604919217a790770f4` with `-Dworkdir_current=true`.
+   - Test fixture under `tests/fixtures/rmxp_character_min/`:
+     - `fixture.rb`: Clean-room Ruby script setting up a 640×480 scene with neutral dark background `(25, 25, 30)` and a high-contrast test pad `(210, 215, 220)` at `(260, 164, 120×152)` with distinct corner alignment markers (Red TL, Green TR, Blue BL, Yellow BR).
+     - Loads `Bitmap.new("Graphics/Characters/001-Fighter01")` and displays the full 96×128 character sheet at `(272, 176)`.
+     - Positive control: Renders 60 frames and exits with code 0.
+     - Negative control: When RTP is empty, catches `Errno::ENOENT`, logs `SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01`, renders 30 frames of the blank pad, and exits with code 1.
+   - Evidence recorded in `artifacts/runtime/rmxp/character/verification_evidence.json` binding commit `826929e`, target manifest hash, target character hash, fixture manifest hash, logs, diagnostics, and screenshots.
+
+## 9. Informational Derived Summary Documentation
+
+Any derived summaries, test reports, walkthroughs, or compatibility documentation generated during development are strictly informational and secondary to:
+1. Canonical source assets (`registry/assets/`) and provenance records (`registry/provenance/`).
+2. Target slot registries (`registry/slots/`) and schemas (`schemas/`).
+3. Deterministic code, tests, and build tooling (`tools/`, `tests/`).
+4. Real runtime execution evidence and inspected screenshot artifacts (`artifacts/runtime/`).
+

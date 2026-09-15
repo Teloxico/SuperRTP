@@ -36,16 +36,30 @@ jobs:
           echo "PKG_CONFIG_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
           echo "LD_LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
 
-      - name: Build target packs (RM2000 & RM2003)
+      - name: Cache mkxp-z binary
+        uses: actions/cache@v4
+        id: mkxp-cache
+        with:
+          path: ~/.local/bin/mkxp-z
+          key: mkxp-z-826929eeb3ebc4b887c011604919217a790770f4
+
+      - name: Install mkxp-z (RGSS1 runner)
+        run: |
+          tools/install_mkxp_z_ci.sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Build target packs (RM2000, RM2003, RMXP)
         run: |
           python3 tools/build_target.py --target rm2000 --clean
           python3 tools/build_target.py --target rm2003 --clean
+          python3 tools/build_target.py --target rmxp --clean
 
       - name: Run automated test suite on committed repository state
         env:
           SUPERRTP_REQUIRE_RUNTIME: "1"
         run: |
           python3 tests/test_vertical_slice.py
+          python3 tests/test_rmxp_vertical_slice.py
 
       - name: Verify generator reproducibility and assert zero git diff
         run: |
@@ -58,14 +72,19 @@ jobs:
         run: |
           python3 tools/validate_target.py --target rm2000
           python3 tools/validate_target.py --target rm2003
+          python3 tools/validate_target.py --target rmxp
 
       - name: Verify runtime evidence chain
         run: |
           python3 tools/verify_runtime.py --target all --verify
           python3 tools/verify_chipset_runtime.py --target all --verify
+          python3 tools/verify_rmxp_runtime.py --verify
 
       - name: Optional full visual replay (manual dispatch)
         if: ${{ inputs.run_full_replay == true }}
         run: |
           python3 tools/verify_runtime.py --target all --run-replay
+          python3 tools/verify_chipset_runtime.py --target all --run-capture
+          python3 tools/verify_rmxp_runtime.py --run-capture
+
 

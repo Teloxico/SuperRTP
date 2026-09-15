@@ -25,7 +25,7 @@ import argparse
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from png_utils import deterministic_zlib_compress, make_png_chunk
+from png_utils import deterministic_zlib_compress, make_png_chunk, create_rgba_png
 
 def compute_sha256(filepath):
     h = hashlib.sha256()
@@ -101,6 +101,68 @@ def transform_rgba_to_indexed_png(rgba_bytes, width=288, height=256):
     return create_indexed_png(width, height, palette, pixel_indices, has_trns=True)
  
 transform_rgba_to_rm2000_indexed_png = transform_rgba_to_indexed_png
+ 
+def transform_canonical_to_rmxp_character(source_bytes: bytes, char_idx: int = 0) -> bytes:
+    """
+    Transforms neutral 32-bit RGBA canonical 2k-family walking character sheet (288x256)
+    into an RPG Maker XP / RGSS1 compliant 32-bit truecolor RGBA Character sheet (96x128).
+
+    Mapping rules:
+    - Character 0: char_grid_x = char_idx % 4, char_grid_y = char_idx // 4.
+      Base coordinates: char_base_x = char_grid_x * 72, char_base_y = char_grid_y * 128.
+    - Each frame is 24x32 pixels.
+    - Rows:
+      Canonical: 0: UP, 1: RIGHT, 2: DOWN, 3: LEFT
+      XP RGSS1:  0: DOWN, 1: LEFT, 2: RIGHT, 3: UP
+      -> row_map = [2, 3, 1, 0]
+    - Columns:
+      Canonical: 0: STEP_LEFT, 1: IDLE, 2: STEP_RIGHT
+      XP RGSS1:  0: STEP_LEFT, 1: IDLE, 2: STEP_RIGHT, 3: IDLE
+      -> col_map = [0, 1, 2, 1]
+    - Output dimensions: 4 columns * 24 = 96, 4 rows * 32 = 128.
+    - Output format: 32-bit truecolor RGBA PNG (Color Type 6) with deterministic RFC 1951 stored blocks.
+    """
+    src_width = 288
+    src_height = 256
+    expected_src_len = src_width * src_height * 4
+    if len(source_bytes) != expected_src_len:
+        raise ValueError(f"Input RGBA buffer size mismatch: expected {expected_src_len}, got {len(source_bytes)}")
+
+    dst_width = 96
+    dst_height = 128
+    dst_rgba = bytearray(dst_width * dst_height * 4)
+
+    char_grid_x = char_idx % 4
+    char_grid_y = char_idx // 4
+    char_base_x = char_grid_x * 72
+    char_base_y = char_grid_y * 128
+
+    row_map = [2, 3, 1, 0]  # XP Down, Left, Right, Up <- Can Down, Left, Right, Up
+    col_map = [0, 1, 2, 1]  # XP StepLeft, Idle, StepRight, Idle <- Can StepLeft, Idle, StepRight, Idle
+
+    frame_w = 24
+    frame_h = 32
+
+    for xp_row in range(4):
+        can_row = row_map[xp_row]
+        for xp_col in range(4):
+            can_col = col_map[xp_col]
+            src_frame_x = char_base_x + can_col * frame_w
+            src_frame_y = char_base_y + can_row * frame_h
+            dst_frame_x = xp_col * frame_w
+            dst_frame_y = xp_row * frame_h
+
+            for py in range(frame_h):
+                src_y = src_frame_y + py
+                dst_y = dst_frame_y + py
+                for px in range(frame_w):
+                    src_x = src_frame_x + px
+                    dst_x = dst_frame_x + px
+                    src_idx = (src_y * src_width + src_x) * 4
+                    dst_idx = (dst_y * dst_width + dst_x) * 4
+                    dst_rgba[dst_idx : dst_idx + 4] = source_bytes[src_idx : src_idx + 4]
+
+    return create_rgba_png(dst_width, dst_height, bytes(dst_rgba))
 
 def get_reproducible_timestamp():
     """Returns a deterministic ISO-8601 timestamp based on SOURCE_DATE_EPOCH if set."""
@@ -187,6 +249,9 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
             target_png = transform_rgba_to_indexed_png(source_bytes, 288, 256)
         elif target in ("rm2000", "rm2003") and category == "chipset":
             target_png = transform_rgba_to_indexed_png(source_bytes, 480, 256)
+        elif target == "rmxp" and category == "character":
+            char_idx = slot_info.get("character_index", 0)
+            target_png = transform_canonical_to_rmxp_character(source_bytes, char_idx=char_idx)
         else:
             raise NotImplementedError(f"Target transformation for {target}/{category} is not yet implemented")
 

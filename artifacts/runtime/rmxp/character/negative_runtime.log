@@ -1,0 +1,25 @@
+
+Could not read Game.ini 
+Game.ini: Could not determine encoding of Game.Title 
+RGSS version 1 (RPG Maker XP) 
+ALC_SOFT_pause_device present 
+Backend      : OpenGL 
+GL Vendor    : Mesa 
+GL Renderer  : llvmpipe (LLVM 21.1.8, 256 bits) 
+GL Version   : 4.5 (Compatibility Profile) Mesa 26.0.8-1ubuntu0.3 
+GLSL Version : 4.50 
+Loading path cache... 
+Path cache completed. 
+
+(process:339946): GLib-GObject-CRITICAL **: 09:23:03.905: g_param_spec_enum: assertion 'g_enum_get_value (enum_class, default_value) != NULL' failed
+
+(process:339946): GLib-GObject-CRITICAL **: 09:23:03.905: validate_pspec_to_install: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+
+(process:339946): GLib-GObject-CRITICAL **: 09:23:03.905: g_param_spec_ref_sink: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+
+(process:339946): GLib-GObject-CRITICAL **: 09:23:03.905: g_param_spec_unref: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+Warning: No soundfont specified, sound might be mute 
+Warning: No soundfont specified, sound might be mute 
+Primary font not found: Arial 
+Could not load Zlib. If this is important, make sure Ruby was built with static extensions, or that zlib.so is present and reachable by Ruby's loadpath. 
+SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01
