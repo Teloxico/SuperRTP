@@ -25,23 +25,24 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install system dependencies (EasyRPG Player, liblcf, Xvfb, ffmpeg)
+      - name: Install system dependencies (EasyRPG Player, liblcf, sdl2_sound, Xvfb, ffmpeg)
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb ffmpeg libasound2 || sudo apt-get install -y xvfb ffmpeg libasound2t64
           curl -sL https://easyrpg.org/downloads/player/0.8.1.1/easyrpg-player-0.8.1.1-linux.tar.gz | sudo tar -xzf - -C /usr/local/bin
           easyrpg-player --version
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-          brew install liblcf
-          echo "PKG_CONFIG_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          brew install liblcf sdl2_sound
+          echo "PKG_CONFIG_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib/pkgconfig:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib:$LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Cache mkxp-z binary
         uses: actions/cache@v4
         id: mkxp-cache
         with:
           path: ~/.local/bin/mkxp-z
-          key: mkxp-z-826929eeb3ebc4b887c011604919217a790770f4
+          key: ${{ runner.os }}-${{ runner.arch }}-mkxp-z-826929eeb3ebc4b887c011604919217a790770f4-v1
 
       - name: Install mkxp-z (RGSS1 runner)
         run: |

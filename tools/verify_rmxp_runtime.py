@@ -9,7 +9,9 @@ Verifies and reproduces mkxp-z runtime execution for RGSS1 Character compatibili
   - Inspects rendered 640x480 screenshot pixels for:
       * Test pad geometry (260, 164, 120x152) and corner alignment markers
       * Background color outside pad
-      * Directional arrow tips (DOWN, LEFT, RIGHT, UP) in Col 1 (Idle column)
+      * Directional arrow tips (DOWN, LEFT, RIGHT, UP) in Col 1 (Idle column) and Col 3 (Idle duplicate)
+      * Full 128-scanline pixel identity between Col 1 and Col 3 (XP 4th column idle repetition)
+      * Active step markers in Col 0 (Step Left) and Col 2 (Step Right)
       * Transparency mechanics: arrow notches exposing underlying pad color
   - Manages artifacts/runtime/rmxp/character/verification_evidence.json
 """
@@ -24,13 +26,16 @@ import hashlib
 import argparse
 import subprocess
 import re
+import tempfile
 from datetime import datetime, timezone
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
 sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
 
-from png_utils import decode_png_rgb
+from png_utils import decode_png_rgb, create_rgba_png
+
+PINNED_MKXP_COMMIT = "826929eeb3ebc4b887c011604919217a790770f4"
 
 def compute_sha256(filepath):
     h = hashlib.sha256()
@@ -72,11 +77,18 @@ def verify_rmxp_screenshot(screenshot_path, mode="positive"):
           BL (260, 308, 8, 8): Blue (60, 60, 255)
           BR (372, 308, 8, 8): Yellow (255, 255, 60)
       - Character sprite: placed at (272, 176), size 96x128 (4 cols x 4 rows)
+          Col 0 (Step Left):  x in 272..295, active step marker at (280, 176 + row*32 + 27) = (240, 160, 20)
           Col 1 (Idle column): x in 296..319
-          Row 0 (DOWN):  tip at (307, 197), notch at (307, 182)
-          Row 1 (LEFT):  tip at (300, 221), notch at (315, 221)
-          Row 2 (RIGHT): tip at (315, 253), notch at (300, 253)
-          Row 3 (UP):    tip at (307, 277), notch at (307, 293)
+              Row 0 (DOWN):  tip at (307, 197), notch at (307, 182)
+              Row 1 (LEFT):  tip at (300, 221), notch at (315, 221)
+              Row 2 (RIGHT): tip at (315, 253), notch at (300, 253)
+              Row 3 (UP):    tip at (307, 277), notch at (307, 293)
+          Col 2 (Step Right): x in 320..343, active step marker at (336, 176 + row*32 + 27) = (240, 160, 20)
+          Col 3 (Idle duplicate): x in 344..367 (offset +48 from Col 1, exact duplicate)
+              Row 0 (DOWN):  tip at (355, 197), notch at (355, 182)
+              Row 1 (LEFT):  tip at (348, 221), notch at (363, 221)
+              Row 2 (RIGHT): tip at (363, 253), notch at (348, 253)
+              Row 3 (UP):    tip at (355, 277), notch at (355, 293)
           Arrow tip color: (10, 40, 70)
           Notch (transparent) exposes pad: (210, 215, 220)
     """
@@ -115,6 +127,7 @@ def verify_rmxp_screenshot(screenshot_path, mode="positive"):
 
     pad_color = (210, 215, 220)
     arrow_tip_color = (10, 40, 70)
+    foot_color = (240, 160, 20)
 
     # 3. Check coordinates for positive vs negative
     r0_tip_px = pixels[197][307]
@@ -145,31 +158,77 @@ def verify_rmxp_screenshot(screenshot_path, mode="positive"):
             "pad_center_color": list(pixels[240][320])
         }
 
-    # Positive control: verify arrow tips and transparent notches
+    # Positive control: verify Col 1 arrow tips and transparent notches
     r0_notch_px = pixels[182][307]
     r1_notch_px = pixels[221][315]
     r2_notch_px = pixels[253][300]
     r3_notch_px = pixels[293][307]
 
     if r0_tip_px != arrow_tip_color:
-        raise ValueError(f"Row 0 (DOWN) arrow tip mismatch: expected {arrow_tip_color}, got {r0_tip_px}")
+        raise ValueError(f"Row 0 (DOWN) Col 1 arrow tip mismatch: expected {arrow_tip_color}, got {r0_tip_px}")
     if r0_notch_px != pad_color:
-        raise ValueError(f"Row 0 (DOWN) notch transparency mismatch: expected pad {pad_color}, got {r0_notch_px}")
+        raise ValueError(f"Row 0 (DOWN) Col 1 notch transparency mismatch: expected pad {pad_color}, got {r0_notch_px}")
 
     if r1_tip_px != arrow_tip_color:
-        raise ValueError(f"Row 1 (LEFT) arrow tip mismatch: expected {arrow_tip_color}, got {r1_tip_px}")
+        raise ValueError(f"Row 1 (LEFT) Col 1 arrow tip mismatch: expected {arrow_tip_color}, got {r1_tip_px}")
     if r1_notch_px != pad_color:
-        raise ValueError(f"Row 1 (LEFT) notch transparency mismatch: expected pad {pad_color}, got {r1_notch_px}")
+        raise ValueError(f"Row 1 (LEFT) Col 1 notch transparency mismatch: expected pad {pad_color}, got {r1_notch_px}")
 
     if r2_tip_px != arrow_tip_color:
-        raise ValueError(f"Row 2 (RIGHT) arrow tip mismatch: expected {arrow_tip_color}, got {r2_tip_px}")
+        raise ValueError(f"Row 2 (RIGHT) Col 1 arrow tip mismatch: expected {arrow_tip_color}, got {r2_tip_px}")
     if r2_notch_px != pad_color:
-        raise ValueError(f"Row 2 (RIGHT) notch transparency mismatch: expected pad {pad_color}, got {r2_notch_px}")
+        raise ValueError(f"Row 2 (RIGHT) Col 1 notch transparency mismatch: expected pad {pad_color}, got {r2_notch_px}")
 
     if r3_tip_px != arrow_tip_color:
-        raise ValueError(f"Row 3 (UP) arrow tip mismatch: expected {arrow_tip_color}, got {r3_tip_px}")
+        raise ValueError(f"Row 3 (UP) Col 1 arrow tip mismatch: expected {arrow_tip_color}, got {r3_tip_px}")
     if r3_notch_px != pad_color:
-        raise ValueError(f"Row 3 (UP) notch transparency mismatch: expected pad {pad_color}, got {r3_notch_px}")
+        raise ValueError(f"Row 3 (UP) Col 1 notch transparency mismatch: expected pad {pad_color}, got {r3_notch_px}")
+
+    # Positive control: verify Col 3 (Idle duplicate) arrow tips and transparent notches
+    # Col 3 is at x = 344..367, offset +48 from Col 1 (296..319)
+    r0_c3_tip = pixels[197][355]
+    r0_c3_notch = pixels[182][355]
+    r1_c3_tip = pixels[221][348]
+    r1_c3_notch = pixels[221][363]
+    r2_c3_tip = pixels[253][363]
+    r2_c3_notch = pixels[253][348]
+    r3_c3_tip = pixels[277][355]
+    r3_c3_notch = pixels[293][355]
+
+    if r0_c3_tip != arrow_tip_color:
+        raise ValueError(f"Row 0 (DOWN) Col 3 arrow tip mismatch: expected {arrow_tip_color}, got {r0_c3_tip}")
+    if r0_c3_notch != pad_color:
+        raise ValueError(f"Row 0 (DOWN) Col 3 notch transparency mismatch: expected pad {pad_color}, got {r0_c3_notch}")
+    if r1_c3_tip != arrow_tip_color:
+        raise ValueError(f"Row 1 (LEFT) Col 3 arrow tip mismatch: expected {arrow_tip_color}, got {r1_c3_tip}")
+    if r1_c3_notch != pad_color:
+        raise ValueError(f"Row 1 (LEFT) Col 3 notch transparency mismatch: expected pad {pad_color}, got {r1_c3_notch}")
+    if r2_c3_tip != arrow_tip_color:
+        raise ValueError(f"Row 2 (RIGHT) Col 3 arrow tip mismatch: expected {arrow_tip_color}, got {r2_c3_tip}")
+    if r2_c3_notch != pad_color:
+        raise ValueError(f"Row 2 (RIGHT) Col 3 notch transparency mismatch: expected pad {pad_color}, got {r2_c3_notch}")
+    if r3_c3_tip != arrow_tip_color:
+        raise ValueError(f"Row 3 (UP) Col 3 arrow tip mismatch: expected {arrow_tip_color}, got {r3_c3_tip}")
+    if r3_c3_notch != pad_color:
+        raise ValueError(f"Row 3 (UP) Col 3 notch transparency mismatch: expected pad {pad_color}, got {r3_c3_notch}")
+
+    # Positive control: verify complete pixel equality between Col 1 (296..319) and Col 3 (344..367) across all 128 scanlines
+    for y in range(176, 176 + 128):
+        for dx in range(24):
+            c1_px = pixels[y][296 + dx]
+            c3_px = pixels[y][344 + dx]
+            if c1_px != c3_px:
+                raise ValueError(f"XP Column 3 idle repetition mismatch at y={y}, dx={dx}: Col 1 {c1_px} != Col 3 {c3_px}")
+
+    # Positive control: verify active step markers in Col 0 (Step Left, x=280) and Col 2 (Step Right, x=336)
+    for row in range(4):
+        y_step = 176 + row * 32 + 27
+        col0_step_px = pixels[y_step][280]
+        col2_step_px = pixels[y_step][336]
+        if col0_step_px != foot_color:
+            raise ValueError(f"Row {row} Col 0 (Step Left) foot marker mismatch at (280, {y_step}): expected {foot_color}, got {col0_step_px}")
+        if col2_step_px != foot_color:
+            raise ValueError(f"Row {row} Col 2 (Step Right) foot marker mismatch at (336, {y_step}): expected {foot_color}, got {col2_step_px}")
 
     return {
         "status": "VERIFIED",
@@ -180,11 +239,22 @@ def verify_rmxp_screenshot(screenshot_path, mode="positive"):
             "bottom_left": list(bl_color),
             "bottom_right": list(br_color)
         },
-        "directional_arrows": {
+        "directional_arrows_col1": {
             "row_0_down": {"tip": list(r0_tip_px), "notch_transparency": list(r0_notch_px)},
             "row_1_left": {"tip": list(r1_tip_px), "notch_transparency": list(r1_notch_px)},
             "row_2_right": {"tip": list(r2_tip_px), "notch_transparency": list(r2_notch_px)},
             "row_3_up": {"tip": list(r3_tip_px), "notch_transparency": list(r3_notch_px)}
+        },
+        "directional_arrows_col3": {
+            "row_0_down": {"tip": list(r0_c3_tip), "notch_transparency": list(r0_c3_notch)},
+            "row_1_left": {"tip": list(r1_c3_tip), "notch_transparency": list(r1_c3_notch)},
+            "row_2_right": {"tip": list(r2_c3_tip), "notch_transparency": list(r2_c3_notch)},
+            "row_3_up": {"tip": list(r3_c3_tip), "notch_transparency": list(r3_c3_notch)}
+        },
+        "column_repetition_col3_equals_col1": True,
+        "step_markers": {
+            "col0_step_left": list(foot_color),
+            "col2_step_right": list(foot_color)
         }
     }
 
@@ -211,7 +281,13 @@ def verify_evidence_chain(evidence_path=None, artifacts_dir=None, target_dir=Non
     print("=== SuperRTP RPG Maker XP Character Runtime Verification Evidence Check ===")
     print(f"Target:          {evidence.get('target')}")
     print(f"Engine Mode:     {evidence.get('engine_mode')}")
-    print(f"Requested Slot:  {evidence.get('requested_character')}")
+    print(f"Runtime:         {evidence.get('runtime')}")
+    print(f"Runtime Commit:  {evidence.get('runtime_commit')}")
+    print(f"RGSS Version:    {evidence.get('rgss_version')}")
+    print(f"Category:        {evidence.get('target_category')}")
+    print(f"Requested Slot:  {evidence.get('requested_resource')}")
+    print(f"Character Index: {evidence.get('source_character_index')}")
+    print(f"Transform Policy:{evidence.get('transform_policy')}")
     print(f"Canonical Asset: {evidence.get('canonical_asset_id')}")
     print(f"mkxp-z Version:  {evidence.get('mkxp_z_version')}")
     print(f"Recorded Date:   {evidence.get('recorded_at')}")
@@ -222,9 +298,47 @@ def verify_evidence_chain(evidence_path=None, artifacts_dir=None, target_dir=Non
     if evidence.get("engine_mode") != cfg["engine"]:
         raise ValueError(f"Evidence engine_mode mismatch: expected {cfg['engine']}, got {evidence.get('engine_mode')}")
 
-    # Check requested slot
-    if evidence.get("requested_character") != cfg["expected_character_slot"]:
-        raise ValueError(f"Evidence requested_character mismatch: expected {cfg['expected_character_slot']}, got {evidence.get('requested_character')}")
+    # Check runtime and exact commit pin
+    if evidence.get("runtime") != "mkxp-z":
+        raise ValueError(f"Evidence runtime mismatch: expected 'mkxp-z', got {evidence.get('runtime')}")
+    if evidence.get("runtime_commit") != PINNED_MKXP_COMMIT:
+        raise ValueError(f"mkxp-z commit pin violation: expected '{PINNED_MKXP_COMMIT}', got '{evidence.get('runtime_commit')}'")
+
+    # Check RGSS version
+    if evidence.get("rgss_version") != 1:
+        raise ValueError(f"Evidence rgss_version mismatch: expected 1, got {evidence.get('rgss_version')}")
+
+    # Check category and requested resource
+    if evidence.get("target_category") != "Character":
+        raise ValueError(f"Evidence target_category mismatch: expected 'Character', got {evidence.get('target_category')}")
+    expected_resource = f"Graphics/Characters/{cfg['expected_character_slot']}"
+    if evidence.get("requested_resource") != expected_resource:
+        raise ValueError(f"Evidence requested_resource mismatch: expected '{expected_resource}', got {evidence.get('requested_resource')}")
+
+    # Check character index and transform policy
+    if evidence.get("source_character_index") != 0:
+        raise ValueError(f"Evidence source_character_index mismatch: expected 0, got {evidence.get('source_character_index')}")
+    if evidence.get("transform_policy") != "rm2k_to_rgss1_character_4x4":
+        raise ValueError(f"Evidence transform_policy mismatch: expected 'rm2k_to_rgss1_character_4x4', got {evidence.get('transform_policy')}")
+
+    # Check mkxp-z build configuration
+    build_cfg = evidence.get("mkxp_z_build_configuration")
+    if not isinstance(build_cfg, dict):
+        raise ValueError("Missing mkxp_z_build_configuration in evidence")
+    if build_cfg.get("workdir_current") is not True:
+        raise ValueError("mkxp_z_build_configuration.workdir_current must be true")
+    if build_cfg.get("static_executable") is not False:
+        raise ValueError("mkxp_z_build_configuration.static_executable must be false")
+    if build_cfg.get("mri_version") != "3.3":
+        raise ValueError("mkxp_z_build_configuration.mri_version must be '3.3'")
+    if build_cfg.get("shared_fluid") is not False:
+        raise ValueError("mkxp_z_build_configuration.shared_fluid must be false")
+
+    # Check exit codes
+    if evidence.get("positive_exit_code") != 0:
+        raise ValueError(f"positive_exit_code mismatch: expected 0, got {evidence.get('positive_exit_code')}")
+    if evidence.get("negative_exit_code") != 1:
+        raise ValueError(f"negative_exit_code mismatch: expected 1, got {evidence.get('negative_exit_code')}")
 
     # Check canonical asset ID and source SHA-256
     if evidence.get("canonical_asset_id") != "test.calibration.walking-character":
@@ -235,10 +349,10 @@ def verify_evidence_chain(evidence_path=None, artifacts_dir=None, target_dir=Non
     if actual_canonical_sha256 != evidence.get("canonical_source_sha256"):
         raise ValueError(f"Canonical source SHA-256 mismatch: expected {evidence.get('canonical_source_sha256')}, got {actual_canonical_sha256}")
 
-    # Check mkxp-z pinned commit (826929e)
+    # Check mkxp_z_version string contains short commit
     ver = evidence.get("mkxp_z_version", "")
-    if "826929e" not in ver:
-        raise ValueError(f"mkxp-z commit pin violation: expected 826929e in '{ver}'")
+    if PINNED_MKXP_COMMIT[:7] not in ver:
+        raise ValueError(f"mkxp-z version string violation: expected {PINNED_MKXP_COMMIT[:7]} in '{ver}'")
 
     # Check recorded_at ISO-8601 validity
     rec_at = evidence.get("recorded_at", "")
@@ -289,7 +403,30 @@ def verify_evidence_chain(evidence_path=None, artifacts_dir=None, target_dir=Non
     if act_f_hash != evidence["fixture_manifest_sha256"]:
         raise ValueError(f"Fixture manifest hash mismatch: expected {evidence['fixture_manifest_sha256']}, got {act_f_hash}")
 
-    # 4. Runtime logs
+    # 4. Fixture script (fixture.rb)
+    fixt_script = os.path.join(fixture_dir, evidence.get("fixture_script", "fixture.rb"))
+    if not os.path.exists(fixt_script):
+        raise FileNotFoundError(f"Fixture script not found: {fixt_script}")
+    act_script_hash = compute_sha256(fixt_script)
+    if act_script_hash != evidence.get("fixture_script_sha256"):
+        raise ValueError(f"Fixture script hash mismatch: expected {evidence.get('fixture_script_sha256')}, got {act_script_hash}")
+
+    # 5. Portable runtime configuration hash checks
+    pos_conf_obj = evidence.get("positive_runtime_configuration")
+    if not isinstance(pos_conf_obj, dict):
+        raise ValueError("Missing positive_runtime_configuration in evidence")
+    calc_pos_hash = hashlib.sha256(json.dumps(pos_conf_obj, sort_keys=True, indent=2).encode("utf-8")).hexdigest()
+    if calc_pos_hash != evidence.get("positive_runtime_configuration_sha256"):
+        raise ValueError(f"Positive runtime configuration hash mismatch: expected {evidence.get('positive_runtime_configuration_sha256')}, got {calc_pos_hash}")
+
+    neg_conf_obj = evidence.get("negative_runtime_configuration")
+    if not isinstance(neg_conf_obj, dict):
+        raise ValueError("Missing negative_runtime_configuration in evidence")
+    calc_neg_hash = hashlib.sha256(json.dumps(neg_conf_obj, sort_keys=True, indent=2).encode("utf-8")).hexdigest()
+    if calc_neg_hash != evidence.get("negative_runtime_configuration_sha256"):
+        raise ValueError(f"Negative runtime configuration hash mismatch: expected {evidence.get('negative_runtime_configuration_sha256')}, got {calc_neg_hash}")
+
+    # 6. Runtime logs
     pos_log = os.path.join(artifacts_dir, evidence.get("positive_runtime_log", "positive_runtime.log"))
     if not os.path.exists(pos_log):
         raise FileNotFoundError(f"Missing positive runtime log: {pos_log}")
@@ -310,7 +447,7 @@ def verify_evidence_chain(evidence_path=None, artifacts_dir=None, target_dir=Non
     if expected_diag not in neg_text:
         raise ValueError(f"Expected diagnostic '{expected_diag}' not found in negative runtime log")
 
-    # 5. Screenshots & pixel assertions
+    # 7. Screenshots & pixel assertions
     for shot_name, exp_hash in evidence["screenshots"].items():
         shot_path = os.path.join(artifacts_dir, shot_name)
         if not os.path.exists(shot_path):
@@ -330,6 +467,7 @@ def run_capture_and_record():
     """
     Executes live mkxp-z runs under xvfb for positive and negative controls,
     captures logs, captures 640x480 screenshots, verifies pixels, and writes evidence JSON.
+    Uses temporary runtime directories to ensure repository working tree is never mutated.
     """
     cfg = get_target_config()
     mkxp_bin = shutil.which("mkxp-z")
@@ -354,33 +492,38 @@ def run_capture_and_record():
     pos_shot_path = os.path.join(cfg["artifacts_dir"], pos_shot_name)
     neg_shot_path = os.path.join(cfg["artifacts_dir"], neg_shot_name)
 
-    mkxp_json_path = os.path.join(cfg["fixture_dir"], "mkxp.json")
+    # 1. Positive Control Run (executed from temporary directory)
+    print("Executing mkxp-z positive control under xvfb from temporary runtime directory...")
+    with tempfile.TemporaryDirectory(prefix="mkxp_pos_run_") as tmp_pos_dir:
+        pos_conf = {
+            "rgssVersion": 1,
+            "gameFolder": os.path.abspath(cfg["fixture_dir"]),
+            "customScript": "fixture.rb",
+            "pathCache": True,
+            "RTP": [os.path.abspath(cfg["target_dir"])]
+        }
+        with open(os.path.join(tmp_pos_dir, "mkxp.json"), "w", encoding="utf-8") as f:
+            json.dump(pos_conf, f, indent=2)
+            f.write("\n")
 
-    # 1. Positive Control Run
-    print("Executing mkxp-z positive control under xvfb...")
-    pos_conf = {
-        "rgssVersion": 1,
-        "gameFolder": ".",
-        "customScript": "fixture.rb",
-        "pathCache": True,
-        "RTP": [cfg["target_dir"]]
-    }
-    with open(mkxp_json_path, "w", encoding="utf-8") as f:
-        json.dump(pos_conf, f, indent=2)
-        f.write("\n")
+        pos_mkv = "/tmp/rmxp_char_pos.mkv"
+        pos_cmd = (
+            f"cd {tmp_pos_dir} && "
+            f"xvfb-run -s '-screen 0 640x480x24' bash -c '"
+            f"ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i :99.0 -c:v libx264rgb -crf 0 -preset ultrafast -t 3 {pos_mkv} & "
+            f"FFMPEG_PID=$! ; sleep 0.3 ; "
+            f"ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 {mkxp_bin} > /tmp/rmxp_pos_stdout.log 2> /tmp/rmxp_pos_stderr.log ; "
+            f"echo $? > /tmp/rmxp_pos_exit_code ; "
+            f"wait $FFMPEG_PID'"
+        )
+        subprocess.run(pos_cmd, shell=True, check=True)
+        extract_pos_cmd = ["ffmpeg", "-y", "-ss", "00:00:01.0", "-i", pos_mkv, "-frames:v", "1", pos_shot_path]
+        subprocess.run(extract_pos_cmd, capture_output=True, check=True)
 
-    pos_mkv = "/tmp/rmxp_char_pos.mkv"
-    pos_cmd = (
-        f"cd {cfg['fixture_dir']} && "
-        f"xvfb-run -s '-screen 0 640x480x24' bash -c '"
-        f"ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i :99.0 -c:v libx264rgb -crf 0 -preset ultrafast -t 3 {pos_mkv} & "
-        f"FFMPEG_PID=$! ; sleep 0.3 ; "
-        f"ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 {mkxp_bin} > /tmp/rmxp_pos_stdout.log 2> /tmp/rmxp_pos_stderr.log ; "
-        f"wait $FFMPEG_PID'"
-    )
-    subprocess.run(pos_cmd, shell=True, check=True)
-    extract_pos_cmd = ["ffmpeg", "-y", "-ss", "00:00:01.0", "-i", pos_mkv, "-frames:v", "1", pos_shot_path]
-    subprocess.run(extract_pos_cmd, capture_output=True, check=True)
+    with open("/tmp/rmxp_pos_exit_code", "r") as f:
+        pos_exit_code = int(f.read().strip())
+    if pos_exit_code != 0:
+        raise RuntimeError(f"Positive control mkxp-z failed with exit code {pos_exit_code}")
 
     with open("/tmp/rmxp_pos_stdout.log", "r", encoding="utf-8", errors="replace") as f_out:
         pos_stdout = f_out.read()
@@ -394,31 +537,38 @@ def run_capture_and_record():
     ver_match = re.search(r"MKXP-Z VERSION:\s*(\S+)", pos_stdout)
     mkxp_version = ver_match.group(1) if ver_match else "unknown"
 
-    # 2. Negative Control Run
-    print("Executing mkxp-z negative control under xvfb...")
-    neg_conf = {
-        "rgssVersion": 1,
-        "gameFolder": ".",
-        "customScript": "fixture.rb",
-        "pathCache": True,
-        "RTP": []
-    }
-    with open(mkxp_json_path, "w", encoding="utf-8") as f:
-        json.dump(neg_conf, f, indent=2)
-        f.write("\n")
+    # 2. Negative Control Run (executed from temporary directory)
+    print("Executing mkxp-z negative control under xvfb from temporary runtime directory...")
+    with tempfile.TemporaryDirectory(prefix="mkxp_neg_run_") as tmp_neg_dir:
+        neg_conf = {
+            "rgssVersion": 1,
+            "gameFolder": os.path.abspath(cfg["fixture_dir"]),
+            "customScript": "fixture.rb",
+            "pathCache": True,
+            "RTP": []
+        }
+        with open(os.path.join(tmp_neg_dir, "mkxp.json"), "w", encoding="utf-8") as f:
+            json.dump(neg_conf, f, indent=2)
+            f.write("\n")
 
-    neg_mkv = "/tmp/rmxp_char_neg.mkv"
-    neg_cmd = (
-        f"cd {cfg['fixture_dir']} && "
-        f"xvfb-run -s '-screen 0 640x480x24' bash -c '"
-        f"ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i :99.0 -c:v libx264rgb -crf 0 -preset ultrafast -t 2 {neg_mkv} & "
-        f"FFMPEG_PID=$! ; sleep 0.3 ; "
-        f"ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 {mkxp_bin} > /tmp/rmxp_neg_stdout.log 2> /tmp/rmxp_neg_stderr.log || true ; "
-        f"wait $FFMPEG_PID'"
-    )
-    subprocess.run(neg_cmd, shell=True, check=True)
-    extract_neg_cmd = ["ffmpeg", "-y", "-ss", "00:00:00.8", "-i", neg_mkv, "-frames:v", "1", neg_shot_path]
-    subprocess.run(extract_neg_cmd, capture_output=True, check=True)
+        neg_mkv = "/tmp/rmxp_char_neg.mkv"
+        neg_cmd = (
+            f"cd {tmp_neg_dir} && "
+            f"xvfb-run -s '-screen 0 640x480x24' bash -c '"
+            f"ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i :99.0 -c:v libx264rgb -crf 0 -preset ultrafast -t 2 {neg_mkv} & "
+            f"FFMPEG_PID=$! ; sleep 0.3 ; "
+            f"ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 {mkxp_bin} > /tmp/rmxp_neg_stdout.log 2> /tmp/rmxp_neg_stderr.log ; "
+            f"echo $? > /tmp/rmxp_neg_exit_code ; "
+            f"wait $FFMPEG_PID'"
+        )
+        subprocess.run(neg_cmd, shell=True, check=True)
+        extract_neg_cmd = ["ffmpeg", "-y", "-ss", "00:00:00.8", "-i", neg_mkv, "-frames:v", "1", neg_shot_path]
+        subprocess.run(extract_neg_cmd, capture_output=True, check=True)
+
+    with open("/tmp/rmxp_neg_exit_code", "r") as f:
+        neg_exit_code = int(f.read().strip())
+    if neg_exit_code != 1:
+        raise RuntimeError(f"Negative control mkxp-z expected exit code 1, got {neg_exit_code}")
 
     with open("/tmp/rmxp_neg_stdout.log", "r", encoding="utf-8", errors="replace") as f_out:
         neg_stdout = f_out.read()
@@ -428,30 +578,65 @@ def run_capture_and_record():
     with open(neg_log_path, "w", encoding="utf-8") as f:
         f.write(neg_log_content)
 
-    # Restore clean fixture state for mkxp.json
-    with open(mkxp_json_path, "w", encoding="utf-8") as f:
-        json.dump(neg_conf, f, indent=2)
-        f.write("\n")
-
     # 3. Pixel verification
     pos_vis = verify_rmxp_screenshot(pos_shot_path, mode="positive")
     neg_vis = verify_rmxp_screenshot(neg_shot_path, mode="negative_control")
 
-    # 4. Build evidence JSON
+    # 4. Build portable config templates and compute hashes
+    pos_cfg_portable = {
+        "rgssVersion": 1,
+        "gameFolder": "tests/fixtures/rmxp_character_min",
+        "customScript": "fixture.rb",
+        "pathCache": True,
+        "RTP": ["generated/rmxp"]
+    }
+    neg_cfg_portable = {
+        "rgssVersion": 1,
+        "gameFolder": "tests/fixtures/rmxp_character_min",
+        "customScript": "fixture.rb",
+        "pathCache": True,
+        "RTP": []
+    }
+    pos_cfg_sha256 = hashlib.sha256(json.dumps(pos_cfg_portable, sort_keys=True, indent=2).encode("utf-8")).hexdigest()
+    neg_cfg_sha256 = hashlib.sha256(json.dumps(neg_cfg_portable, sort_keys=True, indent=2).encode("utf-8")).hexdigest()
+
+    # 5. Build evidence JSON
     canonical_rgba = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character.rgba")
     target_manifest = os.path.join(cfg["target_dir"], "manifest.json")
     target_char = os.path.join(cfg["target_dir"], "Graphics", "Characters", "001-Fighter01.png")
     fixt_manifest = os.path.join(cfg["fixture_dir"], "fixture_manifest.json")
+    fixt_script = os.path.join(cfg["fixture_dir"], "fixture.rb")
 
     evidence = {
         "target": cfg["target"],
+        "engine": "RPG Maker XP",
         "engine_mode": cfg["engine"],
-        "requested_character": cfg["expected_character_slot"],
+        "runtime": "mkxp-z",
+        "runtime_commit": PINNED_MKXP_COMMIT,
+        "rgss_version": 1,
+        "target_category": "Character",
+        "requested_resource": f"Graphics/Characters/{cfg['expected_character_slot']}",
+        "source_character_index": 0,
+        "transform_policy": "rm2k_to_rgss1_character_4x4",
+        "mkxp_z_build_configuration": {
+            "workdir_current": True,
+            "static_executable": False,
+            "mri_version": "3.3",
+            "shared_fluid": False
+        },
         "canonical_asset_id": "test.calibration.walking-character",
         "canonical_source_sha256": compute_sha256(canonical_rgba),
         "target_manifest_sha256": compute_sha256(target_manifest),
         "target_character_sha256": compute_sha256(target_char),
         "fixture_manifest_sha256": compute_sha256(fixt_manifest),
+        "fixture_script": "fixture.rb",
+        "fixture_script_sha256": compute_sha256(fixt_script),
+        "positive_runtime_configuration": pos_cfg_portable,
+        "positive_runtime_configuration_sha256": pos_cfg_sha256,
+        "negative_runtime_configuration": neg_cfg_portable,
+        "negative_runtime_configuration_sha256": neg_cfg_sha256,
+        "positive_exit_code": pos_exit_code,
+        "negative_exit_code": neg_exit_code,
         "positive_runtime_log": "positive_runtime.log",
         "positive_runtime_log_sha256": compute_sha256(pos_log_path),
         "negative_runtime_log": "negative_runtime.log",

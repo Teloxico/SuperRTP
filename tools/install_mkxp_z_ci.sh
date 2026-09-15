@@ -21,10 +21,55 @@ echo "Installing mkxp-z build dependencies..."
 if command -v apt-get >/dev/null 2>&1; then
   sudo apt-get update
   sudo apt-get install -y --no-install-recommends \
-    meson ninja-build xxd \
+    meson ninja-build xxd cmake \
     libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev \
     libopenal-dev libvorbis-dev libogg-dev libphysfs-dev libtheora-dev \
     ruby-dev
+fi
+
+# Ensure SDL2_sound is available (Homebrew or compile from source)
+if command -v brew >/dev/null 2>&1; then
+  echo "Checking Homebrew sdl2_sound..."
+  if ! brew list sdl2_sound >/dev/null 2>&1; then
+    brew install sdl2_sound || true
+  fi
+elif [[ -x "/home/linuxbrew/.linuxbrew/bin/brew" ]]; then
+  eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  if ! brew list sdl2_sound >/dev/null 2>&1; then
+    brew install sdl2_sound || true
+  fi
+fi
+
+if ! pkg-config --exists SDL2_sound 2>/dev/null && ! [ -f /usr/local/lib/libSDL2_sound.so ] && ! [ -f /home/linuxbrew/.linuxbrew/lib/libSDL2_sound.so ]; then
+  echo "Building SDL_sound v2.0.4 from source..."
+  TMP_SDL_SOUND=$(mktemp -d /tmp/sdl-sound-build-XXXXXX)
+  git clone --depth 1 -b v2.0.4 https://github.com/icculus/SDL_sound.git "${TMP_SDL_SOUND}"
+  cmake -S "${TMP_SDL_SOUND}" -B "${TMP_SDL_SOUND}/build" \
+    -DSDLSOUND_BUILD_TEST=OFF \
+    -DSDLSOUND_BUILD_SHARED=ON \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/usr/local
+  cmake --build "${TMP_SDL_SOUND}/build" -j"$(nproc)"
+  if command -v sudo >/dev/null 2>&1; then
+    sudo cmake --install "${TMP_SDL_SOUND}/build"
+    sudo ldconfig || true
+  else
+    cmake --install "${TMP_SDL_SOUND}/build" --prefix "${HOME}/.local"
+  fi
+  rm -rf "${TMP_SDL_SOUND}"
+fi
+
+EXTRA_LINK_ARGS="['-ltheoradec']"
+if [[ -d "/home/linuxbrew/.linuxbrew/lib" ]]; then
+  export PKG_CONFIG_PATH="/home/linuxbrew/.linuxbrew/lib/pkgconfig:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+  export LD_LIBRARY_PATH="/home/linuxbrew/.linuxbrew/lib:${LD_LIBRARY_PATH:-}"
+  export LIBRARY_PATH="/home/linuxbrew/.linuxbrew/lib:${LIBRARY_PATH:-}"
+  EXTRA_LINK_ARGS="['-ltheoradec', '-Wl,-rpath,/home/linuxbrew/.linuxbrew/lib']"
+fi
+if [[ -d "/usr/local/lib" ]]; then
+  export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
+  export LD_LIBRARY_PATH="/usr/local/lib:${LD_LIBRARY_PATH:-}"
+  export LIBRARY_PATH="/usr/local/lib:${LIBRARY_PATH:-}"
 fi
 
 BUILD_DIR=$(mktemp -d /tmp/mkxp-z-build-XXXXXX)
@@ -42,7 +87,7 @@ meson setup build \
   -Dmri_version=3.3 \
   -Dshared_fluid=false \
   -Dcpp_args="-D_TTF_Font=TTF_Font" \
-  -Dcpp_link_args="['-ltheoradec']"
+  -Dcpp_link_args="${EXTRA_LINK_ARGS}"
 
 echo "Compiling mkxp-z..."
 ninja -C build

@@ -11,13 +11,13 @@ GLSL Version : 4.50
 Loading path cache... 
 Path cache completed. 
 
-(process:339946): GLib-GObject-CRITICAL **: 09:23:03.905: g_param_spec_enum: assertion 'g_enum_get_value (enum_class, default_value) != NULL' failed
+(process:479761): GLib-GObject-CRITICAL **: 10:15:25.902: g_param_spec_enum: assertion 'g_enum_get_value (enum_class, default_value) != NULL' failed
 
-(process:339946): GLib-GObject-CRITICAL **: 09:23:03.905: validate_pspec_to_install: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+(process:479761): GLib-GObject-CRITICAL **: 10:15:25.902: validate_pspec_to_install: assertion 'G_IS_PARAM_SPEC (pspec)' failed
 
-(process:339946): GLib-GObject-CRITICAL **: 09:23:03.905: g_param_spec_ref_sink: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+(process:479761): GLib-GObject-CRITICAL **: 10:15:25.902: g_param_spec_ref_sink: assertion 'G_IS_PARAM_SPEC (pspec)' failed
 
-(process:339946): GLib-GObject-CRITICAL **: 09:23:03.905: g_param_spec_unref: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+(process:479761): GLib-GObject-CRITICAL **: 10:15:25.902: g_param_spec_unref: assertion 'G_IS_PARAM_SPEC (pspec)' failed
 Warning: No soundfont specified, sound might be mute 
 Warning: No soundfont specified, sound might be mute 
 Primary font not found: Arial 
