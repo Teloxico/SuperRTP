@@ -362,10 +362,10 @@ class TestRMXPVerticalSlice(unittest.TestCase):
             cmd = (
                 f"cd {tmp_dir} && "
                 f"xvfb-run -a -s '-screen 0 640x480x24' bash -c '"
-                f"SDL_AUDIODRIVER=dummy ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 LIBGL_ALWAYS_SOFTWARE=1 {mkxp_bin}'"
+                f"SDL_AUDIODRIVER=dummy ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 LIBGL_ALWAYS_SOFTWARE=1 {mkxp_bin} 2>&1'"
             )
             res = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            self.assertEqual(res.returncode, 0, f"mkxp-z exited with code {res.returncode}:\n{res.stdout}\n{res.stderr}")
+            self.assertEqual(res.returncode, 0, f"mkxp-z exited with code {res.returncode}:\n{res.stdout}")
             self.assertIn("MKXP-Z VERSION: 2.4.2/826929e", res.stdout)
             self.assertIn("SUPERRTP_RMXP_CHARACTER_LOADED 96x128", res.stdout)
             self.assertIn("SUPERRTP_RMXP_RENDER_DONE", res.stdout)
@@ -398,11 +398,11 @@ class TestRMXPVerticalSlice(unittest.TestCase):
             cmd = (
                 f"cd {tmp_dir} && "
                 f"xvfb-run -a -s '-screen 0 640x480x24' bash -c '"
-                f"SDL_AUDIODRIVER=dummy ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 LIBGL_ALWAYS_SOFTWARE=1 {mkxp_bin}'"
+                f"SDL_AUDIODRIVER=dummy ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 LIBGL_ALWAYS_SOFTWARE=1 {mkxp_bin} 2>&1'"
             )
             res = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
-            self.assertEqual(res.returncode, 1, f"Expected exit code 1 for negative control, got {res.returncode}")
-            self.assertIn("SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01", res.stderr)
+            self.assertEqual(res.returncode, 1, f"Expected exit code 1 for negative control, got {res.returncode}:\n{res.stdout}")
+            self.assertIn("SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01", res.stdout)
 
     def test_11_evidence_chain_and_pixel_verification(self):
         """Verify complete durable evidence chain and pixel verification for RMXP."""
