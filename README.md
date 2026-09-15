@@ -123,7 +123,7 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
 ```bash
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_vertical_slice.py
 ```
-Executes 22 mechanical checks:
+Executes 23 mechanical checks:
 1. Canonical master RGBA and preview deterministic reproducibility (CharSet)
 2. Target PNG structural compliance (288×256, 8-bit indexed, color type 3, index 0 transparent)
 3. Provenance schema completeness and clean-room attestations
@@ -141,11 +141,12 @@ Executes 22 mechanical checks:
 15. Real EasyRPG Player headless RM2003 missing-asset fallback (negative control, exact failure isolation)
 16. RM2003 four-direction runtime verification evidence chain & directional arrow assertions
 17. ChipSet canonical asset reproducibility, schemas, and engine-specific slot mappings (RM2000 Basis vs RM2003 Main/Basic)
-18. ChipSet target builder, cross-target byte determinism, and validator compliance
+18. ChipSet multi-category target builder, manifest semantic category presence, category mismatch rejection, and cross-target byte determinism
 19. RM2000 and RM2003 clean-room ChipSet fixture manifests, dynamic LCF regeneration, and bundled graphics
 20. Real EasyRPG Player RM2000 ChipSet positive control (Basis) and negative control (`Image not found: ChipSet/Basis`)
 21. Real EasyRPG Player RM2003 ChipSet positive control (Main) and negative control (`Image not found: ChipSet/Main`)
 22. Durable ChipSet runtime verification evidence chain, hashes, and upper/lower layer transparency composition
+23. Adversarial evidence-tamper rejection verifying all bound inputs (canonical source, target World.png, manifests, logs, diagnostics, screenshots, engine modes, slots, EasyRPG version)
 
 ### 2. Generate Clean-Room Fixture Graphics
 ```bash

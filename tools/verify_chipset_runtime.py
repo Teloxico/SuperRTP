@@ -169,13 +169,19 @@ def verify_chipset_screenshot(screenshot_path, mode="positive", target="rm2000")
         }
     }
 
-def verify_evidence_chain(target="rm2000"):
+def verify_evidence_chain(target="rm2000", evidence_path=None, artifacts_dir=None, target_dir=None, fixture_dir=None, canonical_rgba_path=None):
     """Verifies complete cryptographic hashes and visual evidence chain for ChipSet."""
     cfg = get_target_config(target)
-    evidence_path = cfg["evidence_path"]
-    artifacts_dir = cfg["artifacts_dir"]
-    target_dir = cfg["target_dir"]
-    fixture_dir = cfg["fixture_dir"]
+    if evidence_path is None:
+        evidence_path = cfg["evidence_path"]
+    if artifacts_dir is None:
+        artifacts_dir = cfg["artifacts_dir"]
+    if target_dir is None:
+        target_dir = cfg["target_dir"]
+    if fixture_dir is None:
+        fixture_dir = cfg["fixture_dir"]
+    if canonical_rgba_path is None:
+        canonical_rgba_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_map_chipset.rgba")
 
     if not os.path.exists(evidence_path):
         raise FileNotFoundError(f"Verification evidence file not found: {evidence_path}")
@@ -190,6 +196,55 @@ def verify_evidence_chain(target="rm2000"):
     print(f"Canonical Asset: {evidence.get('canonical_asset_id')}")
     print(f"EasyRPG Version: {evidence.get('easyrpg_version')}")
     print(f"Recorded Date:   {evidence.get('recorded_at')}")
+
+    # Check target and engine mode
+    if evidence.get("target") != cfg["target"]:
+        raise ValueError(f"Evidence target mismatch: expected {cfg['target']}, got {evidence.get('target')}")
+    if evidence.get("engine_mode") != cfg["engine"]:
+        raise ValueError(f"Evidence engine_mode mismatch: expected {cfg['engine']}, got {evidence.get('engine_mode')}")
+
+    # Check requested chipset slot alias
+    if evidence.get("requested_chipset") != cfg["expected_chipset_alias"]:
+        raise ValueError(f"Evidence requested_chipset mismatch: expected {cfg['expected_chipset_alias']}, got {evidence.get('requested_chipset')}")
+
+    # Check canonical asset ID and canonical source SHA-256
+    if evidence.get("canonical_asset_id") != "test.calibration.map-chipset":
+        raise ValueError(f"Unexpected canonical_asset_id: {evidence.get('canonical_asset_id')}")
+    if not os.path.exists(canonical_rgba_path):
+        raise FileNotFoundError(f"Canonical RGBA source file missing: {canonical_rgba_path}")
+    actual_canonical_sha256 = compute_sha256(canonical_rgba_path)
+    if actual_canonical_sha256 != evidence.get("canonical_source_sha256"):
+        raise ValueError(f"Canonical source SHA-256 mismatch: expected {evidence.get('canonical_source_sha256')}, got {actual_canonical_sha256}")
+
+    # Check EasyRPG pinned version
+    ver = evidence.get("easyrpg_version", "")
+    if "0.8.1.1" not in ver:
+        raise ValueError(f"EasyRPG version pin violation: expected 0.8.1.1 in '{ver}'")
+
+    # Check recorded_at ISO-8601 validity
+    rec_at = evidence.get("recorded_at", "")
+    try:
+        datetime.fromisoformat(rec_at.replace("Z", "+00:00"))
+    except Exception as e:
+        raise ValueError(f"Invalid recorded_at ISO-8601 timestamp '{rec_at}': {e}")
+
+    # Check negative_control structure
+    neg_control = evidence.get("negative_control")
+    if not isinstance(neg_control, dict):
+        raise ValueError("Missing or invalid negative_control sub-object in evidence")
+    if neg_control.get("status") != "VERIFIED":
+        raise ValueError(f"negative_control.status mismatch: expected 'VERIFIED', got {neg_control.get('status')}")
+    expected_missing = f"ChipSet/{cfg['expected_chipset_alias']}"
+    if neg_control.get("expected_missing_asset") != expected_missing:
+        raise ValueError(f"negative_control.expected_missing_asset mismatch: expected '{expected_missing}', got {neg_control.get('expected_missing_asset')}")
+    expected_diag = f"Image not found: ChipSet/{cfg['expected_chipset_alias']}"
+    if neg_control.get("diagnostic") != expected_diag:
+        raise ValueError(f"negative_control.diagnostic mismatch: expected '{expected_diag}', got {neg_control.get('diagnostic')}")
+    neg_shot_key = neg_control.get("screenshot")
+    if not neg_shot_key or neg_shot_key not in evidence.get("screenshots", {}):
+        raise ValueError(f"negative_control screenshot '{neg_shot_key}' not present in evidence screenshots")
+    if neg_control.get("screenshot_sha256") != evidence["screenshots"][neg_shot_key]:
+        raise ValueError("negative_control screenshot_sha256 mismatch with screenshots table")
 
     # 1. Target manifest
     target_manifest = os.path.join(target_dir, "manifest.json")
@@ -231,7 +286,6 @@ def verify_evidence_chain(target="rm2000"):
         raise ValueError(f"Negative runtime log hash mismatch: expected {evidence['negative_runtime_log_sha256']}, got {act_neg_log_hash}")
 
     # Diagnostic check in negative log
-    expected_diag = f"Image not found: ChipSet/{cfg['expected_chipset_alias']}"
     with open(neg_log, "r", encoding="utf-8", errors="replace") as nlf:
         neg_text = nlf.read()
     if expected_diag not in neg_text:

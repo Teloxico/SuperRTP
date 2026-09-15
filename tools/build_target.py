@@ -200,8 +200,11 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
 
         print(f"  [TRANSFORM] {source_file_rel} -> {slot_rel_path} (SHA-256: {target_sha256[:12]}...)")
 
+        category_name = slot_info.get("category", "")
+
         manifest_entries.append({
             "slot": slot_rel_path,
+            "category": category_name,
             "is_primary": True,
             "asset_id": asset_id,
             "sha256": target_sha256,
@@ -217,6 +220,7 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
             print(f"  [ALIAS] {alias_rel} <- {slot_rel_path}")
             manifest_entries.append({
                 "slot": alias_rel,
+                "category": category_name,
                 "is_primary": False,
                 "primary_slot": slot_rel_path,
                 "asset_id": asset_id,
