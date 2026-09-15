@@ -1,0 +1,7 @@
+{
+  "rgssVersion": 2,
+  "gameFolder": ".",
+  "customScript": "fixture.rb",
+  "pathCache": true,
+  "RTP": []
+}

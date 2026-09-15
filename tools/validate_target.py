@@ -334,6 +334,147 @@ def validate_png_rmxp_character(filepath):
         "directions": ["DOWN", "LEFT", "RIGHT", "UP"]
     }
 
+def validate_png_rmvx_character(filepath):
+    """Validates RPG Maker VX / RGSS2 standard 8-character sheet technical specifications and calibration geometry."""
+    with open(filepath, "rb") as f:
+        data = f.read()
+
+    chunks = parse_png_chunks(data)
+    chunk_types = [c[0] for c in chunks]
+
+    # Required chunks in order
+    if not chunk_types or chunk_types[0] != "IHDR":
+        raise ValueError("PNG must start with IHDR chunk")
+    if "PLTE" in chunk_types:
+        raise ValueError("Unexpected PLTE (Palette) chunk: RPG Maker VX character sheets must be truecolor RGBA")
+    if "IDAT" not in chunk_types:
+        raise ValueError("Missing IDAT chunk")
+    if chunk_types[-1] != "IEND":
+        raise ValueError("PNG must terminate with IEND chunk")
+
+    # Inspect IHDR
+    ihdr_data = next(c[1] for c in chunks if c[0] == "IHDR")
+    width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
+
+    if width != 288 or height != 256:
+        raise ValueError(f"Invalid VX Character dimensions: expected 288x256, got {width}x{height}")
+    if bit_depth != 8:
+        raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
+    if color_type != 6:
+        raise ValueError(f"Invalid color type: expected 6 (RGBA truecolor), got {color_type}")
+    if compression != 0 or filter_method != 0 or interlace != 0:
+        raise ValueError("Unsupported compression/filter/interlace method")
+
+    # Decompress IDAT and reconstruct 32-bit RGBA pixel grid
+    idat_data = b''.join(c[1] for c in chunks if c[0] == "IDAT")
+    raw = bytearray(zlib.decompress(idat_data))
+    bpp = 4
+    stride = 1 + width * bpp
+    if len(raw) != height * stride:
+        raise ValueError(f"Decompressed IDAT size mismatch: expected {height * stride}, got {len(raw)}")
+
+    recon = bytearray(width * height * bpp)
+    prior = bytearray(width * bpp)
+
+    for y in range(height):
+        filter_type = raw[y * stride]
+        filt = raw[y * stride + 1 : (y + 1) * stride]
+        line = bytearray(width * bpp)
+
+        if filter_type == 0:
+            line[:] = filt
+        elif filter_type == 1:
+            for x in range(width * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                line[x] = (filt[x] + a) & 0xff
+        elif filter_type == 2:
+            for x in range(width * bpp):
+                line[x] = (filt[x] + prior[x]) & 0xff
+        elif filter_type == 3:
+            for x in range(width * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                line[x] = (filt[x] + ((a + prior[x]) >> 1)) & 0xff
+        elif filter_type == 4:
+            for x in range(width * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                b = prior[x]
+                c = prior[x - bpp] if x >= bpp else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+                line[x] = (filt[x] + pr) & 0xff
+        else:
+            raise ValueError(f"Unknown PNG filter type {filter_type}")
+
+        prior[:] = line
+        recon[y * width * bpp : (y + 1) * width * bpp] = line
+
+    def get_pixel(x, y):
+        idx = (y * width + x) * 4
+        return (recon[idx], recon[idx + 1], recon[idx + 2], recon[idx + 3])
+
+    # Check alpha distribution
+    alphas = set(recon[3::4])
+    if 0 not in alphas:
+        raise ValueError("Missing transparent pixels (alpha 0) in VX character sheet")
+    if 255 not in alphas:
+        raise ValueError("Missing fully opaque pixels (alpha 255) in VX character sheet")
+
+    # Check grid divisibility: 4x2 characters, each character 72x128 with 3 columns x 4 rows of 24x32
+    if width % 12 != 0 or height % 8 != 0:
+        raise ValueError(f"Dimensions {width}x{height} not divisible by 12x8 standard VX cells")
+
+    # Check directional arrow orientation on Idle column (Col 1 of each character block) for all 8 characters
+    for char_idx in range(8):
+        char_x = (char_idx % 4) * 72
+        char_y = (char_idx // 4) * 128
+        idle_x = char_x + 24  # Col 1 (Idle column) starts at +24
+
+        # Row 0: DOWN (tip at bottom, notch at top)
+        r0_tip = get_pixel(idle_x + 11, char_y + 0 * 32 + 21)
+        r0_notch = get_pixel(idle_x + 11, char_y + 0 * 32 + 6)
+        if r0_tip[3] == 0:
+            raise ValueError(f"Character {char_idx} Row 0 arrow orientation error: expected DOWN facing arrow tip at center-bottom")
+        if r0_notch[3] != 0:
+            raise ValueError(f"Character {char_idx} Row 0 arrow orientation error: expected DOWN facing arrow notch at center-top")
+
+        # Row 1: LEFT (tip at left, notch at right)
+        r1_tip = get_pixel(idle_x + 4, char_y + 1 * 32 + 13)
+        r1_notch = get_pixel(idle_x + 19, char_y + 1 * 32 + 13)
+        if r1_tip[3] == 0:
+            raise ValueError(f"Character {char_idx} Row 1 arrow orientation error: expected LEFT facing arrow tip at center-left")
+        if r1_notch[3] != 0:
+            raise ValueError(f"Character {char_idx} Row 1 arrow orientation error: expected LEFT facing arrow notch at center-right")
+
+        # Row 2: RIGHT (tip at right, notch at left)
+        r2_tip = get_pixel(idle_x + 19, char_y + 2 * 32 + 13)
+        r2_notch = get_pixel(idle_x + 4, char_y + 2 * 32 + 13)
+        if r2_tip[3] == 0:
+            raise ValueError(f"Character {char_idx} Row 2 arrow orientation error: expected RIGHT facing arrow tip at center-right")
+        if r2_notch[3] != 0:
+            raise ValueError(f"Character {char_idx} Row 2 arrow orientation error: expected RIGHT facing arrow notch at center-left")
+
+        # Row 3: UP (tip at top, notch at bottom)
+        r3_tip = get_pixel(idle_x + 11, char_y + 3 * 32 + 5)
+        r3_notch = get_pixel(idle_x + 11, char_y + 3 * 32 + 21)
+        if r3_tip[3] == 0:
+            raise ValueError(f"Character {char_idx} Row 3 arrow orientation error: expected UP facing arrow tip at center-top")
+        if r3_notch[3] != 0:
+            raise ValueError(f"Character {char_idx} Row 3 arrow orientation error: expected UP facing arrow notch at center-bottom")
+
+    return {
+        "width": width,
+        "height": height,
+        "bit_depth": bit_depth,
+        "color_type": color_type,
+        "num_colors": "truecolor-rgba",
+        "has_trns": False,
+        "frame_cell": "24x32",
+        "character_block": "72x128",
+        "grid": "4x2 characters (12x8 cells)",
+        "directions": ["DOWN", "LEFT", "RIGHT", "UP"]
+    }
+
 def validate_schemas(repo_root, target):
     """Enforces JSON Schema validation on registry files."""
     slots_path = os.path.join(repo_root, "registry", "slots", f"{target}.json")
@@ -562,8 +703,14 @@ def validate_target(target, target_dir=None):
                 specs = validate_png_charset(filepath)
                 spec_desc = f"{specs['width']}x{specs['height']}, {specs['num_colors']} colors, indexed-8, index 0 transparent (tRNS={specs['has_trns']})"
             elif cat_norm == "character":
-                specs = validate_png_rmxp_character(filepath)
-                spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 4x4 frames (Down, Left, Right, Up)"
+                if target == "rmxp":
+                    specs = validate_png_rmxp_character(filepath)
+                    spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 4x4 frames (Down, Left, Right, Up)"
+                elif target == "rmvx":
+                    specs = validate_png_rmvx_character(filepath)
+                    spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 8 characters (4x2), 3x4 frames each (Down, Left, Right, Up)"
+                else:
+                    raise ValueError(f"Unsupported target '{target}' for character category")
             else:
                 raise ValueError(f"Unknown or unsupported semantic category '{manifest_category}' for slot '{slot}'")
             print(f"  PASSED PNG specs: {spec_desc}")

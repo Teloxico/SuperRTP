@@ -17,7 +17,7 @@
   },
   "canonical_asset_id": "test.calibration.walking-character",
   "canonical_source_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
-  "target_manifest_sha256": "81fbeaabc37c2a24ae81d26f4917d3a3544ca27dc41661a434067e49ba8180ff",
+  "target_manifest_sha256": "1156eaaae54874ca18d6d63e3e0c0c63ba948f3f7ce5d3a55321765516abc0c0",
   "target_character_sha256": "b4e81694247632b5580b5eef55a17e61c6afd709092de0e574aed70b41759743",
   "fixture_manifest_sha256": "56cafb5894ce9cc23ca3eaa1a51f34c1359537d78d14964d311210602d06f703",
   "fixture_script": "fixture.rb",

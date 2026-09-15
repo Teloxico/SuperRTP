@@ -212,6 +212,82 @@ def transform_canonical_to_rmxp_character(source_bytes: bytes, char_idx: int = 0
     semantic_frames = extract_walking_frames(source_bytes, char_idx=char_idx)
     return pack_rmxp_character(semantic_frames)
 
+def pack_rmvx_character_sheet(semantic_characters: list, frame_w: int = 24, frame_h: int = 32) -> bytes:
+    """
+    Packs 8 semantic walking characters into an RPG Maker VX / RGSS2 compliant standard 8-character sheet.
+
+    Input:
+      semantic_characters: list of 8 dicts, where each element is:
+        frames[direction][phase] -> bytes (frame_w * frame_h * 4 RGBA bytes)
+        direction in ("DOWN", "LEFT", "RIGHT", "UP")
+        phase in ("STEP_LEFT", "IDLE", "STEP_RIGHT")
+
+    Target layout policy (RPG Maker VX / RGSS2 standard sheet):
+      - 8 characters arranged in a 4x2 grid (characters 0..3 on top row, 4..7 on bottom row)
+      - Each character block: 3 columns x 4 rows
+      - Rows (directions): DOWN, LEFT, RIGHT, UP
+      - Columns (animation patterns): STEP_LEFT, IDLE, STEP_RIGHT
+      - Total sheet dimensions: (4 * 3 * frame_w) x (2 * 4 * frame_h) = (12 * 24) x (8 * 32) = 288 x 256 px
+      - Output: 32-bit truecolor RGBA PNG (Color Type 6) with deterministic RFC 1951 stored blocks.
+    """
+    if not isinstance(semantic_characters, (list, tuple)) or len(semantic_characters) != 8:
+        raise ValueError(f"Expected exactly 8 semantic characters for standard VX sheet, got {len(semantic_characters) if hasattr(semantic_characters, '__len__') else type(semantic_characters)}")
+
+    dst_width = 12 * frame_w  # 288 px
+    dst_height = 8 * frame_h  # 256 px
+    dst_rgba = bytearray(dst_width * dst_height * 4)
+
+    vx_row_order = ["DOWN", "LEFT", "RIGHT", "UP"]
+    vx_col_phases = ["STEP_LEFT", "IDLE", "STEP_RIGHT"]
+
+    for char_idx, char_frames in enumerate(semantic_characters):
+        char_grid_x = char_idx % 4
+        char_grid_y = char_idx // 4
+        char_base_x = char_grid_x * (3 * frame_w)
+        char_base_y = char_grid_y * (4 * frame_h)
+
+        for row_idx, direction in enumerate(vx_row_order):
+            if direction not in char_frames:
+                raise KeyError(f"Missing required direction '{direction}' for character {char_idx}")
+            for col_idx, phase in enumerate(vx_col_phases):
+                if phase not in char_frames[direction]:
+                    raise KeyError(f"Missing required phase '{phase}' for direction '{direction}' in character {char_idx}")
+                frame_raw = char_frames[direction][phase]
+                expected_frame_len = frame_w * frame_h * 4
+                if len(frame_raw) != expected_frame_len:
+                    raise ValueError(f"Frame length mismatch for char {char_idx}/{direction}/{phase}: expected {expected_frame_len}, got {len(frame_raw)}")
+
+                dst_frame_x = char_base_x + col_idx * frame_w
+                dst_frame_y = char_base_y + row_idx * frame_h
+
+                for py in range(frame_h):
+                    src_offset = py * frame_w * 4
+                    dst_offset = ((dst_frame_y + py) * dst_width + dst_frame_x) * 4
+                    dst_rgba[dst_offset : dst_offset + frame_w * 4] = frame_raw[src_offset : src_offset + frame_w * 4]
+
+    return create_rgba_png(dst_width, dst_height, bytes(dst_rgba))
+
+def transform_canonical_to_rmvx_character(source_bytes: bytes, source_indices: list = None) -> bytes:
+    """
+    Transforms neutral 32-bit RGBA canonical 2k-family walking character sheet (288x256)
+    into an RPG Maker VX / RGSS2 compliant standard 8-character sheet (288x256).
+
+    Decoupled pipeline:
+      Canonical 2k sheet -> extract_walking_frames() for each character index
+      -> Semantic Frames (UP/RIGHT/DOWN/LEFT, STEP_LEFT/IDLE/STEP_RIGHT)
+      -> pack_rmvx_character_sheet() -> VX standard 8-character RGBA PNG
+    """
+    if source_indices is None:
+        source_indices = list(range(8))
+    if len(source_indices) != 8:
+        raise ValueError(f"Expected exactly 8 source character indices, got {len(source_indices)}")
+
+    semantic_characters = [
+        extract_walking_frames(source_bytes, char_idx=idx)
+        for idx in source_indices
+    ]
+    return pack_rmvx_character_sheet(semantic_characters)
+
 def get_reproducible_timestamp():
     """Returns a deterministic ISO-8601 timestamp based on SOURCE_DATE_EPOCH if set."""
     sde = os.environ.get("SOURCE_DATE_EPOCH")
@@ -300,6 +376,9 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
         elif target == "rmxp" and category == "character":
             char_idx = slot_info.get("character_index", 0)
             target_png = transform_canonical_to_rmxp_character(source_bytes, char_idx=char_idx)
+        elif target == "rmvx" and category == "character":
+            source_indices = slot_info.get("source_character_indices", list(range(8)))
+            target_png = transform_canonical_to_rmvx_character(source_bytes, source_indices=source_indices)
         else:
             raise NotImplementedError(f"Target transformation for {target}/{category} is not yet implemented")
 
@@ -315,14 +394,22 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
 
         category_name = slot_info.get("category", "")
 
-        manifest_entries.append({
+        manifest_entry = {
             "slot": slot_rel_path,
             "category": category_name,
             "is_primary": True,
             "asset_id": asset_id,
             "sha256": target_sha256,
             "test_only": slot_info.get("test_only", False)
-        })
+        }
+        if "character_index" in slot_info:
+            manifest_entry["character_index"] = slot_info["character_index"]
+        if "source_character_indices" in slot_info:
+            manifest_entry["source_character_indices"] = slot_info["source_character_indices"]
+        if "transform_policy" in slot_info:
+            manifest_entry["transform_policy"] = slot_info["transform_policy"]
+
+        manifest_entries.append(manifest_entry)
 
         # Write aliases
         for alias_rel in aliases:
@@ -331,7 +418,7 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
             with open(dest_alias, "wb") as af:
                 af.write(target_png)
             print(f"  [ALIAS] {alias_rel} <- {slot_rel_path}")
-            manifest_entries.append({
+            alias_entry = {
                 "slot": alias_rel,
                 "category": category_name,
                 "is_primary": False,
@@ -339,7 +426,14 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
                 "asset_id": asset_id,
                 "sha256": target_sha256,
                 "test_only": slot_info.get("test_only", False)
-            })
+            }
+            if "character_index" in slot_info:
+                alias_entry["character_index"] = slot_info["character_index"]
+            if "source_character_indices" in slot_info:
+                alias_entry["source_character_indices"] = slot_info["source_character_indices"]
+            if "transform_policy" in slot_info:
+                alias_entry["transform_policy"] = slot_info["transform_policy"]
+            manifest_entries.append(alias_entry)
 
     # Write build manifest (deterministic)
     manifest = {

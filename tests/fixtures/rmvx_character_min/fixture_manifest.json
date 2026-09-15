@@ -1,0 +1,17 @@
+{
+  "fixture_name": "rmvx_character_min",
+  "engine": "RPG Maker VX",
+  "rgss_version": 2,
+  "description": "Minimal clean-room RGSS2 test fixture for mkxp-z character loading and rendering",
+  "clean_room_attestation": "All fixture scripts and configurations are written from scratch without proprietary creative assets.",
+  "files": {
+    "fixture.rb": {
+      "sha256": "c334c48128b892c9114031743d1e847930b08d5706d453a4d302fd18e45a516a",
+      "purpose": "Harness script for loading Graphics/Characters/Actor1 and rendering"
+    },
+    "mkxp.json": {
+      "sha256": "407036f216836f0a194d3e26b9d45a68af6f0eac2235e2a0c23e2a040ce46d9b",
+      "purpose": "Configuration specifying RGSS2 and customScript execution"
+    }
+  }
+}

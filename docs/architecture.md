@@ -136,11 +136,49 @@ SuperRTP's single-source architecture enables generating RGSS1-compliant charact
      - Negative control: When RTP is empty, catches `Errno::ENOENT`, logs `SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01`, renders 30 frames of the blank pad, and exits with code 1.
    - Evidence recorded in `artifacts/runtime/rmxp/character/verification_evidence.json` binding commit `826929e`, target manifest hash, target character hash, fixture manifest hash, logs, diagnostics, and screenshots.
 
-## 9. Informational Derived Summary Documentation
+## 9. RPG Maker VX (RGSS2) Character Architecture
+
+SuperRTP's semantic walking-frame abstraction enables feeding RPG Maker VX's standard 8-character sheet directly from the same canonical walking-character source:
+
+1. **Semantic Extraction & 8-Character Standard Sheet Packing:**
+   - Canonical walking-character source contains 8 characters (4×2 grid of 72×128 px, 24×32 frames).
+   - `extract_walking_frames()` extracts pure semantic representations (`UP/RIGHT/DOWN/LEFT` × `STEP_LEFT/IDLE/STEP_RIGHT`) for all eight characters ($0..7$).
+   - `pack_rmvx_character_sheet()` arranges the 8 characters into a standard 4×2 grid ($288\times 256$ pixels):
+     - Characters 0..3 on top row ($y=0..127$).
+     - Characters 4..7 on bottom row ($y=128..255$).
+   - **Direction Row Ordering:**
+     - Row 0: Facing **Down** (`v`)
+     - Row 1: Facing **Left** (`<`)
+     - Row 2: Facing **Right** (`>`)
+     - Row 3: Facing **Up** (`^`)
+   - **Animation Column Mapping:**
+     - Column 0: Step Left (`STEP_LEFT`)
+     - Column 1: Idle / Standing (`IDLE`)
+     - Column 2: Step Right (`STEP_RIGHT`)
+   - Unlike XP, no fourth repeated idle column is added; VX standard sheets natively use 3 animation patterns.
+
+2. **Architectural Distinction Between XP and VX:**
+   - **XP / RGSS1**: One character per file for Task 4, 4 animation columns (`STEP_LEFT`, `IDLE`, `STEP_RIGHT`, `IDLE`), 96×128 pixels, 640×480 screen.
+   - **VX / RGSS2**: Standard 8-character sheet, 3 animation columns (`STEP_LEFT`, `IDLE`, `STEP_RIGHT`), 288×256 pixels, 544×416 screen.
+   - Documented `$` (single character) and `!` (no offset / bush translucency) filename prefixes are recognized functional facts of the engine but are intentionally outside the scope of Task 5 and remain unverified.
+   - RPG Maker VX Ace (`rmvxace`) is a separate engine target (RGSS3) and is not implemented in Task 5.
+
+3. **Clean-Room RGSS2 Test Harness & Runtime Verification:**
+   - Pinned runner: `mkxp-z` built from commit `826929eeb3ebc4b887c011604919217a790770f4` with `rgssVersion = 2`.
+   - Test fixture under `tests/fixtures/rmvx_character_min/`:
+     - `fixture.rb`: Clean-room Ruby script asserting screen dimensions $544\times 416$ (`SUPERRTP_RGSS2_SCREEN 544x416`), setting up a test pad `(210, 215, 220)` at `(116, 68, 312×280)` with 4 corner alignment markers (Red TL, Green TR, Blue BL, Yellow BR).
+     - Loads `Bitmap.new("Graphics/Characters/Actor1")` (omitted `.png` extension) via RGSS2 RTP resolution.
+     - Positions the full 288×256 sheet at `(128, 80)` (centered in 544×416).
+     - Positive control: Renders 60 frames and exits with code 0.
+     - Negative control: With empty RTP, catches `Errno::ENOENT`, logs `SUPERRTP_RMVX_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1`, renders 30 frames of the blank pad, and exits with code 1.
+   - Evidence recorded in `artifacts/runtime/rmvx/character/verification_evidence.json` binding commit `826929e`, target manifest hash, target character hash, fixture manifest hash, logs, diagnostics, and screenshots.
+
+## 10. Informational Derived Summary Documentation
 
 Any derived summaries, test reports, walkthroughs, or compatibility documentation generated during development are strictly informational and secondary to:
 1. Canonical source assets (`registry/assets/`) and provenance records (`registry/provenance/`).
 2. Target slot registries (`registry/slots/`) and schemas (`schemas/`).
 3. Deterministic code, tests, and build tooling (`tools/`, `tests/`).
 4. Real runtime execution evidence and inspected screenshot artifacts (`artifacts/runtime/`).
+
 
