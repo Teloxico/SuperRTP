@@ -59,12 +59,13 @@ jobs:
           tools/install_mkxp_z_ci.sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Build target packs (RM2000, RM2003, RMXP, RMVX)
+      - name: Build target packs (RM2000, RM2003, RMXP, RMVX, RMVXAce)
         run: |
           python3 tools/build_target.py --target rm2000 --clean
           python3 tools/build_target.py --target rm2003 --clean
           python3 tools/build_target.py --target rmxp --clean
           python3 tools/build_target.py --target rmvx --clean
+          python3 tools/build_target.py --target rmvxace --clean
 
       - name: Run automated test suite on committed repository state
         env:
@@ -73,6 +74,7 @@ jobs:
           python3 tests/test_vertical_slice.py
           python3 tests/test_rmxp_vertical_slice.py
           python3 tests/test_rmvx_vertical_slice.py
+          python3 tests/test_rmvxace_vertical_slice.py
 
       - name: Verify generator reproducibility and assert zero git diff
         run: |
@@ -87,6 +89,7 @@ jobs:
           python3 tools/validate_target.py --target rm2003
           python3 tools/validate_target.py --target rmxp
           python3 tools/validate_target.py --target rmvx
+          python3 tools/validate_target.py --target rmvxace
 
       - name: Verify runtime evidence chain
         run: |
@@ -94,6 +97,7 @@ jobs:
           python3 tools/verify_chipset_runtime.py --target all --verify
           python3 tools/verify_rmxp_runtime.py --verify
           python3 tools/verify_rmvx_runtime.py --verify
+          python3 tools/verify_rmvxace_runtime.py --verify
 
       - name: Optional full visual replay (manual dispatch)
         if: ${{ inputs.run_full_replay == true }}
@@ -102,5 +106,6 @@ jobs:
           python3 tools/verify_chipset_runtime.py --target all --run-capture
           python3 tools/verify_rmxp_runtime.py --run-capture
           python3 tools/verify_rmvx_runtime.py --run-capture
+          python3 tools/verify_rmvxace_runtime.py --run-capture
 
 

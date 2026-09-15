@@ -127,6 +127,8 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
 ### 4. RPG Maker VX (RGSS2) Standard 8-Character Compatibility Slice (Task 5)
 - **Shared Canonical Source:** Reuses the exact same canonical `test.calibration.walking-character` raw source (SHA-256: `78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790`).
 - **Standard 8-Character Sheet Geometry & Direction Rows:**
+### 4. RPG Maker VX (RGSS2) Standard 8-Character Slice (Task 5)
+- **Standard 8-Character Sheet Packing:**
   - Extracts all 8 characters ($0..7$) semantically via `extract_walking_frames()`.
   - Packs characters in a $4 \times 2$ grid ($288 \times 256$ pixels), strictly preserving character indices without permutation.
   - Each character is $72 \times 128$ pixels, comprising $3 \times 4$ cells of $24 \times 32$ pixels (96 cells total).
@@ -139,23 +141,35 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
     - **Column 0**: Step Left
     - **Column 1**: Idle / Standing
     - **Column 2**: Step Right
-- **Distinction from RPG Maker XP:**
-  - Unlike RMXP (which targets single characters expanded into 4 columns at $96 \times 128$), RPG Maker VX standard Character sheets contain all 8 characters organized in 4 columns $\times$ 2 rows with 3 animation steps ($288 \times 256$).
 - **Clean-Room Boundary & Scope Invariant:**
   - Zero proprietary RPG Maker VX RTP creative content. The official `Actor1.png` pixels were never downloaded, viewed, or traced.
   - Prefix behaviors (`$` for single-character sheets, `!` for disabling the 4-pixel shift and bush transparency depth) are documented as unverified and are not implemented in this slice.
-  - RPG Maker VX Ace (`rmvxace`) / RGSS3 is out of scope and not implemented in this slice.
 - **Deterministic 32-bit Truecolor RGBA Encoder:**
   - Encodes directly into 32-bit truecolor RGBA PNG (Color Type 6, bit depth 8) with RFC 1951 stored blocks for deterministic byte output across platforms.
-  - Strictly omits `PLTE` chunk and maintains full alpha channel ($0 \le \alpha \le 255$).
 - **Target Slot Mapping:**
   - `rmvx`: Emits `Graphics/Characters/Actor1.png` (SHA-256: `c6ed8cba9025b982c6300ed5e57a82aee99cc29f7929d81cf1b517ded47550bf`). Slot provenance documented from Steam Depot 521881.
 - **Runtime & Visual Verification (mkxp-z in RGSS2 mode):**
   - Executed using pinned `mkxp-z` (commit `826929eeb3ebc4b887c011604919217a790770f4`) in RGSS2 mode (`rgssVersion: 2`, screen resolution $544 \times 416$) against clean-room test harness ([`tests/fixtures/rmvx_character_min/`](tests/fixtures/rmvx_character_min/)).
-  - Fixture asserts $544 \times 416$ resolution and loads via RTP omitting extension (`Bitmap.new("Graphics/Characters/Actor1")`).
-  - Positive control: Renders $288 \times 256$ sheet centered at $(128, 80)$ over a high-contrast test pad $(116, 68, 312 \times 280)$ with 4 distinct corner alignment markers. Verified 100% pixel composite match across the $288 \times 256$ region against underlying pad, verified all 8 character block placements, and verified directional arrow orientations and transparency notches.
+  - Positive control: Renders $288 \times 256$ sheet centered at $(128, 80)$ over high-contrast test pad $(116, 68, 312 \times 280)$ with 4 distinct corner alignment markers. Verified 100% pixel composite match across the $288 \times 256$ region against underlying pad, verified all 8 character block placements, and verified directional arrow orientations and transparency notches.
   - Negative control: With empty RTP, `Bitmap.new` raises `Errno::ENOENT`, logged as `SUPERRTP_RMVX_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1` with clean non-zero exit (exit code 1). Negative screenshot captures blank pad with no sprite rendered.
   - Durable evidence recorded and verified in [`artifacts/runtime/rmvx/character/verification_evidence.json`](artifacts/runtime/rmvx/character/verification_evidence.json).
+
+### 5. RPG Maker VX Ace (RGSS3) Standard 8-Character Slice (Task 6)
+- **Engine-Identity Separation with Shared Physical Geometry:**
+  - Proves that RPG Maker VX (`rmvx`, RGSS2) and RPG Maker VX Ace (`rmvxace`, RGSS3) share identical physical 8-character sheet layout ($288 \times 256$ RGBA PNG, $4 \times 2$ grid, 3 animation columns $\times$ 4 direction rows) while maintaining strictly separated target identities, manifests, transform policies, and runtime proofs.
+  - Core physical layout is packaged once via `pack_vx_family_standard_character_sheet()`, avoiding code duplication or speculative class hierarchies.
+- **Byte-for-Byte Payload Equality:**
+  - `generated/rmvx/Graphics/Characters/Actor1.png` and `generated/rmvxace/Graphics/Characters/Actor1.png` are byte-identical (SHA-256: `c6ed8cba9025b982c6300ed5e57a82aee99cc29f7929d81cf1b517ded47550bf`).
+- **Separate Target Contracts & Metadata:**
+  - `rmvx`: target `rmvx`, engine `RPG Maker VX`, mode `rgss2`, policy `rm2k8_to_rgss2_standard_character_sheet_v1`.
+  - `rmvxace`: target `rmvxace`, engine `RPG Maker VX Ace`, mode `rgss3`, policy `rm2k8_to_rgss3_standard_character_sheet_v1`.
+  - Manifest and registry cross-validation enforces target, category, indices, and policy integrity.
+- **Runtime & Visual Verification (mkxp-z in RGSS3 mode):**
+  - Executed using pinned `mkxp-z` in RGSS3 mode (`rgssVersion: 3`, screen resolution $544 \times 416$) against clean-room test harness ([`tests/fixtures/rmvxace_character_min/`](tests/fixtures/rmvxace_character_min/)).
+  - Startup verified via explicit mkxp-z startup log: `RGSS version 3 (RPG Maker VX Ace) `.
+  - Positive control renders $288 \times 256$ sheet centered at $(128, 80)$ on pad; 100% composite match and alpha transparency verified.
+  - Negative control isolates missing asset with deterministic diagnostic `SUPERRTP_RMVXACE_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1` and exit code 1.
+  - Durable evidence recorded and verified in [`artifacts/runtime/rmvxace/character/verification_evidence.json`](artifacts/runtime/rmvxace/character/verification_evidence.json).
 
 ## Repository Layout
 
@@ -189,11 +203,15 @@ SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmxp_vertical_slice.py
 
 # Task 5: RPG Maker VX / RGSS2 Character test suite (14 tests)
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmvx_vertical_slice.py
+
+# Task 6: RPG Maker VX Ace / RGSS3 Character test suite (15 tests)
+SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmvxace_vertical_slice.py
 ```
-Executes 49 mechanical checks across all targets:
+Executes 64 mechanical checks across all targets:
 - **Tasks 1–3 Suite (23 tests)**: Canonical master RGBA/PNG reproducibility, 8-bit indexed format compliance, provenance schemas, deterministic target builder, validator rejections, liblcf fixture generation, headless EasyRPG positive/negative controls, 4-direction turning verification, ChipSet fixed-tile geometry (Blocks E/F), layer transparency composition, and adversarial evidence tamper suites.
 - **Task 4 Suite (12 tests)**: Deterministic truecolor RGBA PNG encoding with full alpha range, semantic walking frame extraction, 4×4 RGSS1 packing and direction remapping from canonical sheet, RMXP target build reproducibility, frozen baseline regression integrity across all 3 engines, target validation for RMXP, validator rejections (bad dimensions, paletted PNG, missing alpha, idle column mismatch), clean-room RGSS1 fixture manifest integrity, live headless mkxp-z positive resolution, live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and 20+ field adversarial tamper rejection.
 - **Task 5 Suite (14 tests)**: Canonical walking character asset integrity, semantic 8-character extraction against independent physical crop oracle, RGSS2 standard $4\times 2$ character sheet packing geometry, 96-cell exact byte equality directly against independent physical source crops, single-frame mutation locality (one cell mutation alters only that target cell and leaves all 95 others 100% byte-identical), character index preservation and non-scrambling test, adversarial packer validation, RMVX target build reproducibility, frozen baseline regression integrity across all 4 targets, RMVX target validator adversarial rejections (wrong source indices, missing/wrong transform policy, wrong category, wrong target hash, directional-row permutation), live headless mkxp-z RGSS2 positive resolution ($544\times 416$), live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and expanded adversarial tamper rejection including build config options, diagnostics, and actual screenshot pixel corruption.
+- **Task 6 Suite (15 tests)**: Canonical walking character asset integrity, 8-character semantic extraction against independent physical crop oracle, shared VX-family 8-character packing and thin wrapper verification, 96-cell exact byte equality directly against independent physical crops, single-frame mutation locality (1 frame mutated, 95 cells byte-identical), cross-target byte equality (`rmvx` Actor1 bytes == `rmvxace` Actor1 bytes) alongside distinct engine/target manifests and transform policies, independent build without reading `generated/rmvx`, A/B deterministic build reproducibility, frozen baseline regression integrity across all 5 targets, RMVXAce validator adversarial rejections (wrong category, wrong target SHA, corrupted indices, wrong/missing transform policy, row permutation), clean-room RGSS3 fixture integrity, live headless mkxp-z RGSS3 positive resolution (`RGSS version 3 (RPG Maker VX Ace)` banner, $544\times 416$ screen), live headless mkxp-z negative control (`SUPERRTP_RMVXACE_MISSING_ASSET: Graphics/Characters/Actor1`, exit code 1), complete durable evidence chain verification, and expanded 22+ field adversarial tamper suite including nested build config and screenshot pixel corruption.
 
 ### 2. Generate Clean-Room Fixture Graphics
 ```bash
@@ -207,12 +225,13 @@ python3 tools/generate_calibration_charset.py
 python3 tools/generate_calibration_chipset.py
 ```
 
-### 4. Build Target Packs (RM2000, RM2003, RMXP & RMVX)
+### 4. Build Target Packs (RM2000, RM2003, RMXP, RMVX & RMVXAce)
 ```bash
 python3 tools/build_target.py --target rm2000 --clean
 python3 tools/build_target.py --target rm2003 --clean
 python3 tools/build_target.py --target rmxp --clean
 python3 tools/build_target.py --target rmvx --clean
+python3 tools/build_target.py --target rmvxace --clean
 ```
 
 ### 5. Validate Target Packs
@@ -221,6 +240,7 @@ python3 tools/validate_target.py --target rm2000
 python3 tools/validate_target.py --target rm2003
 python3 tools/validate_target.py --target rmxp
 python3 tools/validate_target.py --target rmvx
+python3 tools/validate_target.py --target rmvxace
 ```
 
 ### 6. Runtime Verification & Evidence Verification (EasyRPG Player & mkxp-z)
@@ -230,12 +250,14 @@ python3 tools/verify_runtime.py --target all --verify
 python3 tools/verify_chipset_runtime.py --target all --verify
 python3 tools/verify_rmxp_runtime.py --verify
 python3 tools/verify_rmvx_runtime.py --verify
+python3 tools/verify_rmvxace_runtime.py --verify
 
 # Re-run live replay / capture under virtual X11:
 python3 tools/verify_runtime.py --target all --run-replay
 python3 tools/verify_chipset_runtime.py --target all --run-capture
 python3 tools/verify_rmxp_runtime.py --run-capture
 python3 tools/verify_rmvx_runtime.py --run-capture
+python3 tools/verify_rmvxace_runtime.py --run-capture
 ```
 Generates and validates cryptographic evidence chains:
 - [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json)
@@ -244,6 +266,7 @@ Generates and validates cryptographic evidence chains:
 - [`artifacts/runtime/rm2003/chipset/verification_evidence.json`](artifacts/runtime/rm2003/chipset/verification_evidence.json)
 - [`artifacts/runtime/rmxp/character/verification_evidence.json`](artifacts/runtime/rmxp/character/verification_evidence.json)
 - [`artifacts/runtime/rmvx/character/verification_evidence.json`](artifacts/runtime/rmvx/character/verification_evidence.json)
+- [`artifacts/runtime/rmvxace/character/verification_evidence.json`](artifacts/runtime/rmvxace/character/verification_evidence.json)
 
 
 ## Clean-Room Policy & Licensing
