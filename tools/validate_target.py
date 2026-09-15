@@ -334,8 +334,8 @@ def validate_png_rmxp_character(filepath):
         "directions": ["DOWN", "LEFT", "RIGHT", "UP"]
     }
 
-def validate_png_rmvx_character(filepath):
-    """Validates RPG Maker VX / RGSS2 standard 8-character sheet technical specifications and calibration geometry."""
+def validate_png_vx_family_character(filepath, engine_name="VX"):
+    """Validates VX-family (RPG Maker VX / VX Ace) standard 8-character sheet technical specifications and calibration geometry."""
     with open(filepath, "rb") as f:
         data = f.read()
 
@@ -346,7 +346,7 @@ def validate_png_rmvx_character(filepath):
     if not chunk_types or chunk_types[0] != "IHDR":
         raise ValueError("PNG must start with IHDR chunk")
     if "PLTE" in chunk_types:
-        raise ValueError("Unexpected PLTE (Palette) chunk: RPG Maker VX character sheets must be truecolor RGBA")
+        raise ValueError(f"Unexpected PLTE (Palette) chunk: RPG Maker {engine_name} character sheets must be truecolor RGBA")
     if "IDAT" not in chunk_types:
         raise ValueError("Missing IDAT chunk")
     if chunk_types[-1] != "IEND":
@@ -357,7 +357,7 @@ def validate_png_rmvx_character(filepath):
     width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
 
     if width != 288 or height != 256:
-        raise ValueError(f"Invalid VX Character dimensions: expected 288x256, got {width}x{height}")
+        raise ValueError(f"Invalid {engine_name} Character dimensions: expected 288x256, got {width}x{height}")
     if bit_depth != 8:
         raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
     if color_type != 6:
@@ -474,6 +474,14 @@ def validate_png_rmvx_character(filepath):
         "grid": "4x2 characters (12x8 cells)",
         "directions": ["DOWN", "LEFT", "RIGHT", "UP"]
     }
+
+def validate_png_rmvx_character(filepath):
+    """Validates RPG Maker VX / RGSS2 standard 8-character sheet specifications."""
+    return validate_png_vx_family_character(filepath, engine_name="VX")
+
+def validate_png_rmvxace_character(filepath):
+    """Validates RPG Maker VX Ace / RGSS3 standard 8-character sheet specifications."""
+    return validate_png_vx_family_character(filepath, engine_name="VX Ace")
 
 def validate_schemas(repo_root, target):
     """Enforces JSON Schema validation on registry files."""
@@ -720,8 +728,9 @@ def validate_target(target, target_dir=None):
                 if target == "rmxp":
                     specs = validate_png_rmxp_character(filepath)
                     spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 4x4 frames (Down, Left, Right, Up)"
-                elif target == "rmvx":
-                    specs = validate_png_rmvx_character(filepath)
+                elif target in ("rmvx", "rmvxace"):
+                    engine_name = "VX Ace" if target == "rmvxace" else "VX"
+                    specs = validate_png_vx_family_character(filepath, engine_name=engine_name)
                     spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 8 characters (4x2), 3x4 frames each (Down, Left, Right, Up)"
                 else:
                     raise ValueError(f"Unsupported target '{target}' for character category")

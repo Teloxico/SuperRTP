@@ -1,0 +1,21 @@
+MKXP-Z VERSION: 2.4.2/826929e
+SUPERRTP_RGSS3_SCREEN 544x416
+SUPERRTP_RMVXACE_CHARACTER_LOADED 288x256
+SUPERRTP_RMVXACE_RENDER_DONE
+
+Could not read Game.ini 
+Game.ini: Could not determine encoding of Game.Title 
+RGSS version 3 (RPG Maker VX Ace) 
+ALC_SOFT_pause_device present 
+Backend      : OpenGL 
+GL Vendor    : Mesa 
+GL Renderer  : llvmpipe (LLVM 21.1.8, 256 bits) 
+GL Version   : 4.5 (Compatibility Profile) Mesa 26.0.8-1ubuntu0.3 
+GLSL Version : 4.50 
+Loading path cache... 
+Path cache completed. 
+Primary font not found: VL Gothic 
+Could not load Zlib. If this is important, make sure Ruby was built with static extensions, or that zlib.so is present and reachable by Ruby's loadpath. 
+EventThread termination requested 
+RGSS thread ack'd request after 0 ms 
+Shutting down. 

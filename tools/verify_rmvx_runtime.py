@@ -225,6 +225,8 @@ def verify_rmvx_screenshot(screenshot_path, target_char_path=None, mode="positiv
         "all_8_character_blocks": "VERIFIED (4x2 grid, DOWN/LEFT/RIGHT/UP directions verified in all 8 blocks)"
     }
 
+verify_vx_family_screenshot = verify_rmvx_screenshot
+
 def read_mkxp_build_metadata(mkxp_bin):
     bin_dir = os.path.dirname(os.path.abspath(mkxp_bin))
     candidates = [

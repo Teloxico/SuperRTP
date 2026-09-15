@@ -1,0 +1,15 @@
+
+Could not read Game.ini 
+Game.ini: Could not determine encoding of Game.Title 
+RGSS version 3 (RPG Maker VX Ace) 
+ALC_SOFT_pause_device present 
+Backend      : OpenGL 
+GL Vendor    : Mesa 
+GL Renderer  : llvmpipe (LLVM 21.1.8, 256 bits) 
+GL Version   : 4.5 (Compatibility Profile) Mesa 26.0.8-1ubuntu0.3 
+GLSL Version : 4.50 
+Loading path cache... 
+Path cache completed. 
+Primary font not found: VL Gothic 
+Could not load Zlib. If this is important, make sure Ruby was built with static extensions, or that zlib.so is present and reachable by Ruby's loadpath. 
+SUPERRTP_RMVXACE_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1

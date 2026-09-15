@@ -1,0 +1,17 @@
+{
+  "fixture_name": "rmvxace_character_min",
+  "engine": "RPG Maker VX Ace",
+  "rgss_version": 3,
+  "description": "Minimal clean-room RGSS3 test fixture for mkxp-z character loading and rendering",
+  "clean_room_attestation": "All fixture scripts and configurations are written from scratch without proprietary creative assets.",
+  "files": {
+    "fixture.rb": {
+      "sha256": "e4c1ae03cbfd0e68e64c86518f5933c6365d0c01896e1840d62396d874c3daf0",
+      "purpose": "Harness script for loading Graphics/Characters/Actor1 and rendering"
+    },
+    "mkxp.json": {
+      "sha256": "917f564120544cad49739c4343e344bf81d46c239961f0b55a7f8fe6fc31b28f",
+      "purpose": "Configuration specifying RGSS3 and customScript execution"
+    }
+  }
+}

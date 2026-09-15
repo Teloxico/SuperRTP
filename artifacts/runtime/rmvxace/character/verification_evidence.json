@@ -1,0 +1,81 @@
+{
+  "target": "rmvxace",
+  "engine": "RPG Maker VX Ace",
+  "engine_mode": "rgss3",
+  "rgss_version": 3,
+  "runtime": "mkxp-z",
+  "runtime_commit": "826929eeb3ebc4b887c011604919217a790770f4",
+  "startup_log_identity": "RGSS version 3 (RPG Maker VX Ace) ",
+  "category": "Character",
+  "requested_resource": "Graphics/Characters/Actor1",
+  "canonical_asset_id": "test.calibration.walking-character",
+  "canonical_asset_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
+  "source_character_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "transform_policy": "rm2k8_to_rgss3_standard_character_sheet_v1",
+  "target_manifest_sha256": "42ef679975d0806ecc3cfbceceea093101287954a5e32d5ca052e514a4b01bb6",
+  "actor1_png_sha256": "c6ed8cba9025b982c6300ed5e57a82aee99cc29f7929d81cf1b517ded47550bf",
+  "rmvx_actor1_reference_sha256": "c6ed8cba9025b982c6300ed5e57a82aee99cc29f7929d81cf1b517ded47550bf",
+  "rmvx_byte_equality": "IDENTICAL",
+  "fixture_script_sha256": "e4c1ae03cbfd0e68e64c86518f5933c6365d0c01896e1840d62396d874c3daf0",
+  "fixture_manifest_sha256": "a64f55ea3e2aa131879b71646e3b999e5a3e72e1d0fcc4f37f5de160f6f70ef4",
+  "positive_portable_config": {
+    "rgssVersion": 3,
+    "gameFolder": "tests/fixtures/rmvxace_character_min",
+    "customScript": "fixture.rb",
+    "pathCache": true,
+    "RTP": [
+      "generated/rmvxace"
+    ]
+  },
+  "positive_portable_config_sha256": "0bb56f7b534a9abf67100372f4b680ab56491137ce5b355f6fc89b9140f2f89c",
+  "negative_portable_config": {
+    "rgssVersion": 3,
+    "gameFolder": "tests/fixtures/rmvxace_character_min",
+    "customScript": "fixture.rb",
+    "pathCache": true,
+    "RTP": []
+  },
+  "negative_portable_config_sha256": "fcba25c9b95b525f0e088a7c32677fd0f0bc9c707d09c8cbb4545dc358185b7c",
+  "positive_exit_code": 0,
+  "negative_exit_code": 1,
+  "positive_runtime_log_sha256": "2d05c65b1d75ecadfc0d57a9974f979d3da1dcdd1b1276a834c89e3f0a39dfae",
+  "negative_runtime_log_sha256": "46221330a37fe5a0963464bec5d33f314c6c70d3db9ac374cedebc9be9dca211",
+  "negative_diagnostic": "No such file or directory - Graphics/Characters/Actor1",
+  "positive_screenshot_sha256": "c05e6886efc2c630b5a5790bbedb358c65fc954dac0a806b14b1c3f4a1467fb2",
+  "negative_screenshot_sha256": "3462da09c283164050ab70055ea464b441f577da5086e55e3100e03baf1da99a",
+  "positive_visual_verification": {
+    "status": "VERIFIED",
+    "mode": "positive",
+    "screenshot_dimensions": "544x416",
+    "pad_corners": "VERIFIED",
+    "composite_equality": "100% pixel match across 288x256 region",
+    "transparency_mechanics": "VERIFIED (alpha 0 exposes pad color 210,215,220)",
+    "all_8_character_blocks": "VERIFIED (4x2 grid, DOWN/LEFT/RIGHT/UP directions verified in all 8 blocks)"
+  },
+  "negative_visual_verification": {
+    "status": "VERIFIED",
+    "mode": "negative_control",
+    "screenshot_dimensions": "544x416",
+    "pad_corners": "VERIFIED",
+    "pad_blank": "VERIFIED"
+  },
+  "build_metadata": {
+    "runtime": "mkxp-z",
+    "pinned_commit": "826929eeb3ebc4b887c011604919217a790770f4",
+    "mri_version": "3.2",
+    "workdir_current": true,
+    "static_executable": false,
+    "shared_fluid": false,
+    "build_config_revision": "buildcfg2"
+  },
+  "timestamp": "2026-09-15T06:28:37.739017+00:00"
+}

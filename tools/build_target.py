@@ -212,9 +212,9 @@ def transform_canonical_to_rmxp_character(source_bytes: bytes, char_idx: int = 0
     semantic_frames = extract_walking_frames(source_bytes, char_idx=char_idx)
     return pack_rmxp_character(semantic_frames)
 
-def pack_rmvx_character_sheet(semantic_characters: list, frame_w: int = 24, frame_h: int = 32) -> bytes:
+def pack_vx_family_standard_character_sheet(semantic_characters: list, frame_w: int = 24, frame_h: int = 32) -> bytes:
     """
-    Packs 8 semantic walking characters into an RPG Maker VX / RGSS2 compliant standard 8-character sheet.
+    Packs 8 semantic walking characters into a VX-family (RPG Maker VX / VX Ace) standard 8-character sheet.
 
     Input:
       semantic_characters: list of 8 dicts, where each element is:
@@ -222,7 +222,7 @@ def pack_rmvx_character_sheet(semantic_characters: list, frame_w: int = 24, fram
         direction in ("DOWN", "LEFT", "RIGHT", "UP")
         phase in ("STEP_LEFT", "IDLE", "STEP_RIGHT")
 
-    Target layout policy (RPG Maker VX / RGSS2 standard sheet):
+    Target layout policy (VX-family standard 8-character sheet):
       - 8 characters arranged in a 4x2 grid (characters 0..3 on top row, 4..7 on bottom row)
       - Each character block: 3 columns x 4 rows
       - Rows (directions): DOWN, LEFT, RIGHT, UP
@@ -231,7 +231,7 @@ def pack_rmvx_character_sheet(semantic_characters: list, frame_w: int = 24, fram
       - Output: 32-bit truecolor RGBA PNG (Color Type 6) with deterministic RFC 1951 stored blocks.
     """
     if not isinstance(semantic_characters, (list, tuple)) or len(semantic_characters) != 8:
-        raise ValueError(f"Expected exactly 8 semantic characters for standard VX sheet, got {len(semantic_characters) if hasattr(semantic_characters, '__len__') else type(semantic_characters)}")
+        raise ValueError(f"Expected exactly 8 semantic characters for standard VX-family sheet, got {len(semantic_characters) if hasattr(semantic_characters, '__len__') else type(semantic_characters)}")
 
     dst_width = 12 * frame_w  # 288 px
     dst_height = 8 * frame_h  # 256 px
@@ -267,6 +267,14 @@ def pack_rmvx_character_sheet(semantic_characters: list, frame_w: int = 24, fram
 
     return create_rgba_png(dst_width, dst_height, bytes(dst_rgba))
 
+def pack_rmvx_character_sheet(semantic_characters: list, frame_w: int = 24, frame_h: int = 32) -> bytes:
+    """Thin wrapper around shared VX-family 8-character sheet packer for RPG Maker VX / RGSS2."""
+    return pack_vx_family_standard_character_sheet(semantic_characters, frame_w=frame_w, frame_h=frame_h)
+
+def pack_rmvxace_character_sheet(semantic_characters: list, frame_w: int = 24, frame_h: int = 32) -> bytes:
+    """Thin wrapper around shared VX-family 8-character sheet packer for RPG Maker VX Ace / RGSS3."""
+    return pack_vx_family_standard_character_sheet(semantic_characters, frame_w=frame_w, frame_h=frame_h)
+
 def transform_canonical_to_rmvx_character(source_bytes: bytes, source_indices: list = None) -> bytes:
     """
     Transforms neutral 32-bit RGBA canonical 2k-family walking character sheet (288x256)
@@ -287,6 +295,27 @@ def transform_canonical_to_rmvx_character(source_bytes: bytes, source_indices: l
         for idx in source_indices
     ]
     return pack_rmvx_character_sheet(semantic_characters)
+
+def transform_canonical_to_rmvxace_character(source_bytes: bytes, source_indices: list = None) -> bytes:
+    """
+    Transforms neutral 32-bit RGBA canonical 2k-family walking character sheet (288x256)
+    into an RPG Maker VX Ace / RGSS3 compliant standard 8-character sheet (288x256).
+
+    Decoupled pipeline:
+      Canonical 2k sheet -> extract_walking_frames() for each character index
+      -> Semantic Frames (UP/RIGHT/DOWN/LEFT, STEP_LEFT/IDLE/STEP_RIGHT)
+      -> pack_rmvxace_character_sheet() -> VX Ace standard 8-character RGBA PNG
+    """
+    if source_indices is None:
+        source_indices = list(range(8))
+    if len(source_indices) != 8:
+        raise ValueError(f"Expected exactly 8 source character indices, got {len(source_indices)}")
+
+    semantic_characters = [
+        extract_walking_frames(source_bytes, char_idx=idx)
+        for idx in source_indices
+    ]
+    return pack_rmvxace_character_sheet(semantic_characters)
 
 def get_reproducible_timestamp():
     """Returns a deterministic ISO-8601 timestamp based on SOURCE_DATE_EPOCH if set."""
@@ -379,6 +408,9 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
         elif target == "rmvx" and category == "character":
             source_indices = slot_info.get("source_character_indices", list(range(8)))
             target_png = transform_canonical_to_rmvx_character(source_bytes, source_indices=source_indices)
+        elif target == "rmvxace" and category == "character":
+            source_indices = slot_info.get("source_character_indices", list(range(8)))
+            target_png = transform_canonical_to_rmvxace_character(source_bytes, source_indices=source_indices)
         else:
             raise NotImplementedError(f"Target transformation for {target}/{category} is not yet implemented")
 
