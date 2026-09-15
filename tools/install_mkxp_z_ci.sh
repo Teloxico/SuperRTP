@@ -74,12 +74,12 @@ if ! [ -f /usr/local/lib/libiconv.a ] && ! [ -f /usr/lib/libiconv.so ]; then
   fi
 fi
 
-EXTRA_LINK_ARGS="['-L/usr/local/lib', '-ltheoradec']"
+EXTRA_LINK_ARGS="['-L/usr/local/lib', '-ltheoradec', '-Wl,-rpath,/usr/local/lib']"
 if [[ -d "/home/linuxbrew/.linuxbrew/lib" ]]; then
   export PKG_CONFIG_PATH="/home/linuxbrew/.linuxbrew/lib/pkgconfig:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
   export LD_LIBRARY_PATH="/home/linuxbrew/.linuxbrew/lib:${LD_LIBRARY_PATH:-}"
   export LIBRARY_PATH="/home/linuxbrew/.linuxbrew/lib:${LIBRARY_PATH:-}"
-  EXTRA_LINK_ARGS="['-L/usr/local/lib', '-ltheoradec', '-Wl,-rpath,/home/linuxbrew/.linuxbrew/lib']"
+  EXTRA_LINK_ARGS="['-L/usr/local/lib', '-ltheoradec', '-Wl,-rpath,/usr/local/lib', '-Wl,-rpath,/home/linuxbrew/.linuxbrew/lib', '-Wl,-rpath,/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib']"
 fi
 if [[ -d "/usr/local/lib" ]]; then
   export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
@@ -95,11 +95,29 @@ git clone https://github.com/mkxp-z/mkxp-z.git "${BUILD_DIR}"
 cd "${BUILD_DIR}"
 git checkout "${PINNED_COMMIT}"
 
+echo "Detecting installed Ruby (MRI) version..."
+MRI_VERSION=""
+if command -v ruby >/dev/null 2>&1; then
+  MRI_VERSION=$(ruby -e 'require "rbconfig"; puts "#{RbConfig::CONFIG[\"MAJOR\"]}.#{RbConfig::CONFIG[\"MINOR\"]}"' 2>/dev/null || true)
+fi
+if [[ -z "${MRI_VERSION}" ]]; then
+  for candidate in $(pkg-config --list-all 2>/dev/null | grep -oE 'ruby-[0-9]+\.[0-9]+' | sort -uV); do
+    ver="${candidate#ruby-}"
+    if pkg-config --exists "ruby-${ver}" 2>/dev/null; then
+      MRI_VERSION="${ver}"
+    fi
+  done
+fi
+if [[ -z "${MRI_VERSION}" ]]; then
+  MRI_VERSION="3.2"
+fi
+echo "Using MRI version: ${MRI_VERSION}"
+
 echo "Configuring mkxp-z with meson..."
 meson setup build \
   -Dworkdir_current=true \
   -Dstatic_executable=false \
-  -Dmri_version=3.3 \
+  -Dmri_version="${MRI_VERSION}" \
   -Dshared_fluid=false \
   -Dcpp_args="-D_TTF_Font=TTF_Font" \
   -Dcpp_link_args="${EXTRA_LINK_ARGS}"
