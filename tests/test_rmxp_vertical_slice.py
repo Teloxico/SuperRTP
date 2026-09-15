@@ -362,9 +362,9 @@ class TestRMXPVerticalSlice(unittest.TestCase):
             cmd = (
                 f"cd {tmp_dir} && "
                 f"xvfb-run -a -s '-screen 0 640x480x24' bash -c '"
-                f"ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 {mkxp_bin}'"
+                f"SDL_AUDIODRIVER=dummy ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 LIBGL_ALWAYS_SOFTWARE=1 {mkxp_bin}'"
             )
-            res = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
+            res = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
             self.assertEqual(res.returncode, 0, f"mkxp-z exited with code {res.returncode}:\n{res.stdout}\n{res.stderr}")
             self.assertIn("MKXP-Z VERSION: 2.4.2/826929e", res.stdout)
             self.assertIn("SUPERRTP_RMXP_CHARACTER_LOADED 96x128", res.stdout)
@@ -398,9 +398,9 @@ class TestRMXPVerticalSlice(unittest.TestCase):
             cmd = (
                 f"cd {tmp_dir} && "
                 f"xvfb-run -a -s '-screen 0 640x480x24' bash -c '"
-                f"ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 {mkxp_bin}'"
+                f"SDL_AUDIODRIVER=dummy ALSOFT_DRIVERS=null SDL_VIDEODRIVER=x11 LIBGL_ALWAYS_SOFTWARE=1 {mkxp_bin}'"
             )
-            res = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
+            res = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
             self.assertEqual(res.returncode, 1, f"Expected exit code 1 for negative control, got {res.returncode}")
             self.assertIn("SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01", res.stderr)
 
