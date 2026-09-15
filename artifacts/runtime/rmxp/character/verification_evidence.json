@@ -1,18 +1,53 @@
 {
   "target": "rmxp",
+  "engine": "RPG Maker XP",
   "engine_mode": "rgss1",
-  "requested_character": "001-Fighter01",
+  "runtime": "mkxp-z",
+  "runtime_commit": "826929eeb3ebc4b887c011604919217a790770f4",
+  "rgss_version": 1,
+  "target_category": "Character",
+  "requested_resource": "Graphics/Characters/001-Fighter01",
+  "source_character_index": 0,
+  "transform_policy": "rm2k_to_rgss1_character_4x4",
+  "mkxp_z_build_configuration": {
+    "workdir_current": true,
+    "static_executable": false,
+    "mri_version": "3.3",
+    "shared_fluid": false
+  },
   "canonical_asset_id": "test.calibration.walking-character",
   "canonical_source_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
-  "target_manifest_sha256": "8e16c1b2837587e76a074f0e2a9f8e4a6f82ce96b86d746a40766c75662d14c7",
+  "target_manifest_sha256": "81fbeaabc37c2a24ae81d26f4917d3a3544ca27dc41661a434067e49ba8180ff",
   "target_character_sha256": "b4e81694247632b5580b5eef55a17e61c6afd709092de0e574aed70b41759743",
   "fixture_manifest_sha256": "56cafb5894ce9cc23ca3eaa1a51f34c1359537d78d14964d311210602d06f703",
+  "fixture_script": "fixture.rb",
+  "fixture_script_sha256": "5c54a4f265724b10656c746c4df1ad50b0f13bc95eb8bb07884047c96054a47b",
+  "positive_runtime_configuration": {
+    "rgssVersion": 1,
+    "gameFolder": "tests/fixtures/rmxp_character_min",
+    "customScript": "fixture.rb",
+    "pathCache": true,
+    "RTP": [
+      "generated/rmxp"
+    ]
+  },
+  "positive_runtime_configuration_sha256": "ccbed0c097883267f411c87956ee28ec0c3574712309afc5ce798402bdae889c",
+  "negative_runtime_configuration": {
+    "rgssVersion": 1,
+    "gameFolder": "tests/fixtures/rmxp_character_min",
+    "customScript": "fixture.rb",
+    "pathCache": true,
+    "RTP": []
+  },
+  "negative_runtime_configuration_sha256": "97c70df56b54991d61ff7bd460a028fab07beee304aa64ef8d69e3d511415426",
+  "positive_exit_code": 0,
+  "negative_exit_code": 1,
   "positive_runtime_log": "positive_runtime.log",
-  "positive_runtime_log_sha256": "1e352510023a7083895f37221cb581b87a110ad63f76dbd3ae770dc7559ca644",
+  "positive_runtime_log_sha256": "7fa1808a9b6872f3245bf9c1b69e835608de90ca8cd085969eb477f9e3248dcf",
   "negative_runtime_log": "negative_runtime.log",
-  "negative_runtime_log_sha256": "0aafed938b91ba575d507f9799b1d3e0dceb8f7a8c3074ca62f0e558107e7bb8",
+  "negative_runtime_log_sha256": "840d8c49b5e5d3a9e51181dd1bcb3a2cf55b7c4458b588e027ec7bdfee64e4e2",
   "mkxp_z_version": "2.4.2/826929e",
-  "recorded_at": "2026-09-15T03:53:05.967542+00:00",
+  "recorded_at": "2026-09-15T04:45:28.041900+00:00",
   "negative_control": {
     "status": "VERIFIED",
     "expected_missing_asset": "Graphics/Characters/001-Fighter01",
@@ -49,7 +84,7 @@
         60
       ]
     },
-    "directional_arrows": {
+    "directional_arrows_col1": {
       "row_0_down": {
         "tip": [
           10,
@@ -98,6 +133,69 @@
           220
         ]
       }
+    },
+    "directional_arrows_col3": {
+      "row_0_down": {
+        "tip": [
+          10,
+          40,
+          70
+        ],
+        "notch_transparency": [
+          210,
+          215,
+          220
+        ]
+      },
+      "row_1_left": {
+        "tip": [
+          10,
+          40,
+          70
+        ],
+        "notch_transparency": [
+          210,
+          215,
+          220
+        ]
+      },
+      "row_2_right": {
+        "tip": [
+          10,
+          40,
+          70
+        ],
+        "notch_transparency": [
+          210,
+          215,
+          220
+        ]
+      },
+      "row_3_up": {
+        "tip": [
+          10,
+          40,
+          70
+        ],
+        "notch_transparency": [
+          210,
+          215,
+          220
+        ]
+      }
+    },
+    "column_repetition_col3_equals_col1": true,
+    "step_markers": {
+      "col0_step_left": [
+        240,
+        160,
+        20
+      ],
+      "col2_step_right": [
+        240,
+        160,
+        20
+      ]
     }
   }
 }

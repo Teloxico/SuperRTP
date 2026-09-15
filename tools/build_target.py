@@ -102,67 +102,115 @@ def transform_rgba_to_indexed_png(rgba_bytes, width=288, height=256):
  
 transform_rgba_to_rm2000_indexed_png = transform_rgba_to_indexed_png
  
+def extract_walking_frames(
+    source_rgba_bytes: bytes,
+    char_idx: int = 0,
+    frame_w: int = 24,
+    frame_h: int = 32,
+    sheet_w: int = 288,
+    sheet_h: int = 256
+) -> dict:
+    """
+    Extracts semantic walking frames for a single character from a 2k-family canonical sheet.
+
+    Returns a nested dict:
+      frames[direction][phase] -> bytes (frame_w * frame_h * 4 RGBA bytes)
+    where:
+      direction in ("UP", "RIGHT", "DOWN", "LEFT")
+      phase in ("STEP_LEFT", "IDLE", "STEP_RIGHT")
+
+    Canonical 2k layout geometry:
+      - 8 characters in 4x2 grid (72x128 px per character)
+      - Row order: 0: UP, 1: RIGHT, 2: DOWN, 3: LEFT
+      - Column order: 0: STEP_LEFT, 1: IDLE, 2: STEP_RIGHT
+    """
+    expected_len = sheet_w * sheet_h * 4
+    if len(source_rgba_bytes) != expected_len:
+        raise ValueError(f"Input RGBA buffer size mismatch: expected {expected_len}, got {len(source_rgba_bytes)}")
+    if not (0 <= char_idx < 8):
+        raise ValueError(f"Character index out of range (0..7): {char_idx}")
+
+    char_grid_x = char_idx % 4
+    char_grid_y = char_idx // 4
+    char_base_x = char_grid_x * (3 * frame_w)
+    char_base_y = char_grid_y * (4 * frame_h)
+
+    directions = ["UP", "RIGHT", "DOWN", "LEFT"]
+    phases = ["STEP_LEFT", "IDLE", "STEP_RIGHT"]
+
+    frames = {d: {} for d in directions}
+
+    for row_idx, direction in enumerate(directions):
+        for col_idx, phase in enumerate(phases):
+            src_frame_x = char_base_x + col_idx * frame_w
+            src_frame_y = char_base_y + row_idx * frame_h
+            frame_bytes = bytearray(frame_w * frame_h * 4)
+
+            for py in range(frame_h):
+                src_y = src_frame_y + py
+                dst_y = py
+                src_row_start = (src_y * sheet_w + src_frame_x) * 4
+                src_row_end = src_row_start + frame_w * 4
+                dst_row_start = (dst_y * frame_w) * 4
+                dst_row_end = dst_row_start + frame_w * 4
+                frame_bytes[dst_row_start:dst_row_end] = source_rgba_bytes[src_row_start:src_row_end]
+
+            frames[direction][phase] = bytes(frame_bytes)
+
+    return frames
+
+def pack_rmxp_character(semantic_frames: dict, frame_w: int = 24, frame_h: int = 32) -> bytes:
+    """
+    Packs semantic walking frames into an RPG Maker XP / RGSS1 compliant 4x4 sheet.
+
+    Input:
+      semantic_frames: dict[direction, dict[phase, bytes]]
+
+    Target layout policy (RPG Maker XP / RGSS1):
+      - 4 rows (directions): DOWN, LEFT, RIGHT, UP
+      - 4 columns (phases): STEP_LEFT, IDLE, STEP_RIGHT, IDLE (4-phase walk cycle with repeated idle)
+      - Sheet size: (4 * frame_w) x (4 * frame_h) = 96 x 128 px
+      - Output: 32-bit truecolor RGBA PNG (Color Type 6) with deterministic RFC 1951 stored blocks.
+    """
+    dst_width = 4 * frame_w
+    dst_height = 4 * frame_h
+    dst_rgba = bytearray(dst_width * dst_height * 4)
+
+    xp_row_order = ["DOWN", "LEFT", "RIGHT", "UP"]
+    xp_col_phases = ["STEP_LEFT", "IDLE", "STEP_RIGHT", "IDLE"]
+
+    for row_idx, direction in enumerate(xp_row_order):
+        if direction not in semantic_frames:
+            raise KeyError(f"Missing required direction in semantic frames: {direction}")
+        for col_idx, phase in enumerate(xp_col_phases):
+            if phase not in semantic_frames[direction]:
+                raise KeyError(f"Missing required phase '{phase}' for direction '{direction}'")
+            frame_raw = semantic_frames[direction][phase]
+            expected_frame_len = frame_w * frame_h * 4
+            if len(frame_raw) != expected_frame_len:
+                raise ValueError(f"Frame length mismatch for {direction}/{phase}: expected {expected_frame_len}, got {len(frame_raw)}")
+
+            dst_frame_x = col_idx * frame_w
+            dst_frame_y = row_idx * frame_h
+
+            for py in range(frame_h):
+                src_offset = py * frame_w * 4
+                dst_offset = ((dst_frame_y + py) * dst_width + dst_frame_x) * 4
+                dst_rgba[dst_offset : dst_offset + frame_w * 4] = frame_raw[src_offset : src_offset + frame_w * 4]
+
+    return create_rgba_png(dst_width, dst_height, bytes(dst_rgba))
+
 def transform_canonical_to_rmxp_character(source_bytes: bytes, char_idx: int = 0) -> bytes:
     """
     Transforms neutral 32-bit RGBA canonical 2k-family walking character sheet (288x256)
     into an RPG Maker XP / RGSS1 compliant 32-bit truecolor RGBA Character sheet (96x128).
 
-    Mapping rules:
-    - Character 0: char_grid_x = char_idx % 4, char_grid_y = char_idx // 4.
-      Base coordinates: char_base_x = char_grid_x * 72, char_base_y = char_grid_y * 128.
-    - Each frame is 24x32 pixels.
-    - Rows:
-      Canonical: 0: UP, 1: RIGHT, 2: DOWN, 3: LEFT
-      XP RGSS1:  0: DOWN, 1: LEFT, 2: RIGHT, 3: UP
-      -> row_map = [2, 3, 1, 0]
-    - Columns:
-      Canonical: 0: STEP_LEFT, 1: IDLE, 2: STEP_RIGHT
-      XP RGSS1:  0: STEP_LEFT, 1: IDLE, 2: STEP_RIGHT, 3: IDLE
-      -> col_map = [0, 1, 2, 1]
-    - Output dimensions: 4 columns * 24 = 96, 4 rows * 32 = 128.
-    - Output format: 32-bit truecolor RGBA PNG (Color Type 6) with deterministic RFC 1951 stored blocks.
+    Decoupled pipeline:
+      Canonical 2k sheet -> extract_walking_frames() -> Semantic Frames (UP/RIGHT/DOWN/LEFT, STEP_LEFT/IDLE/STEP_RIGHT)
+      Semantic Frames -> pack_rmxp_character() -> XP 4x4 RGBA PNG
     """
-    src_width = 288
-    src_height = 256
-    expected_src_len = src_width * src_height * 4
-    if len(source_bytes) != expected_src_len:
-        raise ValueError(f"Input RGBA buffer size mismatch: expected {expected_src_len}, got {len(source_bytes)}")
-
-    dst_width = 96
-    dst_height = 128
-    dst_rgba = bytearray(dst_width * dst_height * 4)
-
-    char_grid_x = char_idx % 4
-    char_grid_y = char_idx // 4
-    char_base_x = char_grid_x * 72
-    char_base_y = char_grid_y * 128
-
-    row_map = [2, 3, 1, 0]  # XP Down, Left, Right, Up <- Can Down, Left, Right, Up
-    col_map = [0, 1, 2, 1]  # XP StepLeft, Idle, StepRight, Idle <- Can StepLeft, Idle, StepRight, Idle
-
-    frame_w = 24
-    frame_h = 32
-
-    for xp_row in range(4):
-        can_row = row_map[xp_row]
-        for xp_col in range(4):
-            can_col = col_map[xp_col]
-            src_frame_x = char_base_x + can_col * frame_w
-            src_frame_y = char_base_y + can_row * frame_h
-            dst_frame_x = xp_col * frame_w
-            dst_frame_y = xp_row * frame_h
-
-            for py in range(frame_h):
-                src_y = src_frame_y + py
-                dst_y = dst_frame_y + py
-                for px in range(frame_w):
-                    src_x = src_frame_x + px
-                    dst_x = dst_frame_x + px
-                    src_idx = (src_y * src_width + src_x) * 4
-                    dst_idx = (dst_y * dst_width + dst_x) * 4
-                    dst_rgba[dst_idx : dst_idx + 4] = source_bytes[src_idx : src_idx + 4]
-
-    return create_rgba_png(dst_width, dst_height, bytes(dst_rgba))
+    semantic_frames = extract_walking_frames(source_bytes, char_idx=char_idx)
+    return pack_rmxp_character(semantic_frames)
 
 def get_reproducible_timestamp():
     """Returns a deterministic ISO-8601 timestamp based on SOURCE_DATE_EPOCH if set."""

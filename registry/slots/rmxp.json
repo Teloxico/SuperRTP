@@ -2,7 +2,7 @@
   "target": "rmxp",
   "target_name": "RPG Maker XP Runtime Package",
   "engine": "RPG Maker XP",
-  "reference_source": "mkxp-z / RGSS1 Character Specification (commit 826929e)",
+  "reference_source": "mkxp-z / RGSS1 Character Specification (commit 826929eeb3ebc4b887c011604919217a790770f4)",
   "slots": {
     "Graphics/Characters/001-Fighter01.png": {
       "asset_id": "test.calibration.walking-character",
@@ -11,6 +11,8 @@
       "aliases": [],
       "format": "truecolor-rgba-png",
       "dimensions": [96, 128],
+      "character_index": 0,
+      "transform_policy": "rm2k_to_rgss1_character_4x4",
       "test_only": true
     }
   }

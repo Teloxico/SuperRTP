@@ -48,6 +48,8 @@
             "minItems": 2,
             "maxItems": 2
           },
+          "character_index": { "type": "integer" },
+          "transform_policy": { "type": "string" },
           "test_only": { "type": "boolean" }
         },
         "additionalProperties": false
