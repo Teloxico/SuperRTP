@@ -29,13 +29,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb ffmpeg libpixman-1-dev libuchardet-dev libasound2 || sudo apt-get install -y xvfb ffmpeg libpixman-1-dev libuchardet-dev libasound2t64
+          sudo ar cr /usr/local/lib/libiconv.a
+          sudo ar cr /usr/local/lib/libcharset.a
           curl -sL https://easyrpg.org/downloads/player/0.8.1.1/easyrpg-player-0.8.1.1-linux.tar.gz | sudo tar -xzf - -C /usr/local/bin
           easyrpg-player --version
           eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
           brew install liblcf sdl2_sound
-          echo "PKG_CONFIG_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib/pkgconfig:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib:$LIBRARY_PATH" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib/pkgconfig:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib/pkgconfig:/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib:/usr/local/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          echo "LIBRARY_PATH=/home/linuxbrew/.linuxbrew/opt/liblcf/lib:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib:/usr/local/lib:$LIBRARY_PATH" >> $GITHUB_ENV
 
       - name: Cache mkxp-z binary
         uses: actions/cache@v4
