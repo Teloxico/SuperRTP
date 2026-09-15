@@ -227,23 +227,44 @@ def verify_rmvx_screenshot(screenshot_path, target_char_path=None, mode="positiv
 
 def read_mkxp_build_metadata(mkxp_bin):
     bin_dir = os.path.dirname(os.path.abspath(mkxp_bin))
-    meta_path = os.path.join(bin_dir, "mkxp-z.build.json")
-    if os.path.exists(meta_path):
-        try:
-            with open(meta_path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    # Fallback to default build metadata
-    return {
-        "runtime": "mkxp-z",
-        "pinned_commit": PINNED_MKXP_COMMIT,
-        "mri_version": "3.2",
-        "workdir_current": True,
-        "static_executable": False,
-        "shared_fluid": False,
-        "build_config_revision": "buildcfg2"
-    }
+    candidates = [
+        os.path.join(bin_dir, "mkxp-z.build.json"),
+        os.path.expanduser("~/.local/bin/mkxp-z.build.json"),
+    ]
+    meta_path = None
+    for cand in candidates:
+        if os.path.exists(cand):
+            meta_path = cand
+            break
+
+    if not meta_path:
+        raise FileNotFoundError(
+            f"mkxp-z build metadata file 'mkxp-z.build.json' not found. "
+            "Actual build metadata is strictly required to prove runtime provenance."
+        )
+
+    with open(meta_path, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if not isinstance(data, dict):
+        raise ValueError(f"Invalid mkxp-z build metadata in {meta_path}: expected JSON object")
+    if data.get("runtime") != "mkxp-z":
+        raise ValueError(f"Invalid runtime in build metadata: expected 'mkxp-z', got {data.get('runtime')}")
+    if data.get("pinned_commit") != PINNED_MKXP_COMMIT:
+        raise ValueError(f"Invalid pinned_commit in build metadata: expected '{PINNED_MKXP_COMMIT}', got {data.get('pinned_commit')}")
+    if data.get("workdir_current") is not True:
+        raise ValueError(f"Invalid workdir_current in build metadata: expected true, got {data.get('workdir_current')}")
+    if data.get("static_executable") is not False:
+        raise ValueError(f"Invalid static_executable in build metadata: expected false, got {data.get('static_executable')}")
+    if data.get("shared_fluid") is not False:
+        raise ValueError(f"Invalid shared_fluid in build metadata: expected false, got {data.get('shared_fluid')}")
+    if data.get("build_config_revision") != "buildcfg2":
+        raise ValueError(f"Invalid build_config_revision in build metadata: expected 'buildcfg2', got {data.get('build_config_revision')}")
+    mri_ver = data.get("mri_version")
+    if not mri_ver or not isinstance(mri_ver, str) or len(mri_ver.strip()) == 0:
+        raise ValueError(f"Invalid or empty mri_version in build metadata: {mri_ver}")
+
+    return data
 
 def run_capture(cfg):
     """Executes live mkxp-z RGSS2 runtime under Xvfb and captures positive and negative controls."""
@@ -489,10 +510,12 @@ def verify_evidence_chain(evidence_path, cfg):
         raise ValueError("mkxp_z_build_configuration.workdir_current must be true")
     if build_cfg.get("static_executable") is not False:
         raise ValueError("mkxp_z_build_configuration.static_executable must be false")
-    if not build_cfg.get("mri_version"):
-        raise ValueError("mkxp_z_build_configuration.mri_version must be non-empty")
+    if not build_cfg.get("mri_version") or not isinstance(build_cfg.get("mri_version"), str):
+        raise ValueError("mkxp_z_build_configuration.mri_version must be non-empty string")
     if build_cfg.get("shared_fluid") is not False:
         raise ValueError("mkxp_z_build_configuration.shared_fluid must be false")
+    if build_cfg.get("build_config_revision") != "buildcfg2":
+        raise ValueError(f"mkxp_z_build_configuration.build_config_revision mismatch: expected 'buildcfg2', got '{build_cfg.get('build_config_revision')}'")
 
     # Check exit codes
     if evidence.get("positive_exit_code") != 0:
