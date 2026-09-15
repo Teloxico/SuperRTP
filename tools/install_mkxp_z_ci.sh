@@ -24,6 +24,7 @@ if command -v apt-get >/dev/null 2>&1; then
     meson ninja-build xxd cmake \
     libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev \
     libopenal-dev libvorbis-dev libogg-dev libphysfs-dev libtheora-dev \
+    libpixman-1-dev libpng-dev zlib1g-dev libuchardet-dev libbz2-dev libfreetype-dev \
     ruby-dev
 fi
 
