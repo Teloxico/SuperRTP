@@ -60,12 +60,26 @@ if ! pkg-config --exists SDL2_sound 2>/dev/null && ! [ -f /usr/local/lib/libSDL2
   rm -rf "${TMP_SDL_SOUND}"
 fi
 
-EXTRA_LINK_ARGS="['-ltheoradec']"
+# Provide libiconv and libcharset archives on Linux (glibc provides iconv in libc)
+if ! [ -f /usr/local/lib/libiconv.a ] && ! [ -f /usr/lib/libiconv.so ]; then
+  echo "Creating iconv and charset static library archives for glibc compatibility..."
+  if command -v sudo >/dev/null 2>&1; then
+    sudo ar cr /usr/local/lib/libiconv.a
+    sudo ar cr /usr/local/lib/libcharset.a
+    sudo ldconfig || true
+  else
+    mkdir -p "${HOME}/.local/lib"
+    ar cr "${HOME}/.local/lib/libiconv.a"
+    ar cr "${HOME}/.local/lib/libcharset.a"
+  fi
+fi
+
+EXTRA_LINK_ARGS="['-L/usr/local/lib', '-ltheoradec']"
 if [[ -d "/home/linuxbrew/.linuxbrew/lib" ]]; then
   export PKG_CONFIG_PATH="/home/linuxbrew/.linuxbrew/lib/pkgconfig:/home/linuxbrew/.linuxbrew/opt/sdl2_sound/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
   export LD_LIBRARY_PATH="/home/linuxbrew/.linuxbrew/lib:${LD_LIBRARY_PATH:-}"
   export LIBRARY_PATH="/home/linuxbrew/.linuxbrew/lib:${LIBRARY_PATH:-}"
-  EXTRA_LINK_ARGS="['-ltheoradec', '-Wl,-rpath,/home/linuxbrew/.linuxbrew/lib']"
+  EXTRA_LINK_ARGS="['-L/usr/local/lib', '-ltheoradec', '-Wl,-rpath,/home/linuxbrew/.linuxbrew/lib']"
 fi
 if [[ -d "/usr/local/lib" ]]; then
   export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig:${PKG_CONFIG_PATH:-}"
