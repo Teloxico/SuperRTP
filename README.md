@@ -42,11 +42,11 @@ Runtime Verification (EasyRPG Player, mkxp-z, WOLF tools)
 
 See [docs/architecture.md](docs/architecture.md) for full architectural specifications and compatibility models.
 
-## Current Status: Phase 1, 2 & 3 Cross-Target Vertical Slices (Hardened)
+## Current Status: Phase 1, 2, 3 & 4 Cross-Target Vertical Slices (Hardened)
 
-The compatibility slices are implemented, hardened, and verified for **cross-target compatibility** across both **RPG Maker 2000 (`rm2000`)** and **RPG Maker 2003 (`rm2003`)** for both **CharSet** and **ChipSet** categories from shared canonical source assets:
+The compatibility slices are implemented, hardened, and verified for **cross-target compatibility** across **RPG Maker 2000 (`rm2000`)**, **RPG Maker 2003 (`rm2003`)**, and **RPG Maker XP (`rmxp`)** from shared canonical source assets:
 
-### 1. CharSet Walking Character Compatibility Slice
+### 1. CharSet Walking Character Compatibility Slice (Tasks 1 & 2)
 - **Single Canonical Asset:** `test.calibration.walking-character`
   - Neutral 32-bit RGBA source ([`registry/assets/test_calibration_walking_character.rgba`](registry/assets/test_calibration_walking_character.rgba)) and preview ([`test_calibration_walking_character_master.png`](registry/assets/test_calibration_walking_character_master.png)).
   - 100% synthetic geometric primitives (directional chevrons, step markers, frame boundary calibration ticks).
@@ -74,7 +74,7 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
     - [`artifacts/runtime/rm2003/charset/`](artifacts/runtime/rm2003/charset/) (`rm2003_charset_down.png`, `left`, `up`, `right`, and `negative_control.png`)
   - Isolated negative controls verified (`Image not found: CharSet/Actor1` for RM2000; `Image not found: CharSet/Hero1` for RM2003).
 
-### 2. ChipSet Fixed-Tile & Layer Composition Slice
+### 2. ChipSet Fixed-Tile & Layer Composition Slice (Task 3)
 - **Single Canonical Asset:** `test.calibration.map-chipset`
   - Neutral 32-bit RGBA source ([`registry/assets/test_calibration_map_chipset.rgba`](registry/assets/test_calibration_map_chipset.rgba)) and preview ([`test_calibration_map_chipset.master.png`](registry/assets/test_calibration_map_chipset.master.png)).
   - 100% synthetic geometric primitives (Blocks E & F fixed tiles).
@@ -96,6 +96,34 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
   - Positive controls verify clean resolution via RTP alias `Basis` (RM2000) and `Main` (RM2003).
   - Negative controls isolate missing asset detection (`Image not found: ChipSet/Basis` for RM2000; `Image not found: ChipSet/Main` for RM2003).
   - Screenshots inspected and verified under [`artifacts/runtime/rm2000/chipset/`](artifacts/runtime/rm2000/chipset/) and [`artifacts/runtime/rm2003/chipset/`](artifacts/runtime/rm2003/chipset/).
+
+### 3. RPG Maker XP (RGSS1) Character Compatibility Slice (Task 4)
+- **Shared Canonical Source:** Reuses the exact same canonical `test.calibration.walking-character` raw source (SHA-256: `78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790`).
+- **RGSS1 Character Layout & Geometry:**
+  - Extracts Character 0 (top-left 72×128 region, 24×32 frames).
+  - Remaps 4 directional rows from RM2k order (`UP`, `RIGHT`, `DOWN`, `LEFT`) to RGSS1 order:
+    - **Row 0**: Facing **Down** (`v`)
+    - **Row 1**: Facing **Left** (`<`)
+    - **Row 2**: Facing **Right** (`>`)
+    - **Row 3**: Facing **Up** (`^`)
+  - Adapts 3 animation phases (`STEP_LEFT`, `IDLE`, `STEP_RIGHT`) into standard 4-column XP layout:
+    - **Column 0**: Step Left
+    - **Column 1**: Idle / Standing
+    - **Column 2**: Step Right
+    - **Column 3**: Idle / Standing (duplicated from Column 1)
+  - Output sheet dimensions: **96×128** pixels.
+- **Deterministic 32-bit Truecolor RGBA Encoder:**
+  - Encodes directly into 32-bit truecolor RGBA PNG (Color Type 6, bit depth 8) using RFC 1951 stored blocks for bit-level determinism across platforms.
+  - Strictly omits `PLTE` chunk and preserves full alpha channel ($0 \le \alpha \le 255$).
+- **Target Slot Mapping:**
+  - `rmxp`: Emits `Graphics/Characters/001-Fighter01.png` (SHA-256: `b4e81694247632b5580b5eef55a17e61c6afd709092de0e574aed70b41759743`).
+- **Runtime & Visual Verification (mkxp-z):**
+  - Executed using pinned `mkxp-z` (commit `826929eeb3ebc4b887c011604919217a790770f4`) with clean-room RGSS1 test harness ([`tests/fixtures/rmxp_character_min/`](tests/fixtures/rmxp_character_min/)).
+  - Positive control: Renders 96×128 sprite over a centered high-contrast test pad (260, 164, 120×152) with distinct corner alignment markers (Red TL, Green TR, Blue BL, Yellow BR).
+  - Deterministic pixel assertions verify directional arrow tips and transparency notches exposing underlying pad color across all 4 rows.
+  - Negative control: With empty RTP, `Bitmap.new` raises `Errno::ENOENT`, logged as `SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01` with clean non-zero exit (exit code 1). Negative screenshot captures blank pad with no sprite rendered.
+  - Durable evidence recorded and verified in [`artifacts/runtime/rmxp/character/verification_evidence.json`](artifacts/runtime/rmxp/character/verification_evidence.json).
+
 
 ## Repository Layout
 
@@ -119,34 +147,17 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
 
 ## Verification & Build Commands
 
-### 1. Run Automated Test Suite
+### 1. Run Automated Test Suites
 ```bash
+# Tasks 1–3: RM2000 & RM2003 CharSet and ChipSet test suite (23 tests)
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_vertical_slice.py
+
+# Task 4: RPG Maker XP / RGSS1 Character test suite (11 tests)
+SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmxp_vertical_slice.py
 ```
-Executes 23 mechanical checks:
-1. Canonical master RGBA and preview deterministic reproducibility (CharSet)
-2. Target PNG structural compliance (288×256, 8-bit indexed, color type 3, index 0 transparent)
-3. Provenance schema completeness and clean-room attestations
-4. Target builder byte-for-byte reproducibility across clean runs and RM2000 slot accuracy
-5. Validator aggressive rejection of corrupted / invalid assets
-6. JSON schema validation on all registry metadata
-7. RM2000 clean-room fixture binary and source hash integrity against `fixture_manifest.json`
-8. Headless EasyRPG Player RM2000 positive control (clean resolution without missing asset warnings)
-9. Headless EasyRPG Player RM2000 negative control (isolated `Image not found: CharSet/Actor1` failure)
-10. RM2000 evidence chain cryptographic integrity and 4-direction runtime verification screenshots
-11. RM2000 sprite arrow shape orientation and directional asymmetry verification
-12. RM2003 target builder, cross-target byte determinism with RM2000, and Hero1 alias inclusion
-13. RM2003 clean-room test fixture manifest & programmatic graphics integrity
-14. Real EasyRPG Player headless RM2003 RTP resolution (positive control, clean logs)
-15. Real EasyRPG Player headless RM2003 missing-asset fallback (negative control, exact failure isolation)
-16. RM2003 four-direction runtime verification evidence chain & directional arrow assertions
-17. ChipSet canonical asset reproducibility, schemas, and engine-specific slot mappings (RM2000 Basis vs RM2003 Main/Basic)
-18. ChipSet multi-category target builder, manifest semantic category presence, category mismatch rejection, and cross-target byte determinism
-19. RM2000 and RM2003 clean-room ChipSet fixture manifests, dynamic LCF regeneration, and bundled graphics
-20. Real EasyRPG Player RM2000 ChipSet positive control (Basis) and negative control (`Image not found: ChipSet/Basis`)
-21. Real EasyRPG Player RM2003 ChipSet positive control (Main) and negative control (`Image not found: ChipSet/Main`)
-22. Durable ChipSet runtime verification evidence chain, hashes, and upper/lower layer transparency composition
-23. Adversarial evidence-tamper rejection verifying all bound inputs (canonical source, target World.png, manifests, logs, diagnostics, screenshots, engine modes, slots, EasyRPG version)
+Executes 34 mechanical checks:
+- **Tasks 1–3 Suite (23 tests)**: Canonical master RGBA/PNG reproducibility, 8-bit indexed format compliance, provenance schemas, deterministic target builder, validator rejections, liblcf fixture generation, headless EasyRPG positive/negative controls, 4-direction turning verification, ChipSet fixed-tile geometry (Blocks E/F), layer transparency composition, and adversarial evidence tamper suites.
+- **Task 4 Suite (11 tests)**: Deterministic truecolor RGBA PNG encoding with full alpha range, 4×4 RGSS1 extraction and direction remapping from canonical sheet, RMXP target build reproducibility, frozen baseline regression integrity across all 3 engines, target validation for RMXP, validator rejections (bad dimensions, paletted PNG, missing alpha, idle column mismatch), clean-room RGSS1 fixture manifest integrity, live headless mkxp-z positive resolution, live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and adversarial tamper rejection.
 
 ### 2. Generate Clean-Room Fixture Graphics
 ```bash
@@ -160,31 +171,39 @@ python3 tools/generate_calibration_charset.py
 python3 tools/generate_calibration_chipset.py
 ```
 
-### 4. Build Target Packs (RM2000 & RM2003)
+### 4. Build Target Packs (RM2000, RM2003 & RMXP)
 ```bash
 python3 tools/build_target.py --target rm2000 --clean
 python3 tools/build_target.py --target rm2003 --clean
+python3 tools/build_target.py --target rmxp --clean
 ```
 
 ### 5. Validate Target Packs
 ```bash
 python3 tools/validate_target.py --target rm2000
 python3 tools/validate_target.py --target rm2003
+python3 tools/validate_target.py --target rmxp
 ```
 
-### 6. Runtime Verification & Evidence Verification (EasyRPG Player)
+### 6. Runtime Verification & Evidence Verification (EasyRPG Player & mkxp-z)
 ```bash
-# Verify existing evidence chains, screenshot hashes, and logs for CharSet:
+# Verify existing evidence chains, screenshot hashes, and logs:
 python3 tools/verify_runtime.py --target all --verify
-
-# Verify existing evidence chains, screenshot hashes, and layer composition for ChipSet:
 python3 tools/verify_chipset_runtime.py --target all --verify
+python3 tools/verify_rmxp_runtime.py --verify
 
 # Re-run live replay / capture under virtual X11:
 python3 tools/verify_runtime.py --target all --run-replay
 python3 tools/verify_chipset_runtime.py --target all --run-capture
+python3 tools/verify_rmxp_runtime.py --run-capture
 ```
-Generates [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json) and [`artifacts/runtime/rm2003/charset/verification_evidence.json`](artifacts/runtime/rm2003/charset/verification_evidence.json) cryptographically binding engine version, target manifest hash, fixture manifest hash, replay file hash, and screenshot hashes.
+Generates and validates cryptographic evidence chains:
+- [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json)
+- [`artifacts/runtime/rm2003/charset/verification_evidence.json`](artifacts/runtime/rm2003/charset/verification_evidence.json)
+- [`artifacts/runtime/rm2000/chipset/verification_evidence.json`](artifacts/runtime/rm2000/chipset/verification_evidence.json)
+- [`artifacts/runtime/rm2003/chipset/verification_evidence.json`](artifacts/runtime/rm2003/chipset/verification_evidence.json)
+- [`artifacts/runtime/rmxp/character/verification_evidence.json`](artifacts/runtime/rmxp/character/verification_evidence.json)
+
 
 ## Clean-Room Policy & Licensing
 

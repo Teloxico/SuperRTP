@@ -294,7 +294,7 @@ def verify_evidence_chain(target="rm2000"):
 
     # Check EasyRPG pinned version
     ver = evidence.get("easyrpg_version", "")
-    if "0.8.1.1" not in ver:
+    if not re.search(r'\b0\.8\.1\.1\b', ver):
         raise ValueError(f"EasyRPG version pin violation: expected 0.8.1.1 in '{ver}'")
 
     # Check recorded_at ISO-8601 validity
