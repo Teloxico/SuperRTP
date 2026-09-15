@@ -4,8 +4,8 @@ set -euo pipefail
 PINNED_COMMIT="826929eeb3ebc4b887c011604919217a790770f4"
 INSTALL_DIR="${HOME}/.local/bin"
 MKXP_BIN="${INSTALL_DIR}/mkxp-z"
-
 BUILD_META_FILE="${INSTALL_DIR}/mkxp-z.build.json"
+mkdir -p "${INSTALL_DIR}"
 
 write_build_metadata() {
   local mri_ver="$1"
