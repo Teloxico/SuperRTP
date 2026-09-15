@@ -332,6 +332,27 @@ class TestRMVXAceVerticalSlice(unittest.TestCase):
                     f"Validator unexpectedly passed under attack: {attack_name}"
                 )
 
+        # Top-level manifest identity attacks
+        top_level_attacks = [
+            ("wrong top-level target", {"target": "rmvx"}),
+            ("wrong top-level engine", {"engine": "RPG Maker VX"}),
+            ("wrong top-level target_name", {"target_name": "RPG Maker VX Runtime Package"}),
+        ]
+
+        for attack_name, mutation in top_level_attacks:
+            with tempfile.TemporaryDirectory() as td:
+                shutil.copytree(real_target_dir, td, dirs_exist_ok=True)
+                mutated_manifest = json.loads(json.dumps(valid_manifest))
+                mutated_manifest.update(mutation)
+                with open(os.path.join(td, "manifest.json"), "w", encoding="utf-8") as f:
+                    json.dump(mutated_manifest, f, indent=2)
+
+                self.assertEqual(
+                    validate_target("rmvxace", target_dir=td),
+                    1,
+                    f"Validator unexpectedly passed under top-level attack: {attack_name}"
+                )
+
         # PNG image mutation attack: permute directional rows (Row 0 DOWN swapped with Row 3 UP)
         with tempfile.TemporaryDirectory() as td:
             shutil.copytree(real_target_dir, td, dirs_exist_ok=True)
@@ -385,8 +406,8 @@ class TestRMVXAceVerticalSlice(unittest.TestCase):
             self.assertTrue(os.path.exists(filepath), f"Missing fixture file: {filename}")
             self.assertEqual(compute_sha256(filepath), fileinfo["sha256"])
 
-    def test_12_rmvxace_positive_runtime_execution(self):
-        """Verifies live mkxp-z RGSS3 positive runtime execution if mkxp-z is available."""
+    def test_12_rmvxace_positive_runtime_evidence_and_markers(self):
+        """Verifies mkxp-z RGSS3 positive runtime evidence and deterministic log markers."""
         mkxp_bin = shutil.which("mkxp-z") or os.path.expanduser("~/.local/bin/mkxp-z")
         if not (os.path.exists(mkxp_bin) and os.access(mkxp_bin, os.X_OK)):
             if os.environ.get("SUPERRTP_REQUIRE_RUNTIME") == "1":
@@ -441,6 +462,7 @@ class TestRMVXAceVerticalSlice(unittest.TestCase):
             ("startup_log_identity", "RGSS version 2 (RPG Maker VX) "),
             ("category", "ChipSet"),
             ("requested_resource", "Graphics/Characters/Actor2"),
+            ("canonical_asset_id", "test.calibration.hero"),
             ("canonical_asset_sha256", "0" * 64),
             ("source_character_indices", [0, 1, 2, 3]),
             ("transform_policy", "rm2k8_to_rgss2_standard_character_sheet_v1"),
@@ -473,6 +495,69 @@ class TestRMVXAceVerticalSlice(unittest.TestCase):
             finally:
                 if os.path.exists(tf_path):
                     os.unlink(tf_path)
+
+        # Coordinated portable config attacks (where sha256 is recomputed to match tampered object)
+        coord_config_attacks = [
+            ("positive RTP points to foreign directory", "positive_portable_config", "RTP", ["generated/rmvx"]),
+            ("positive RTP points to empty list", "positive_portable_config", "RTP", []),
+            ("negative RTP points to generated/rmvxace", "negative_portable_config", "RTP", ["generated/rmvxace"]),
+            ("positive customScript altered", "positive_portable_config", "customScript", "other.rb"),
+            ("negative customScript altered", "negative_portable_config", "customScript", "other.rb"),
+            ("positive pathCache disabled", "positive_portable_config", "pathCache", False),
+            ("negative pathCache disabled", "negative_portable_config", "pathCache", False),
+            ("positive gameFolder wrong", "positive_portable_config", "gameFolder", "tests/fixtures/wrong"),
+            ("negative gameFolder wrong", "negative_portable_config", "gameFolder", "tests/fixtures/wrong"),
+            ("positive rgssVersion wrong", "positive_portable_config", "rgssVersion", 2),
+            ("negative rgssVersion wrong", "negative_portable_config", "rgssVersion", 2),
+        ]
+
+        for desc, cfg_key, prop, bad_val in coord_config_attacks:
+            tampered = json.loads(json.dumps(valid_evidence))
+            tampered[cfg_key][prop] = bad_val
+            tampered[f"{cfg_key}_sha256"] = hashlib.sha256(
+                json.dumps(tampered[cfg_key], sort_keys=True).encode("utf-8")
+            ).hexdigest()
+
+            with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as tf:
+                json.dump(tampered, tf, indent=2)
+                tf_path = tf.name
+
+            try:
+                with self.assertRaises(Exception, msg=f"Coordinated config tamper '{desc}' unexpectedly passed"):
+                    verify_evidence_chain(custom_evidence_path=tf_path)
+            finally:
+                if os.path.exists(tf_path):
+                    os.unlink(tf_path)
+
+        # Coordinated positive runtime log attacks (log modified and hash recomputed)
+        log_attacks = [
+            ("omitted RGSS3 startup identity banner", lambda s: s.replace("RGSS version 3 (RPG Maker VX Ace)", "RGSS version 2 (RPG Maker VX)")),
+            ("omitted screen resolution marker", lambda s: s.replace("SUPERRTP_RGSS3_SCREEN 544x416\n", "")),
+            ("omitted character loaded marker", lambda s: s.replace("SUPERRTP_RMVXACE_CHARACTER_LOADED 288x256\n", "")),
+            ("omitted render done marker", lambda s: s.replace("SUPERRTP_RMVXACE_RENDER_DONE\n", "")),
+        ]
+
+        for desc, mutator in log_attacks:
+            with tempfile.TemporaryDirectory() as td:
+                shutil.copytree(cfg["artifacts_dir"], td, dirs_exist_ok=True)
+                td_pos_log = os.path.join(td, "positive_runtime.log")
+                with open(td_pos_log, "r", encoding="utf-8") as f:
+                    orig_log = f.read()
+
+                mutated_log = mutator(orig_log)
+                self.assertNotEqual(orig_log, mutated_log, f"Mutator for '{desc}' made no changes")
+                with open(td_pos_log, "w", encoding="utf-8") as f:
+                    f.write(mutated_log)
+
+                tampered = json.loads(json.dumps(valid_evidence))
+                tampered["positive_runtime_log_sha256"] = compute_sha256(td_pos_log)
+
+                td_ev_path = os.path.join(td, "verification_evidence.json")
+                with open(td_ev_path, "w", encoding="utf-8") as f:
+                    json.dump(tampered, f, indent=2)
+
+                with self.assertRaises(Exception, msg=f"Coordinated log tamper '{desc}' unexpectedly passed"):
+                    verify_evidence_chain(custom_evidence_path=td_ev_path)
 
         # Attack nested build_metadata fields
         build_meta_attacks = [
