@@ -277,6 +277,9 @@ def verify_evidence_chain(custom_evidence_path=None):
     with open(ev_path, "r", encoding="utf-8") as f:
         ev = json.load(f)
 
+    ev_dir = os.path.dirname(os.path.abspath(ev_path))
+    artifacts_dir = ev_dir if os.path.exists(os.path.join(ev_dir, "positive_runtime.log")) else cfg["artifacts_dir"]
+
     # 1. Verify target identity
     if ev.get("target") != "rmvxace":
         raise ValueError(f"Evidence target mismatch: expected 'rmvxace', got {ev.get('target')}")
@@ -296,6 +299,8 @@ def verify_evidence_chain(custom_evidence_path=None):
         raise ValueError(f"Evidence category mismatch: expected 'Character', got {ev.get('category')}")
     if ev.get("requested_resource") != "Graphics/Characters/Actor1":
         raise ValueError(f"Evidence requested_resource mismatch: expected 'Graphics/Characters/Actor1', got {ev.get('requested_resource')}")
+    if ev.get("canonical_asset_id") != "test.calibration.walking-character":
+        raise ValueError(f"Evidence canonical_asset_id mismatch: expected 'test.calibration.walking-character', got {ev.get('canonical_asset_id')}")
     if ev.get("source_character_indices") != [0, 1, 2, 3, 4, 5, 6, 7]:
         raise ValueError(f"Evidence source_character_indices mismatch: {ev.get('source_character_indices')}")
     if ev.get("transform_policy") != "rm2k8_to_rgss3_standard_character_sheet_v1":
@@ -353,17 +358,35 @@ def verify_evidence_chain(custom_evidence_path=None):
         raise ValueError("Fixture manifest hash mismatch")
 
     # 6. Verify portable configs
-    pos_conf_sha = hashlib.sha256(json.dumps(ev["positive_portable_config"], sort_keys=True).encode("utf-8")).hexdigest()
-    if pos_conf_sha != ev["positive_portable_config_sha256"]:
+    pos_conf = ev.get("positive_portable_config", {})
+    pos_conf_sha = hashlib.sha256(json.dumps(pos_conf, sort_keys=True).encode("utf-8")).hexdigest()
+    if pos_conf_sha != ev.get("positive_portable_config_sha256"):
         raise ValueError("Positive portable config hash mismatch")
-    if ev["positive_portable_config"].get("rgssVersion") != 3:
-        raise ValueError(f"Positive config rgssVersion must be 3, got {ev['positive_portable_config'].get('rgssVersion')}")
+    if pos_conf.get("rgssVersion") != 3:
+        raise ValueError(f"Positive config rgssVersion must be 3, got {pos_conf.get('rgssVersion')}")
+    if pos_conf.get("gameFolder") != "tests/fixtures/rmvxace_character_min":
+        raise ValueError(f"Positive config gameFolder mismatch: expected 'tests/fixtures/rmvxace_character_min', got {pos_conf.get('gameFolder')}")
+    if pos_conf.get("customScript") != "fixture.rb":
+        raise ValueError(f"Positive config customScript mismatch: expected 'fixture.rb', got {pos_conf.get('customScript')}")
+    if pos_conf.get("pathCache") is not True:
+        raise ValueError(f"Positive config pathCache must be true, got {pos_conf.get('pathCache')}")
+    if pos_conf.get("RTP") != ["generated/rmvxace"]:
+        raise ValueError(f"Positive config RTP mismatch: expected ['generated/rmvxace'], got {pos_conf.get('RTP')}")
 
-    neg_conf_sha = hashlib.sha256(json.dumps(ev["negative_portable_config"], sort_keys=True).encode("utf-8")).hexdigest()
-    if neg_conf_sha != ev["negative_portable_config_sha256"]:
+    neg_conf = ev.get("negative_portable_config", {})
+    neg_conf_sha = hashlib.sha256(json.dumps(neg_conf, sort_keys=True).encode("utf-8")).hexdigest()
+    if neg_conf_sha != ev.get("negative_portable_config_sha256"):
         raise ValueError("Negative portable config hash mismatch")
-    if ev["negative_portable_config"].get("rgssVersion") != 3:
-        raise ValueError(f"Negative config rgssVersion must be 3, got {ev['negative_portable_config'].get('rgssVersion')}")
+    if neg_conf.get("rgssVersion") != 3:
+        raise ValueError(f"Negative config rgssVersion must be 3, got {neg_conf.get('rgssVersion')}")
+    if neg_conf.get("gameFolder") != "tests/fixtures/rmvxace_character_min":
+        raise ValueError(f"Negative config gameFolder mismatch: expected 'tests/fixtures/rmvxace_character_min', got {neg_conf.get('gameFolder')}")
+    if neg_conf.get("customScript") != "fixture.rb":
+        raise ValueError(f"Negative config customScript mismatch: expected 'fixture.rb', got {neg_conf.get('customScript')}")
+    if neg_conf.get("pathCache") is not True:
+        raise ValueError(f"Negative config pathCache must be true, got {neg_conf.get('pathCache')}")
+    if neg_conf.get("RTP") != []:
+        raise ValueError(f"Negative config RTP mismatch: expected empty list [], got {neg_conf.get('RTP')}")
 
     # 7. Verify exit codes and logs
     if ev.get("positive_exit_code") != 0:
@@ -371,11 +394,24 @@ def verify_evidence_chain(custom_evidence_path=None):
     if ev.get("negative_exit_code") != 1:
         raise ValueError(f"Expected negative exit code 1, got {ev.get('negative_exit_code')}")
 
-    pos_log_path = os.path.join(cfg["artifacts_dir"], "positive_runtime.log")
+    pos_log_path = os.path.join(artifacts_dir, "positive_runtime.log")
     if compute_sha256(pos_log_path) != ev["positive_runtime_log_sha256"]:
         raise ValueError("Positive runtime log hash mismatch")
 
-    neg_log_path = os.path.join(cfg["artifacts_dir"], "negative_runtime.log")
+    with open(pos_log_path, "r", encoding="utf-8") as f:
+        pos_log_content = f.read()
+
+    expected_pos_markers = [
+        ev.get("startup_log_identity", "").strip() or "RGSS version 3 (RPG Maker VX Ace)",
+        "SUPERRTP_RGSS3_SCREEN 544x416",
+        "SUPERRTP_RMVXACE_CHARACTER_LOADED 288x256",
+        "SUPERRTP_RMVXACE_RENDER_DONE"
+    ]
+    for marker in expected_pos_markers:
+        if marker not in pos_log_content:
+            raise ValueError(f"Required positive runtime log marker not found in {pos_log_path}: '{marker}'")
+
+    neg_log_path = os.path.join(artifacts_dir, "negative_runtime.log")
     if compute_sha256(neg_log_path) != ev["negative_runtime_log_sha256"]:
         raise ValueError("Negative runtime log hash mismatch")
 
@@ -387,11 +423,11 @@ def verify_evidence_chain(custom_evidence_path=None):
         raise ValueError("Negative diagnostic does not mention Graphics/Characters/Actor1")
 
     # 8. Verify screenshots and pixel content
-    pos_shot_path = os.path.join(cfg["artifacts_dir"], "rmvxace_character_positive.png")
+    pos_shot_path = os.path.join(artifacts_dir, "rmvxace_character_positive.png")
     if compute_sha256(pos_shot_path) != ev["positive_screenshot_sha256"]:
         raise ValueError("Positive screenshot hash mismatch")
 
-    neg_shot_path = os.path.join(cfg["artifacts_dir"], "rmvxace_character_negative_control.png")
+    neg_shot_path = os.path.join(artifacts_dir, "rmvxace_character_negative_control.png")
     if compute_sha256(neg_shot_path) != ev["negative_screenshot_sha256"]:
         raise ValueError("Negative screenshot hash mismatch")
 

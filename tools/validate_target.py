@@ -663,6 +663,25 @@ def validate_target(target, target_dir=None):
     all_passed = True
     validated_count = 0
 
+    # Top-level manifest identity validation against target and slot registry
+    manifest_target = manifest.get("target")
+    expected_target = slots_data.get("target", target)
+    if manifest_target != target or manifest_target != expected_target:
+        print(f"  FAILED: Target mismatch in manifest: expected '{target}', got '{manifest_target}'")
+        all_passed = False
+
+    expected_engine = slots_data.get("engine")
+    manifest_engine = manifest.get("engine")
+    if expected_engine and manifest_engine != expected_engine:
+        print(f"  FAILED: Engine mismatch in manifest: expected '{expected_engine}', got '{manifest_engine}'")
+        all_passed = False
+
+    expected_target_name = slots_data.get("target_name")
+    manifest_target_name = manifest.get("target_name")
+    if expected_target_name and manifest_target_name != expected_target_name:
+        print(f"  FAILED: Target name mismatch in manifest: expected '{expected_target_name}', got '{manifest_target_name}'")
+        all_passed = False
+
     for entry in manifest.get("entries", []):
         slot = entry["slot"]
         asset_id = entry["asset_id"]
