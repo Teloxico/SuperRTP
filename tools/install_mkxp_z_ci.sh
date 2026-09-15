@@ -26,7 +26,16 @@ EOF
 if [[ -x "${MKXP_BIN}" ]]; then
   echo "Found existing mkxp-z at ${MKXP_BIN}, checking commit pin..."
   if strings "${MKXP_BIN}" | grep "826929e" >/dev/null 2>&1; then
-    echo "mkxp-z matches pinned commit 826929e. Using cached binary."
+    echo "mkxp-z matches pinned commit 826929e. Checking runtime libraries..."
+    if command -v ldd >/dev/null 2>&1 && ldd "${MKXP_BIN}" 2>&1 | grep "not found" >/dev/null; then
+      echo "Missing shared libraries for cached mkxp-z, installing dependencies..."
+      if command -v apt-get >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends \
+          libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev \
+          libopenal-dev libvorbis-dev libogg-dev libphysfs-dev libtheora-dev ruby-dev
+      fi
+    fi
     if [[ ! -f "${BUILD_META_FILE}" ]]; then
       CACHED_MRI=""
       if command -v ruby >/dev/null 2>&1; then
