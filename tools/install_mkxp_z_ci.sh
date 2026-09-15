@@ -5,12 +5,36 @@ PINNED_COMMIT="826929eeb3ebc4b887c011604919217a790770f4"
 INSTALL_DIR="${HOME}/.local/bin"
 MKXP_BIN="${INSTALL_DIR}/mkxp-z"
 
-mkdir -p "${INSTALL_DIR}"
+BUILD_META_FILE="${INSTALL_DIR}/mkxp-z.build.json"
+
+write_build_metadata() {
+  local mri_ver="$1"
+  cat <<EOF > "${BUILD_META_FILE}"
+{
+  "runtime": "mkxp-z",
+  "pinned_commit": "${PINNED_COMMIT}",
+  "mri_version": "${mri_ver}",
+  "workdir_current": true,
+  "static_executable": false,
+  "shared_fluid": false,
+  "build_config_revision": "buildcfg2"
+}
+EOF
+  echo "Emitted build metadata to ${BUILD_META_FILE}"
+}
 
 if [[ -x "${MKXP_BIN}" ]]; then
   echo "Found existing mkxp-z at ${MKXP_BIN}, checking commit pin..."
   if strings "${MKXP_BIN}" | grep "826929e" >/dev/null 2>&1; then
     echo "mkxp-z matches pinned commit 826929e. Using cached binary."
+    if [[ ! -f "${BUILD_META_FILE}" ]]; then
+      CACHED_MRI=""
+      if command -v ruby >/dev/null 2>&1; then
+        CACHED_MRI=$(ruby -e 'require "rbconfig"; puts "#{RbConfig::CONFIG[\"MAJOR\"]}.#{RbConfig::CONFIG[\"MINOR\"]}"' 2>/dev/null || true)
+      fi
+      [[ -z "${CACHED_MRI}" ]] && CACHED_MRI="3.2"
+      write_build_metadata "${CACHED_MRI}"
+    fi
     exit 0
   else
     echo "mkxp-z binary does not match pinned commit. Rebuilding..."
@@ -135,4 +159,5 @@ else
 fi
 
 chmod +x "${MKXP_BIN}"
+write_build_metadata "${MRI_VERSION}"
 echo "Successfully installed mkxp-z to ${MKXP_BIN}"

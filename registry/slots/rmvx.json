@@ -1,0 +1,19 @@
+{
+  "target": "rmvx",
+  "target_name": "RPG Maker VX Runtime Package",
+  "engine": "RPG Maker VX",
+  "reference_source": "RPG Maker VX Resource Specifications / Steam Depot 521881",
+  "slots": {
+    "Graphics/Characters/Actor1.png": {
+      "asset_id": "test.calibration.walking-character",
+      "category": "Character",
+      "slot_path": "Graphics/Characters/Actor1.png",
+      "aliases": [],
+      "format": "truecolor-rgba-png",
+      "dimensions": [288, 256],
+      "source_character_indices": [0, 1, 2, 3, 4, 5, 6, 7],
+      "transform_policy": "rm2k8_to_rgss2_standard_character_sheet_v1",
+      "test_only": true
+    }
+  }
+}

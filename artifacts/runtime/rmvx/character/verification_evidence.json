@@ -1,0 +1,90 @@
+{
+  "target": "rmvx",
+  "engine": "RPG Maker VX",
+  "engine_mode": "rgss2",
+  "runtime": "mkxp-z",
+  "runtime_commit": "826929eeb3ebc4b887c011604919217a790770f4",
+  "rgss_version": 2,
+  "target_category": "Character",
+  "requested_resource": "Graphics/Characters/Actor1",
+  "source_character_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "transform_policy": "rm2k8_to_rgss2_standard_character_sheet_v1",
+  "mkxp_z_build_configuration": {
+    "workdir_current": true,
+    "static_executable": false,
+    "mri_version": "3.2",
+    "shared_fluid": false,
+    "build_config_revision": "buildcfg2"
+  },
+  "canonical_asset_id": "test.calibration.walking-character",
+  "canonical_source_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
+  "target_manifest_sha256": "45729ec181f066f0dcf99744d55a64e2667053864daacbf2f52b769224b11d08",
+  "target_character_sha256": "c6ed8cba9025b982c6300ed5e57a82aee99cc29f7929d81cf1b517ded47550bf",
+  "fixture_manifest_sha256": "b5e6c0aa3bb0437ba4738b3b96f41e2b9173657d5357c47f834412e277c34f13",
+  "fixture_script": "fixture.rb",
+  "fixture_script_sha256": "c334c48128b892c9114031743d1e847930b08d5706d453a4d302fd18e45a516a",
+  "positive_runtime_configuration": {
+    "rgssVersion": 2,
+    "gameFolder": "tests/fixtures/rmvx_character_min",
+    "customScript": "fixture.rb",
+    "pathCache": true,
+    "RTP": [
+      "generated/rmvx"
+    ]
+  },
+  "positive_runtime_configuration_sha256": "ae31968cdc4db91e0a65e75616390bc94510604db7203db4b0a501b89c137a3c",
+  "negative_runtime_configuration": {
+    "rgssVersion": 2,
+    "gameFolder": "tests/fixtures/rmvx_character_min",
+    "customScript": "fixture.rb",
+    "pathCache": true,
+    "RTP": []
+  },
+  "negative_runtime_configuration_sha256": "b8a18dc05e58844f4cdfb211eaef4c37ec9ea583ddf5d15942b2b26fabe78e30",
+  "positive_exit_code": 0,
+  "negative_exit_code": 1,
+  "positive_runtime_log": "positive_runtime.log",
+  "positive_runtime_log_sha256": "9e7b127093610b2ba1ab92d41bd584c3f292299264afd7e259e9718ec86f69a4",
+  "negative_runtime_log": "negative_runtime.log",
+  "negative_runtime_log_sha256": "bf41cdf901eafd8295a7ed595208635d97cf121f90c54f1fd2206bcfbd1777a2",
+  "mkxp_z_version": "2.4.2/826929e",
+  "recorded_at": "2026-09-15T05:39:38.368909+00:00",
+  "negative_control": {
+    "status": "VERIFIED",
+    "expected_missing_asset": "Graphics/Characters/Actor1",
+    "diagnostic": "SUPERRTP_RMVX_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1",
+    "screenshot": "rmvx_character_negative_control.png",
+    "screenshot_sha256": "3462da09c283164050ab70055ea464b441f577da5086e55e3100e03baf1da99a"
+  },
+  "screenshots": {
+    "rmvx_character_positive.png": "c05e6886efc2c630b5a5790bbedb358c65fc954dac0a806b14b1c3f4a1467fb2",
+    "rmvx_character_negative_control.png": "3462da09c283164050ab70055ea464b441f577da5086e55e3100e03baf1da99a"
+  },
+  "visual_verification": {
+    "positive_control": {
+      "status": "VERIFIED",
+      "mode": "positive",
+      "screenshot_dimensions": "544x416",
+      "pad_corners": "VERIFIED",
+      "composite_equality": "100% pixel match across 288x256 region",
+      "transparency_mechanics": "VERIFIED (alpha 0 exposes pad color 210,215,220)",
+      "all_8_character_blocks": "VERIFIED (4x2 grid, DOWN/LEFT/RIGHT/UP directions verified in all 8 blocks)"
+    },
+    "negative_control": {
+      "status": "VERIFIED",
+      "mode": "negative_control",
+      "screenshot_dimensions": "544x416",
+      "pad_corners": "VERIFIED",
+      "pad_blank": "VERIFIED"
+    }
+  }
+}

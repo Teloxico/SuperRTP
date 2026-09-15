@@ -1,0 +1,33 @@
+MKXP-Z VERSION: 2.4.2/826929e
+SUPERRTP_RGSS2_SCREEN 544x416
+SUPERRTP_RMVX_CHARACTER_LOADED 288x256
+SUPERRTP_RMVX_RENDER_DONE
+
+Could not read Game.ini 
+Game.ini: Could not determine encoding of Game.Title 
+RGSS version 2 (RPG Maker VX) 
+ALC_SOFT_pause_device present 
+Backend      : OpenGL 
+GL Vendor    : Mesa 
+GL Renderer  : llvmpipe (LLVM 21.1.8, 256 bits) 
+GL Version   : 4.5 (Compatibility Profile) Mesa 26.0.8-1ubuntu0.3 
+GLSL Version : 4.50 
+Loading path cache... 
+Path cache completed. 
+
+(process:546896): GLib-GObject-CRITICAL **: 11:09:33.177: g_param_spec_enum: assertion 'g_enum_get_value (enum_class, default_value) != NULL' failed
+
+(process:546896): GLib-GObject-CRITICAL **: 11:09:33.177: validate_pspec_to_install: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+
+(process:546896): GLib-GObject-CRITICAL **: 11:09:33.177: g_param_spec_ref_sink: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+
+(process:546896): GLib-GObject-CRITICAL **: 11:09:33.177: g_param_spec_unref: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+Warning: No soundfont specified, sound might be mute 
+Warning: No soundfont specified, sound might be mute 
+Primary font not found: UmePlus Gothic 
+Fallback font not found: MS Gothic 
+Fallback font not found: Courier New 
+Could not load Zlib. If this is important, make sure Ruby was built with static extensions, or that zlib.so is present and reachable by Ruby's loadpath. 
+EventThread termination requested 
+RGSS thread ack'd request after 0 ms 
+Shutting down. 

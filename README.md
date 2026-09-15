@@ -42,9 +42,9 @@ Runtime Verification (EasyRPG Player, mkxp-z, WOLF tools)
 
 See [docs/architecture.md](docs/architecture.md) for full architectural specifications and compatibility models.
 
-## Current Status: Phase 1, 2, 3 & 4 Cross-Target Vertical Slices (Hardened)
+## Current Status: Phase 1, 2, 3, 4 & 5 Cross-Target Vertical Slices (Hardened)
 
-The compatibility slices are implemented, hardened, and verified for **cross-target compatibility** across **RPG Maker 2000 (`rm2000`)**, **RPG Maker 2003 (`rm2003`)**, and **RPG Maker XP (`rmxp`)** from shared canonical source assets:
+The compatibility slices are implemented, hardened, and verified for **cross-target compatibility** across **RPG Maker 2000 (`rm2000`)**, **RPG Maker 2003 (`rm2003`)**, **RPG Maker XP (`rmxp`)**, and **RPG Maker VX (`rmvx`)** from shared canonical source assets:
 
 ### 1. CharSet Walking Character Compatibility Slice (Tasks 1 & 2)
 - **Single Canonical Asset:** `test.calibration.walking-character`
@@ -124,6 +124,38 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
   - Negative control: With empty RTP, `Bitmap.new` raises `Errno::ENOENT`, logged as `SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01` with clean non-zero exit (exit code 1). Negative screenshot captures blank pad with no sprite rendered.
   - Durable evidence recorded and verified in [`artifacts/runtime/rmxp/character/verification_evidence.json`](artifacts/runtime/rmxp/character/verification_evidence.json).
 
+### 4. RPG Maker VX (RGSS2) Standard 8-Character Compatibility Slice (Task 5)
+- **Shared Canonical Source:** Reuses the exact same canonical `test.calibration.walking-character` raw source (SHA-256: `78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790`).
+- **Standard 8-Character Sheet Geometry & Direction Rows:**
+  - Extracts all 8 characters ($0..7$) semantically via `extract_walking_frames()`.
+  - Packs characters in a $4 \times 2$ grid ($288 \times 256$ pixels), strictly preserving character indices without permutation.
+  - Each character is $72 \times 128$ pixels, comprising $3 \times 4$ cells of $24 \times 32$ pixels (96 cells total).
+  - Remaps 4 directional rows to RGSS2 standard order:
+    - **Row 0**: Facing **Down** (`v`)
+    - **Row 1**: Facing **Left** (`<`)
+    - **Row 2**: Facing **Right** (`>`)
+    - **Row 3**: Facing **Up** (`^`)
+  - Three animation columns per character:
+    - **Column 0**: Step Left
+    - **Column 1**: Idle / Standing
+    - **Column 2**: Step Right
+- **Distinction from RPG Maker XP:**
+  - Unlike RMXP (which targets single characters expanded into 4 columns at $96 \times 128$), RPG Maker VX standard Character sheets contain all 8 characters organized in 4 columns $\times$ 2 rows with 3 animation steps ($288 \times 256$).
+- **Clean-Room Boundary & Scope Invariant:**
+  - Zero proprietary RPG Maker VX RTP creative content. The official `Actor1.png` pixels were never downloaded, viewed, or traced.
+  - Prefix behaviors (`$` for single-character sheets, `!` for disabling the 4-pixel shift and bush transparency depth) are documented as unverified and are not implemented in this slice.
+  - RPG Maker VX Ace (`rmvxace`) / RGSS3 is out of scope and not implemented in this slice.
+- **Deterministic 32-bit Truecolor RGBA Encoder:**
+  - Encodes directly into 32-bit truecolor RGBA PNG (Color Type 6, bit depth 8) with RFC 1951 stored blocks for deterministic byte output across platforms.
+  - Strictly omits `PLTE` chunk and maintains full alpha channel ($0 \le \alpha \le 255$).
+- **Target Slot Mapping:**
+  - `rmvx`: Emits `Graphics/Characters/Actor1.png` (SHA-256: `c6ed8cba9025b982c6300ed5e57a82aee99cc29f7929d81cf1b517ded47550bf`). Slot provenance documented from Steam Depot 521881.
+- **Runtime & Visual Verification (mkxp-z in RGSS2 mode):**
+  - Executed using pinned `mkxp-z` (commit `826929eeb3ebc4b887c011604919217a790770f4`) in RGSS2 mode (`rgssVersion: 2`, screen resolution $544 \times 416$) against clean-room test harness ([`tests/fixtures/rmvx_character_min/`](tests/fixtures/rmvx_character_min/)).
+  - Fixture asserts $544 \times 416$ resolution and loads via RTP omitting extension (`Bitmap.new("Graphics/Characters/Actor1")`).
+  - Positive control: Renders $288 \times 256$ sheet centered at $(128, 80)$ over a high-contrast test pad $(116, 68, 312 \times 280)$ with 4 distinct corner alignment markers. Verified 100% pixel composite match across the $288 \times 256$ region against underlying pad, verified all 8 character block placements, and verified directional arrow orientations and transparency notches.
+  - Negative control: With empty RTP, `Bitmap.new` raises `Errno::ENOENT`, logged as `SUPERRTP_RMVX_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1` with clean non-zero exit (exit code 1). Negative screenshot captures blank pad with no sprite rendered.
+  - Durable evidence recorded and verified in [`artifacts/runtime/rmvx/character/verification_evidence.json`](artifacts/runtime/rmvx/character/verification_evidence.json).
 
 ## Repository Layout
 
@@ -152,12 +184,16 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
 # Tasks 1–3: RM2000 & RM2003 CharSet and ChipSet test suite (23 tests)
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_vertical_slice.py
 
-# Task 4: RPG Maker XP / RGSS1 Character test suite (11 tests)
+# Task 4: RPG Maker XP / RGSS1 Character test suite (12 tests)
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmxp_vertical_slice.py
+
+# Task 5: RPG Maker VX / RGSS2 Character test suite (12 tests)
+SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmvx_vertical_slice.py
 ```
-Executes 34 mechanical checks:
+Executes 47 mechanical checks across all targets:
 - **Tasks 1–3 Suite (23 tests)**: Canonical master RGBA/PNG reproducibility, 8-bit indexed format compliance, provenance schemas, deterministic target builder, validator rejections, liblcf fixture generation, headless EasyRPG positive/negative controls, 4-direction turning verification, ChipSet fixed-tile geometry (Blocks E/F), layer transparency composition, and adversarial evidence tamper suites.
-- **Task 4 Suite (11 tests)**: Deterministic truecolor RGBA PNG encoding with full alpha range, 4×4 RGSS1 extraction and direction remapping from canonical sheet, RMXP target build reproducibility, frozen baseline regression integrity across all 3 engines, target validation for RMXP, validator rejections (bad dimensions, paletted PNG, missing alpha, idle column mismatch), clean-room RGSS1 fixture manifest integrity, live headless mkxp-z positive resolution, live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and adversarial tamper rejection.
+- **Task 4 Suite (12 tests)**: Deterministic truecolor RGBA PNG encoding with full alpha range, semantic walking frame extraction, 4×4 RGSS1 packing and direction remapping from canonical sheet, RMXP target build reproducibility, frozen baseline regression integrity across all 3 engines, target validation for RMXP, validator rejections (bad dimensions, paletted PNG, missing alpha, idle column mismatch), clean-room RGSS1 fixture manifest integrity, live headless mkxp-z positive resolution, live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and 20+ field adversarial tamper rejection.
+- **Task 5 Suite (12 tests)**: Canonical walking character asset integrity, semantic 8-character extraction, RGSS2 standard $4\times 2$ character sheet packing geometry, 96-cell exact byte equality against semantic source frames, character index permutation and non-scrambling test, adversarial packer validation (truncated frames, missing directions), RMVX target build reproducibility, frozen baseline regression integrity across all 4 targets, live headless mkxp-z RGSS2 positive resolution ($544\times 416$), live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and 22-field adversarial tamper rejection.
 
 ### 2. Generate Clean-Room Fixture Graphics
 ```bash
@@ -171,11 +207,12 @@ python3 tools/generate_calibration_charset.py
 python3 tools/generate_calibration_chipset.py
 ```
 
-### 4. Build Target Packs (RM2000, RM2003 & RMXP)
+### 4. Build Target Packs (RM2000, RM2003, RMXP & RMVX)
 ```bash
 python3 tools/build_target.py --target rm2000 --clean
 python3 tools/build_target.py --target rm2003 --clean
 python3 tools/build_target.py --target rmxp --clean
+python3 tools/build_target.py --target rmvx --clean
 ```
 
 ### 5. Validate Target Packs
@@ -183,6 +220,7 @@ python3 tools/build_target.py --target rmxp --clean
 python3 tools/validate_target.py --target rm2000
 python3 tools/validate_target.py --target rm2003
 python3 tools/validate_target.py --target rmxp
+python3 tools/validate_target.py --target rmvx
 ```
 
 ### 6. Runtime Verification & Evidence Verification (EasyRPG Player & mkxp-z)
@@ -191,11 +229,13 @@ python3 tools/validate_target.py --target rmxp
 python3 tools/verify_runtime.py --target all --verify
 python3 tools/verify_chipset_runtime.py --target all --verify
 python3 tools/verify_rmxp_runtime.py --verify
+python3 tools/verify_rmvx_runtime.py --verify
 
 # Re-run live replay / capture under virtual X11:
 python3 tools/verify_runtime.py --target all --run-replay
 python3 tools/verify_chipset_runtime.py --target all --run-capture
 python3 tools/verify_rmxp_runtime.py --run-capture
+python3 tools/verify_rmvx_runtime.py --run-capture
 ```
 Generates and validates cryptographic evidence chains:
 - [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json)
@@ -203,6 +243,7 @@ Generates and validates cryptographic evidence chains:
 - [`artifacts/runtime/rm2000/chipset/verification_evidence.json`](artifacts/runtime/rm2000/chipset/verification_evidence.json)
 - [`artifacts/runtime/rm2003/chipset/verification_evidence.json`](artifacts/runtime/rm2003/chipset/verification_evidence.json)
 - [`artifacts/runtime/rmxp/character/verification_evidence.json`](artifacts/runtime/rmxp/character/verification_evidence.json)
+- [`artifacts/runtime/rmvx/character/verification_evidence.json`](artifacts/runtime/rmvx/character/verification_evidence.json)
 
 
 ## Clean-Room Policy & Licensing

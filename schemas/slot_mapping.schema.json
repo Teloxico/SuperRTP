@@ -49,6 +49,10 @@
             "maxItems": 2
           },
           "character_index": { "type": "integer" },
+          "source_character_indices": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
           "transform_policy": { "type": "string" },
           "test_only": { "type": "boolean" }
         },
