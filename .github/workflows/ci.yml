@@ -50,6 +50,7 @@ jobs:
 
       - name: Install mkxp-z (RGSS1/RGSS2 runner)
         run: |
+          mkdir -p "$HOME/.local/bin"
           tools/install_mkxp_z_ci.sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
