@@ -757,9 +757,32 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
             # Structural validation of generated ChipSet PNG
             validate_png_chipset(world_2k)
 
+            # Assert manifest entries contain semantic category
+            with open(os.path.join(temp_dir_2k, "manifest.json"), "r", encoding="utf-8") as mf:
+                m_2k = json.load(mf)
+            for entry in m_2k["entries"]:
+                self.assertIn("category", entry)
+                self.assertIn(entry["category"], ["CharSet", "ChipSet"])
+
             # Full target validation passes
             self.assertEqual(validate_target("rm2000", target_dir=temp_dir_2k), 0)
             self.assertEqual(validate_target("rm2003", target_dir=temp_dir_2k3), 0)
+
+            # Adversarial check: category mismatch between manifest and registry fails validation
+            m_tampered = dict(m_2k)
+            m_tampered["entries"] = [dict(e) for e in m_2k["entries"]]
+            # Change ChipSet/World.png category to CharSet
+            for e in m_tampered["entries"]:
+                if e["slot"] == "ChipSet/World.png":
+                    e["category"] = "CharSet"
+            tamper_manifest_path = os.path.join(temp_dir_2k, "manifest.json")
+            with open(tamper_manifest_path, "w", encoding="utf-8") as mf:
+                json.dump(m_tampered, mf, indent=2)
+            self.assertNotEqual(validate_target("rm2000", target_dir=temp_dir_2k), 0)
+
+            # Restore valid manifest
+            with open(tamper_manifest_path, "w", encoding="utf-8") as mf:
+                json.dump(m_2k, mf, indent=2)
         finally:
             shutil.rmtree(temp_dir_2k, ignore_errors=True)
             shutil.rmtree(temp_dir_2k3, ignore_errors=True)
@@ -963,6 +986,107 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
             neg_shot = os.path.join(artifact_dir, f"{target}_chipset_negative_control.png")
             with self.assertRaises(ValueError):
                 verify_chipset_screenshot(neg_shot, mode="positive", target=target)
+
+    def test_23_chipset_runtime_evidence_tamper_rejection(self):
+        """Verify that ChipSet evidence verification strictly rejects tampering across all bound inputs."""
+        src_art_dir = os.path.join(REPO_ROOT, "artifacts", "runtime", "rm2000", "chipset")
+        src_target_dir = os.path.join(REPO_ROOT, "generated", "rm2000")
+        src_fixture_dir = os.path.join(REPO_ROOT, "tests", "fixtures", "rm2000_chipset_min")
+        src_canonical = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_map_chipset.rgba")
+
+        if not os.path.exists(os.path.join(src_target_dir, "manifest.json")):
+            build_target("rm2000", output_dir=src_target_dir, clean=False)
+
+        def _setup_sandbox(tmp):
+            tmp_art = os.path.join(tmp, "artifacts")
+            tmp_tgt = os.path.join(tmp, "generated")
+            tmp_fix = os.path.join(tmp, "fixture")
+            tmp_can = os.path.join(tmp, "canonical.rgba")
+            shutil.copytree(src_art_dir, tmp_art)
+            shutil.copytree(src_target_dir, tmp_tgt)
+            shutil.copytree(src_fixture_dir, tmp_fix)
+            shutil.copyfile(src_canonical, tmp_can)
+            ev_path = os.path.join(tmp_art, "verification_evidence.json")
+            return {
+                "evidence_path": ev_path,
+                "artifacts_dir": tmp_art,
+                "target_dir": tmp_tgt,
+                "fixture_dir": tmp_fix,
+                "canonical_rgba_path": tmp_can,
+            }
+
+        # Verify clean sandbox passes first
+        with tempfile.TemporaryDirectory(prefix="superrtp_tamper_clean_") as tmp:
+            paths = _setup_sandbox(tmp)
+            self.assertTrue(
+                verify_chipset_evidence_chain(
+                    target="rm2000",
+                    evidence_path=paths["evidence_path"],
+                    artifacts_dir=paths["artifacts_dir"],
+                    target_dir=paths["target_dir"],
+                    fixture_dir=paths["fixture_dir"],
+                    canonical_rgba_path=paths["canonical_rgba_path"],
+                )
+            )
+
+        def _mutate_json(path, key, val):
+            with open(path, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            d[key] = val
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(d, f, indent=2)
+
+        def _mutate_json_sub(path, sub, key, val):
+            with open(path, "r", encoding="utf-8") as f:
+                d = json.load(f)
+            d[sub][key] = val
+            with open(path, "w", encoding="utf-8") as f:
+                json.dump(d, f, indent=2)
+
+        def _write_file(path, content, is_bytes=False):
+            mode = "wb" if is_bytes else "w"
+            encoding = None if is_bytes else "utf-8"
+            with open(path, mode, encoding=encoding) as f:
+                f.write(content)
+
+        tamper_cases = [
+            ("canonical_source_content", lambda p: _write_file(p["canonical_rgba_path"], b"tampered_source", is_bytes=True)),
+            ("canonical_source_sha256", lambda p: _mutate_json(p["evidence_path"], "canonical_source_sha256", "0" * 64)),
+            ("target_world_file", lambda p: _write_file(os.path.join(p["target_dir"], "ChipSet", "World.png"), b"tampered_world", is_bytes=True)),
+            ("target_world_sha256", lambda p: _mutate_json(p["evidence_path"], "target_world_sha256", "0" * 64)),
+            ("target_manifest_file", lambda p: _write_file(os.path.join(p["target_dir"], "manifest.json"), "{}")),
+            ("target_manifest_sha256", lambda p: _mutate_json(p["evidence_path"], "target_manifest_sha256", "0" * 64)),
+            ("fixture_manifest_file", lambda p: _write_file(os.path.join(p["fixture_dir"], "fixture_manifest.json"), "{}")),
+            ("fixture_manifest_sha256", lambda p: _mutate_json(p["evidence_path"], "fixture_manifest_sha256", "0" * 64)),
+            ("positive_runtime_log_content", lambda p: _write_file(os.path.join(p["artifacts_dir"], "positive_runtime.log"), "tampered")),
+            ("negative_runtime_log_content", lambda p: _write_file(os.path.join(p["artifacts_dir"], "negative_runtime.log"), "tampered")),
+            ("negative_log_diagnostic_removed", lambda p: _write_file(os.path.join(p["artifacts_dir"], "negative_runtime.log"), "No error logged")),
+            ("negative_control_diagnostic", lambda p: _mutate_json_sub(p["evidence_path"], "negative_control", "diagnostic", "Wrong Diagnostic")),
+            ("negative_control_status", lambda p: _mutate_json_sub(p["evidence_path"], "negative_control", "status", "FAILED")),
+            ("screenshot_file", lambda p: _write_file(os.path.join(p["artifacts_dir"], "rm2000_chipset_positive.png"), b"tampered_png", is_bytes=True)),
+            ("screenshot_sha256", lambda p: _mutate_json_sub(p["evidence_path"], "screenshots", "rm2000_chipset_positive.png", "0" * 64)),
+            ("engine_mode", lambda p: _mutate_json(p["evidence_path"], "engine_mode", "banana")),
+            ("requested_chipset", lambda p: _mutate_json(p["evidence_path"], "requested_chipset", "NotARealThing")),
+            ("easyrpg_version", lambda p: _mutate_json(p["evidence_path"], "easyrpg_version", "EasyRPG Player 9.9.9")),
+        ]
+
+        tested_count = 0
+        for name, mutate_fn in tamper_cases:
+            with tempfile.TemporaryDirectory(prefix=f"superrtp_tamper_{name}_") as tmp:
+                p = _setup_sandbox(tmp)
+                mutate_fn(p)
+                with self.assertRaises((ValueError, FileNotFoundError), msg=f"Tamper case '{name}' was not rejected by verify_chipset_evidence_chain"):
+                    verify_chipset_evidence_chain(
+                        target="rm2000",
+                        evidence_path=p["evidence_path"],
+                        artifacts_dir=p["artifacts_dir"],
+                        target_dir=p["target_dir"],
+                        fixture_dir=p["fixture_dir"],
+                        canonical_rgba_path=p["canonical_rgba_path"],
+                    )
+                tested_count += 1
+
+        self.assertEqual(tested_count, len(tamper_cases))
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

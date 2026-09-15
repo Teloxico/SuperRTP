@@ -51,6 +51,7 @@ jobs:
         run: |
           python3 tools/generate_fixture_graphics.py
           python3 tools/generate_calibration_charset.py
+          python3 tools/generate_calibration_chipset.py
           git diff --exit-code
 
       - name: Validate target packs
@@ -61,6 +62,7 @@ jobs:
       - name: Verify runtime evidence chain
         run: |
           python3 tools/verify_runtime.py --target all --verify
+          python3 tools/verify_chipset_runtime.py --target all --verify
 
       - name: Optional full visual replay (manual dispatch)
         if: ${{ inputs.run_full_replay == true }}

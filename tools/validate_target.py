@@ -346,6 +346,20 @@ def validate_target(target, target_dir=None):
         print(f"  FAILED Schema validation: {e}")
         return 1
 
+    # Load slot mapping registry to cross-check categories and declared slots
+    slots_path = os.path.join(repo_root, "registry", "slots", f"{target}.json")
+    if not os.path.exists(slots_path):
+        raise FileNotFoundError(f"Slot mapping not found: {slots_path}")
+    with open(slots_path, "r", encoding="utf-8") as sf:
+        slots_data = json.load(sf)
+
+    slot_lookup = {}
+    for slot_key, s_info in slots_data.get("slots", {}).items():
+        primary_path = s_info.get("slot_path", slot_key)
+        slot_lookup[primary_path] = s_info
+        for alias in s_info.get("aliases", []):
+            slot_lookup[alias] = s_info
+
     manifest_path = os.path.join(target_dir, "manifest.json")
     if not os.path.exists(manifest_path):
         raise FileNotFoundError(f"Missing build manifest in target directory: {manifest_path}")
@@ -365,8 +379,25 @@ def validate_target(target, target_dir=None):
     for entry in manifest.get("entries", []):
         slot = entry["slot"]
         asset_id = entry["asset_id"]
+        manifest_category = entry.get("category")
         filepath = os.path.join(target_dir, slot)
         print(f"\nChecking [{slot}]...")
+
+        if not manifest_category:
+            print(f"  FAILED: Missing semantic category in manifest entry for {slot}")
+            all_passed = False
+            continue
+
+        if slot not in slot_lookup:
+            print(f"  FAILED: Slot '{slot}' is not declared in slot mapping registry {slots_path}")
+            all_passed = False
+            continue
+
+        registry_category = slot_lookup[slot].get("category")
+        if manifest_category != registry_category:
+            print(f"  FAILED: Category mismatch for slot '{slot}': manifest has '{manifest_category}', registry has '{registry_category}'")
+            all_passed = False
+            continue
 
         if not os.path.exists(filepath):
             print(f"  FAILED: File missing at {filepath}")
@@ -383,12 +414,15 @@ def validate_target(target, target_dir=None):
             all_passed = False
             continue
 
-        # PNG Specification check
+        # PNG Specification check dispatched by verified semantic category
         try:
-            if slot.lower().startswith("chipset/"):
+            cat_norm = manifest_category.lower()
+            if cat_norm == "chipset":
                 specs = validate_png_chipset(filepath)
-            else:
+            elif cat_norm == "charset":
                 specs = validate_png_charset(filepath)
+            else:
+                raise ValueError(f"Unknown or unsupported semantic category '{manifest_category}' for slot '{slot}'")
             print(f"  PASSED PNG specs: {specs['width']}x{specs['height']}, {specs['num_colors']} colors, indexed-8, index 0 transparent (tRNS={specs['has_trns']})")
         except Exception as e:
             print(f"  FAILED PNG validation: {e}")

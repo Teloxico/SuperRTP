@@ -84,7 +84,11 @@ int main(int argc, char* argv[]) {
     } else {
         chipset.chipset_name = "ChipSet";
     }
-    chipset.terrain_data.resize(162, 1); // Default all tiles to Terrain ID 1
+    // Explicitly configure ChipSet terrain and passability tables
+    chipset.terrain_data.assign(162, 1);        // Default all tiles to Terrain ID 1
+    chipset.passable_data_lower.assign(162, 15); // Passable in all 4 directions (0x0F)
+    chipset.passable_data_upper.assign(144, 15); // Upper layer passable in all 4 directions (0x0F)
+    chipset.passable_data_upper[0] = 31;         // Tile 0 transparent / above-hero priority (0x1F)
     db.chipsets.push_back(chipset);
 
     if (!lcf::LDB_Reader::Save(out_dir + "/RPG_RT.ldb", db)) {

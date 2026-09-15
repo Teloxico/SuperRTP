@@ -101,5 +101,5 @@ Runtime verification is executed through `tools/verify_runtime.py` and `tools/ve
 - For CharSet: replays deterministic multi-frame inputs navigating all 4 directional faces, verifying facing arrows.
 - For ChipSet: boots new game into 20×15 map with fixed test tiles, capturing 640×480 screenshots with lossless RGB recording (`-c:v libx264rgb -crf 0`).
 - Performs mechanical pixel assertions on all key tile regions and layer composition transparency.
-- Verifies isolated negative control failure diagnostics (`Image not found: CharSet/Actor1`, `Image not found: CharSet/Hero1`, `Image not found: ChipSet/Basis`, `Image not found: ChipSet/Main`).
-- Generates `verification_evidence.json` under `artifacts/runtime/<target>/<category>/`, cryptographically binding target manifest hash, fixture manifest hash, EasyRPG version, log hashes, and screenshot hashes.
+- Generates `verification_evidence.json` under `artifacts/runtime/<target>/<category>/`, cryptographically binding canonical source SHA-256, target manifest hash, fixture manifest hash, EasyRPG pinned version (0.8.1.1), log hashes, negative control diagnostics, and screenshot hashes.
+- All recorded fields in `verification_evidence.json` are strictly enforced by `--verify` across both `verify_runtime.py` and `verify_chipset_runtime.py`. Automated adversarial tamper tests (`test_23`) deliberately corrupt each bound input and assert immediate rejection.
