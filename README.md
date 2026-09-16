@@ -42,9 +42,9 @@ Runtime Verification (EasyRPG Player, mkxp-z, WOLF tools)
 
 See [docs/architecture.md](docs/architecture.md) for full architectural specifications and compatibility models.
 
-## Current Status: Phase 1, 2, 3, 4 & 5 Cross-Target Vertical Slices (Hardened)
+## Current Status: Phase 1, 2, 3, 4, 5 & 6 Cross-Target Vertical Slices (Hardened)
 
-The compatibility slices are implemented, hardened, and verified for **cross-target compatibility** across **RPG Maker 2000 (`rm2000`)**, **RPG Maker 2003 (`rm2003`)**, **RPG Maker XP (`rmxp`)**, and **RPG Maker VX (`rmvx`)** from shared canonical source assets:
+The compatibility slices are implemented, hardened, and verified for **cross-target compatibility** across **RPG Maker 2000 (`rm2000`)**, **RPG Maker 2003 (`rm2003`)**, **RPG Maker XP (`rmxp`)**, **RPG Maker VX (`rmvx`)**, **RPG Maker VX Ace (`rmvxace`)**, and **WOLF RPG Editor (`wolf`)** from shared canonical source assets:
 
 ### 1. CharSet Walking Character Compatibility Slice (Tasks 1 & 2)
 - **Single Canonical Asset:** `test.calibration.walking-character`
@@ -171,6 +171,41 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
   - Negative control isolates missing asset with deterministic diagnostic `SUPERRTP_RMVXACE_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1` and exit code 1.
   - Durable evidence recorded and verified in [`artifacts/runtime/rmvxace/character/verification_evidence.json`](artifacts/runtime/rmvxace/character/verification_evidence.json).
 
+### 6. WOLF RPG Editor v3 Character / CharaChip Slice (Task 7)
+- **First Non-RPG-Maker Engine Family Vertical Slice:**
+  - Establishes native support for WOLF RPG Editor v3 (`wolf`) directly from canonical walking character semantics (`test.calibration.walking-character`, character index 0).
+  - Validates WOLF's native resource model: direct relative lookup under project directories (e.g. `Data/CharaChip/SuperRTP_Calibration.png`), distinct from RGSS RTP search-path fallbacks.
+- **Physical CharaChip Layout & Packing Geometry:**
+  - Standard 3-pattern $\times$ 4-direction character chip ($72 \times 128$ pixels, 12 cells of $24 \times 32$ pixels).
+  - Row order:
+    - **Row 0**: Facing **Down** (`v`, pattern numbers 1, 2, 3)
+    - **Row 1**: Facing **Left** (`<`, pattern numbers 4, 5, 6)
+    - **Row 2**: Facing **Right** (`>`, pattern numbers 7, 8, 9)
+    - **Row 3**: Facing **Up** (`^`, pattern numbers 10, 11, 12)
+  - Column order:
+    - **Column 0**: Step Left
+    - **Column 1**: Idle / Standing (Default direction facing)
+    - **Column 2**: Step Right
+- **Cross-Target Semantic Invariants:**
+  - The 12 cells of WOLF CharaChip are byte-for-byte identical to the top-left $72 \times 128$ block of both RPG Maker VX (`rmvx`) and RPG Maker VX Ace (`rmvxace`) `Actor1.png` sheets.
+  - The 12 cells match RMXP Character 0 walking frames (columns 0, 1, 2 for directions Down, Left, Right, Up).
+- **Target Pack & Slot Mapping:**
+  - `wolf`: Emits `Data/CharaChip/SuperRTP_Calibration.png` (SHA-256: `da3f32ef170575ff49abb04197413b663b1010735154ac2435771eeab02dc6e7`), 32-bit truecolor RGBA (Color Type 6, bit depth 8, no PLTE, no tRNS).
+  - Policy: `rm2k_char0_to_wolf3_p3_d4_character_v1`.
+- **Runtime & Visual Verification (Official WOLF Game.exe v3.717 under Wine/Xvfb):**
+  - Executed using the official WOLF RPG Editor v3.717 runtime (`Game.exe`, SHA-256: `91821bd2439f562811060904498086709b8ac603640551e4f2fca45a0ff5f999`).
+  - Native clean-room fixture ([`tests/fixtures/wolf_character_min/`](tests/fixtures/wolf_character_min/)) with GuruGuru MIDI popup suppressed (`Game.dat` byte 17=0 and byte 20=0) and boot CommonEvent (ID 0) configured to run `parallel_process_always` (`0x23`).
+  - Positive composite control: Renders 4 directions on Pad 1 (Down, Left, Right, Up) and 3 walking animation phases on Pad 2 (Step Left, Idle, Step Right) over high-contrast test pad `Data/Picture/test_pad.png` with 8 corner alignment markers. Verified 100% pixel composite match at 2x integer scaling ($640 \times 480$), opaque sprite equality, transparent alpha revealing pad color, directional chevron orientation, and walking step foot differentiation.
+  - Individual directional & walking phase screenshots captured and verified:
+    - [`wolf_character_down.png`](artifacts/runtime/wolf/character/wolf_character_down.png) (Down Idle, Pattern 2)
+    - [`wolf_character_left.png`](artifacts/runtime/wolf/character/wolf_character_left.png) (Left Idle, Pattern 5)
+    - [`wolf_character_right.png`](artifacts/runtime/wolf/character/wolf_character_right.png) (Right Idle, Pattern 8)
+    - [`wolf_character_up.png`](artifacts/runtime/wolf/character/wolf_character_up.png) (Up Idle, Pattern 11)
+    - [`wolf_character_walk_step1.png`](artifacts/runtime/wolf/character/wolf_character_walk_step1.png) (Down Step Left, Pattern 1)
+    - [`wolf_character_walk_step2.png`](artifacts/runtime/wolf/character/wolf_character_walk_step2.png) (Down Step Right, Pattern 3)
+  - Negative control: With `Data/CharaChip/SuperRTP_Calibration.png` omitted, WOLF runtime halts and renders native green error banner (`[Picture display] File Read Error / Cannot find  CharaChip/SuperRTP_Calibration.png / Process mark:[CommonEv 0 Line 1]`) at screen region $y=192..288$ on black background. Verified in [`wolf_character_negative_control.png`](artifacts/runtime/wolf/character/wolf_character_negative_control.png).
+  - Durable cryptographic evidence recorded and verified in [`artifacts/runtime/wolf/character/verification_evidence.json`](artifacts/runtime/wolf/character/verification_evidence.json).
+
 ## Repository Layout
 
 ```
@@ -206,12 +241,16 @@ SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmvx_vertical_slice.py
 
 # Task 6: RPG Maker VX Ace / RGSS3 Character test suite (15 tests)
 SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmvxace_vertical_slice.py
+
+# Task 7: WOLF RPG Editor v3 Character / CharaChip test suite (13 tests)
+SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_wolf_vertical_slice.py
 ```
-Executes 64 mechanical checks across all targets:
+Executes 77 mechanical checks across all targets:
 - **Tasks 1–3 Suite (23 tests)**: Canonical master RGBA/PNG reproducibility, 8-bit indexed format compliance, provenance schemas, deterministic target builder, validator rejections, liblcf fixture generation, headless EasyRPG positive/negative controls, 4-direction turning verification, ChipSet fixed-tile geometry (Blocks E/F), layer transparency composition, and adversarial evidence tamper suites.
 - **Task 4 Suite (12 tests)**: Deterministic truecolor RGBA PNG encoding with full alpha range, semantic walking frame extraction, 4×4 RGSS1 packing and direction remapping from canonical sheet, RMXP target build reproducibility, frozen baseline regression integrity across all 3 engines, target validation for RMXP, validator rejections (bad dimensions, paletted PNG, missing alpha, idle column mismatch), clean-room RGSS1 fixture manifest integrity, live headless mkxp-z positive resolution, live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and 20+ field adversarial tamper rejection.
 - **Task 5 Suite (14 tests)**: Canonical walking character asset integrity, semantic 8-character extraction against independent physical crop oracle, RGSS2 standard $4\times 2$ character sheet packing geometry, 96-cell exact byte equality directly against independent physical source crops, single-frame mutation locality (one cell mutation alters only that target cell and leaves all 95 others 100% byte-identical), character index preservation and non-scrambling test, adversarial packer validation, RMVX target build reproducibility, frozen baseline regression integrity across all 4 targets, RMVX target validator adversarial rejections (wrong source indices, missing/wrong transform policy, wrong category, wrong target hash, directional-row permutation), live headless mkxp-z RGSS2 positive resolution ($544\times 416$), live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and expanded adversarial tamper rejection including build config options, diagnostics, and actual screenshot pixel corruption.
 - **Task 6 Suite (15 tests)**: Canonical walking character asset integrity, 8-character semantic extraction against independent physical crop oracle, shared VX-family 8-character packing and thin wrapper verification, 96-cell exact byte equality directly against independent physical crops, single-frame mutation locality (1 frame mutated, 95 cells byte-identical), cross-target byte equality (`rmvx` Actor1 bytes == `rmvxace` Actor1 bytes) alongside distinct engine/target manifests and transform policies, independent build without reading `generated/rmvx`, A/B deterministic build reproducibility, frozen baseline regression integrity across all 5 targets, RMVXAce validator adversarial rejections (wrong category, wrong target SHA, corrupted indices, wrong/missing transform policy, row permutation), clean-room RGSS3 fixture integrity, live headless mkxp-z RGSS3 positive resolution (`RGSS version 3 (RPG Maker VX Ace)` banner, $544\times 416$ screen), live headless mkxp-z negative control (`SUPERRTP_RMVXACE_MISSING_ASSET: Graphics/Characters/Actor1`, exit code 1), complete durable evidence chain verification, and expanded 22+ field adversarial tamper suite including nested build config and screenshot pixel corruption.
+- **Task 7 Suite (13 tests)**: Canonical walking character asset integrity, semantic frame extraction for character index 0 against independent physical crop oracle, WOLF 3-pattern $\times$ 4-direction CharaChip packing geometry ($72 \times 128$), 12-cell exact byte equality directly against independent physical crops, cross-target pixel equality with RMVX/RMVXAce top-left character block, cross-target cell equality with RMXP walking frames, WOLF slot registry and schema validation, target validation for WOLF, deterministic A/B target rebuild reproducibility, frozen baseline regression integrity across all 6 targets, adversarial validator tamper suite (corrupted header, bad dimensions, paletted PNG, permuted directional rows), clean-room WOLF fixture integrity, and complete durable runtime verification evidence chain.
 
 ### 2. Generate Clean-Room Fixture Graphics
 ```bash
@@ -225,13 +264,14 @@ python3 tools/generate_calibration_charset.py
 python3 tools/generate_calibration_chipset.py
 ```
 
-### 4. Build Target Packs (RM2000, RM2003, RMXP, RMVX & RMVXAce)
+### 4. Build Target Packs (RM2000, RM2003, RMXP, RMVX, RMVXAce & WOLF)
 ```bash
 python3 tools/build_target.py --target rm2000 --clean
 python3 tools/build_target.py --target rm2003 --clean
 python3 tools/build_target.py --target rmxp --clean
 python3 tools/build_target.py --target rmvx --clean
 python3 tools/build_target.py --target rmvxace --clean
+python3 tools/build_target.py --target wolf --clean
 ```
 
 ### 5. Validate Target Packs
@@ -241,9 +281,10 @@ python3 tools/validate_target.py --target rm2003
 python3 tools/validate_target.py --target rmxp
 python3 tools/validate_target.py --target rmvx
 python3 tools/validate_target.py --target rmvxace
+python3 tools/validate_target.py --target wolf
 ```
 
-### 6. Runtime Verification & Evidence Verification (EasyRPG Player & mkxp-z)
+### 6. Runtime Verification & Evidence Verification (EasyRPG Player, mkxp-z & WOLF Game.exe)
 ```bash
 # Verify existing evidence chains, screenshot hashes, and logs:
 python3 tools/verify_runtime.py --target all --verify
@@ -251,6 +292,7 @@ python3 tools/verify_chipset_runtime.py --target all --verify
 python3 tools/verify_rmxp_runtime.py --verify
 python3 tools/verify_rmvx_runtime.py --verify
 python3 tools/verify_rmvxace_runtime.py --verify
+python3 tools/verify_wolf_runtime.py --verify
 
 # Re-run live replay / capture under virtual X11:
 python3 tools/verify_runtime.py --target all --run-replay
@@ -258,6 +300,7 @@ python3 tools/verify_chipset_runtime.py --target all --run-capture
 python3 tools/verify_rmxp_runtime.py --run-capture
 python3 tools/verify_rmvx_runtime.py --run-capture
 python3 tools/verify_rmvxace_runtime.py --run-capture
+python3 tools/verify_wolf_runtime.py --run-capture
 ```
 Generates and validates cryptographic evidence chains:
 - [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json)
@@ -267,6 +310,7 @@ Generates and validates cryptographic evidence chains:
 - [`artifacts/runtime/rmxp/character/verification_evidence.json`](artifacts/runtime/rmxp/character/verification_evidence.json)
 - [`artifacts/runtime/rmvx/character/verification_evidence.json`](artifacts/runtime/rmvx/character/verification_evidence.json)
 - [`artifacts/runtime/rmvxace/character/verification_evidence.json`](artifacts/runtime/rmvxace/character/verification_evidence.json)
+- [`artifacts/runtime/wolf/character/verification_evidence.json`](artifacts/runtime/wolf/character/verification_evidence.json)
 
 
 ## Clean-Room Policy & Licensing

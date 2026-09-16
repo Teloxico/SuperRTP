@@ -1,0 +1,74 @@
+{
+  "fixture_name": "wolf_character_min",
+  "engine": "WOLF RPG Editor",
+  "version": "3.717",
+  "category": "Character",
+  "description": "Minimal clean-room WOLF RPG Editor test fixture for CharaChip loading and rendering verification",
+  "clean_room_attestation": "All fixture project data and configuration files are written from scratch or authored using official WOLF v3.717 editor without proprietary creative assets. The test pad graphic is 100% synthetic SuperRTP-generated content.",
+  "authoring_environment": {
+    "wolf_version": "3.717",
+    "upstream_tag": "v3.717",
+    "upstream_commit": "e733f289def676f06db8121bbdb4386cc8f634f5",
+    "archive_sha256": "d73c524a186eeb9e4b6c4b6e2350c3f2449c05ce9a94b3edeebeff18c3ec842d"
+  },
+  "project_data": {
+    "Game.ini": {
+      "sha256": "aaa95a4d4355fa74d032226d24436692eb3ec35233545abf2ba9f0718bb71022",
+      "purpose": "Runtime window and audio configuration"
+    },
+    "Data/BasicData/Game.dat": {
+      "sha256": "5e3f2861b753d31b1f8f0caac8d9312ddcfc08cfc6237e897b89705631868e1a",
+      "purpose": "Game system settings with MIDI initialization prompt disabled"
+    },
+    "Data/BasicData/CommonEvent.dat": {
+      "sha256": "4b6efa0cd56d682e0a555c240e0e92dc45a32d6d6693b747530a821a4574afb7",
+      "purpose": "Event 0 boot harness configured to instantiate test pad and CharaChip"
+    },
+    "Data/BasicData/MapTree.dat": {
+      "sha256": "8feac2b3d323e766e74d96e00a064d2b08d4c4fa9a63f5c894d0c47b4facce6c",
+      "purpose": "Map tree hierarchy metadata"
+    },
+    "Data/BasicData/MapTreeOpenStatus.dat": {
+      "sha256": "ece715acb95acf23acd6dd836f95805f48abbf7e1851236edae3016b2cad3675",
+      "purpose": "Map tree editor view status"
+    },
+    "Data/BasicData/DataBase.dat": {
+      "sha256": "4db6dcb8415b32ff717e402d66d055ec148df4ef2fb1684b7ee71d70271e30fd",
+      "purpose": "User database"
+    },
+    "Data/BasicData/DataBase.project": {
+      "sha256": "4622e01c7edad3a219d89e4a58ce76fbbe70d9f3a38f56d1087c87bb43fd98bd",
+      "purpose": "User database schema"
+    },
+    "Data/BasicData/CDataBase.dat": {
+      "sha256": "4db6dcb8415b32ff717e402d66d055ec148df4ef2fb1684b7ee71d70271e30fd",
+      "purpose": "Changeable database"
+    },
+    "Data/BasicData/CDataBase.project": {
+      "sha256": "4622e01c7edad3a219d89e4a58ce76fbbe70d9f3a38f56d1087c87bb43fd98bd",
+      "purpose": "Changeable database schema"
+    },
+    "Data/BasicData/SysDatabase.dat": {
+      "sha256": "ff18efa1f18b7ecdc37b22bd1c92c00dcdb15d765b658c10a617a0fd2758abf5",
+      "purpose": "System database"
+    },
+    "Data/BasicData/SysDatabase.project": {
+      "sha256": "c9faa90039979d03ac9b8cafee83f319fe6e2275f01d94f9e0e45e59716e4875",
+      "purpose": "System database schema"
+    },
+    "Data/BasicData/TileSetData.dat": {
+      "sha256": "92e8251f68b1c8389ef7234389c20007fbb8da3677c3117bec84ba558b35f90f",
+      "purpose": "Map tileset definitions"
+    },
+    "Data/MapData/SampleMap.mps": {
+      "sha256": "a5fa4ada7ffaa755ae36fe2de4931a667285322da673b0277bc9ecbf4f0af99a",
+      "purpose": "Clean-room empty sample map"
+    }
+  },
+  "support_assets": {
+    "Data/Picture/test_pad.png": {
+      "sha256": "8deedef4a762f49a6eadb16118b70492f056e50fd9692cacd73014ca225e7b41",
+      "purpose": "Synthetic 320x240 high-contrast test pad with 8 alignment markers for visual verification"
+    }
+  }
+}
