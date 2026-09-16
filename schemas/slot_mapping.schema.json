@@ -53,6 +53,9 @@
             "type": "array",
             "items": { "type": "integer" }
           },
+          "direction_mode": { "type": "integer" },
+          "animation_patterns": { "type": "integer" },
+          "runtime_reference": { "type": "string" },
           "transform_policy": { "type": "string" },
           "test_only": { "type": "boolean" }
         },

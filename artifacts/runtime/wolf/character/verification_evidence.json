@@ -1,0 +1,74 @@
+{
+  "target": "wolf",
+  "engine": "WOLF RPG Editor",
+  "runtime": "official WOLF Game.exe",
+  "runtime_version": "3.717",
+  "release_tag": "v3.717",
+  "release_commit": "e733f289def676f06db8121bbdb4386cc8f634f5",
+  "runtime_archive_sha256": "d73c524a186eeb9e4b6c4b6e2350c3f2449c05ce9a94b3edeebeff18c3ec842d",
+  "game_exe_sha256": "91821bd2439f562811060904498086709b8ac603640551e4f2fca45a0ff5f999",
+  "category": "Character",
+  "wolf_resource_class": "CharaChip",
+  "expected_character_slot": "SuperRTP_Calibration.png",
+  "runtime_reference": "CharaChip/SuperRTP_Calibration.png",
+  "direction_mode": 4,
+  "animation_patterns": 3,
+  "canonical_asset_id": "test.calibration.walking-character",
+  "canonical_asset_sha256": "78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790",
+  "source_character_index": 0,
+  "transform_policy": "rm2k_char0_to_wolf3_p3_d4_character_v1",
+  "target_manifest_sha256": "7a13e9b51e39a4b40356617c07f04546aa612115d18649616d15c12ebbb38a92",
+  "target_png_sha256": "da3f32ef170575ff49abb04197413b663b1010735154ac2435771eeab02dc6e7",
+  "fixture_manifest_sha256": "20346714cd3b3d0595c1ffb1cf14813e37941eb33d052f836192da04dfaaec63",
+  "fixture_project_data_hashes": {
+    "Game.ini": "aaa95a4d4355fa74d032226d24436692eb3ec35233545abf2ba9f0718bb71022",
+    "Data/BasicData/Game.dat": "5e3f2861b753d31b1f8f0caac8d9312ddcfc08cfc6237e897b89705631868e1a",
+    "Data/BasicData/CommonEvent.dat": "4b6efa0cd56d682e0a555c240e0e92dc45a32d6d6693b747530a821a4574afb7",
+    "Data/BasicData/MapTree.dat": "8feac2b3d323e766e74d96e00a064d2b08d4c4fa9a63f5c894d0c47b4facce6c",
+    "Data/BasicData/MapTreeOpenStatus.dat": "ece715acb95acf23acd6dd836f95805f48abbf7e1851236edae3016b2cad3675",
+    "Data/BasicData/DataBase.dat": "4db6dcb8415b32ff717e402d66d055ec148df4ef2fb1684b7ee71d70271e30fd",
+    "Data/BasicData/DataBase.project": "4622e01c7edad3a219d89e4a58ce76fbbe70d9f3a38f56d1087c87bb43fd98bd",
+    "Data/BasicData/CDataBase.dat": "4db6dcb8415b32ff717e402d66d055ec148df4ef2fb1684b7ee71d70271e30fd",
+    "Data/BasicData/CDataBase.project": "4622e01c7edad3a219d89e4a58ce76fbbe70d9f3a38f56d1087c87bb43fd98bd",
+    "Data/BasicData/SysDatabase.dat": "ff18efa1f18b7ecdc37b22bd1c92c00dcdb15d765b658c10a617a0fd2758abf5",
+    "Data/BasicData/SysDatabase.project": "c9faa90039979d03ac9b8cafee83f319fe6e2275f01d94f9e0e45e59716e4875",
+    "Data/BasicData/TileSetData.dat": "92e8251f68b1c8389ef7234389c20007fbb8da3677c3117bec84ba558b35f90f",
+    "Data/MapData/SampleMap.mps": "a5fa4ada7ffaa755ae36fe2de4931a667285322da673b0277bc9ecbf4f0af99a"
+  },
+  "fixture_support_asset_hashes": {
+    "Data/Picture/test_pad.png": "8deedef4a762f49a6eadb16118b70492f056e50fd9692cacd73014ca225e7b41"
+  },
+  "positive_lookup_result": "72 128",
+  "negative_lookup_result": "<<NotFound>>",
+  "positive_screenshots": {
+    "wolf_character_positive.png": "a69b0f496ce622f3ab7a9be4df717756f916c4fc7f53b144edb28af5d06c5306",
+    "wolf_character_down.png": "4da25abcaa71890c7e0ee3840d82cf03b1f1ecbdfe4d23fe392cb88c3c439c4f",
+    "wolf_character_left.png": "7216fbaceaa6969f2b9f57108fcaf62d6712353e98666298c4c2b1aefcd4bfd6",
+    "wolf_character_right.png": "5e2e01f3218cd65fdd7a212fdf016cef8ee38f89a9030a56cd3185634de9fc93",
+    "wolf_character_up.png": "a8b4fb1a66799b2c9bc47add7d325bb0e62d49618ef97ea5ef777130cecc2bd8",
+    "wolf_character_walk_step1.png": "e7762f318aa5c4e9b779a5723a6a3a766c510d80984218701e3c901fe0d08567",
+    "wolf_character_walk_step2.png": "4bed874a14aff7bcc7a2a525011ce9d78fe1ebde9e135293b448680eb92aa8c7"
+  },
+  "negative_screenshot": {
+    "wolf_character_negative_control.png": "fe2804dfa80579c748167fe2cc360bad84152f4b5eb65c80563fa24e14ecac6c"
+  },
+  "directional_visual_assertions": {
+    "down": "VERIFIED_DOWN_ARROW",
+    "left": "VERIFIED_LEFT_ARROW",
+    "right": "VERIFIED_RIGHT_ARROW",
+    "up": "VERIFIED_UP_ARROW"
+  },
+  "movement_animation_assertions": {
+    "step_left": "VERIFIED_WALK_PHASE_STEP_LEFT",
+    "idle": "VERIFIED_WALK_PHASE_IDLE",
+    "step_right": "VERIFIED_WALK_PHASE_STEP_RIGHT",
+    "phase_transition": "VERIFIED_IDLE_TO_STEP_TRANSITION"
+  },
+  "runtime_environment_metadata": {
+    "os": "linux",
+    "wine_bin": "/home/manc/.local/bin/wine",
+    "display": ":99",
+    "capture_method": "ffmpeg_x11grab_lossless_640x480"
+  },
+  "timestamp": "2026-09-16T14:01:28.562627+00:00"
+}

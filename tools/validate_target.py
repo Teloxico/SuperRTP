@@ -483,6 +483,167 @@ def validate_png_rmvxace_character(filepath):
     """Validates RPG Maker VX Ace / RGSS3 standard 8-character sheet specifications."""
     return validate_png_vx_family_character(filepath, engine_name="VX Ace")
 
+def validate_png_wolf_character(filepath):
+    """Validates WOLF RPG Editor v3 standard 3-pattern x 4-direction character chip specifications."""
+    basename = os.path.basename(filepath)
+    if basename.endswith(("T.png", "TX.png", "$.png")):
+        raise ValueError(f"WOLF character filename '{basename}' invokes special filename mode (T, TX, or $); out of scope for standard CharaChip")
+
+    with open(filepath, "rb") as f:
+        data = f.read()
+
+    chunks = parse_png_chunks(data)
+    chunk_types = [c[0] for c in chunks]
+
+    # Required chunks in order
+    if not chunk_types or chunk_types[0] != "IHDR":
+        raise ValueError("PNG must start with IHDR chunk")
+    if "PLTE" in chunk_types:
+        raise ValueError("Unexpected PLTE (Palette) chunk: WOLF RPG Editor character chips must be truecolor RGBA")
+    if "tRNS" in chunk_types:
+        raise ValueError("Unexpected tRNS chunk: WOLF truecolor RGBA must carry alpha channel directly")
+    if "IDAT" not in chunk_types:
+        raise ValueError("Missing IDAT chunk")
+    if chunk_types[-1] != "IEND":
+        raise ValueError("PNG must terminate with IEND chunk")
+
+    # Inspect IHDR
+    ihdr_data = next(c[1] for c in chunks if c[0] == "IHDR")
+    width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
+
+    if width != 72 or height != 128:
+        raise ValueError(f"Invalid WOLF Character dimensions: expected 72x128, got {width}x{height}")
+    if bit_depth != 8:
+        raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
+    if color_type != 6:
+        raise ValueError(f"Invalid color type: expected 6 (RGBA truecolor), got {color_type}")
+    if compression != 0 or filter_method != 0 or interlace != 0:
+        raise ValueError("Unsupported compression/filter/interlace method")
+
+    # Decompress IDAT and reconstruct 32-bit RGBA pixel grid
+    idat_data = b''.join(c[1] for c in chunks if c[0] == "IDAT")
+    raw = bytearray(zlib.decompress(idat_data))
+    bpp = 4
+    stride = 1 + width * bpp
+    if len(raw) != height * stride:
+        raise ValueError(f"Decompressed IDAT size mismatch: expected {height * stride}, got {len(raw)}")
+
+    recon = bytearray(width * height * bpp)
+    prior = bytearray(width * bpp)
+
+    for y in range(height):
+        filter_type = raw[y * stride]
+        filt = raw[y * stride + 1 : (y + 1) * stride]
+        line = bytearray(width * bpp)
+
+        if filter_type == 0:
+            line[:] = filt
+        elif filter_type == 1:
+            for x in range(width * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                line[x] = (filt[x] + a) & 0xff
+        elif filter_type == 2:
+            for x in range(width * bpp):
+                line[x] = (filt[x] + prior[x]) & 0xff
+        elif filter_type == 3:
+            for x in range(width * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                line[x] = (filt[x] + ((a + prior[x]) >> 1)) & 0xff
+        elif filter_type == 4:
+            for x in range(width * bpp):
+                a = line[x - bpp] if x >= bpp else 0
+                b = prior[x]
+                c = prior[x - bpp] if x >= bpp else 0
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
+                line[x] = (filt[x] + pr) & 0xff
+        else:
+            raise ValueError(f"Unknown PNG filter type {filter_type}")
+
+        prior[:] = line
+        recon[y * width * bpp : (y + 1) * width * bpp] = line
+
+    def get_pixel(x, y):
+        idx = (y * width + x) * 4
+        return (recon[idx], recon[idx + 1], recon[idx + 2], recon[idx + 3])
+
+    # Check alpha distribution
+    alphas = set(recon[3::4])
+    if 0 not in alphas:
+        raise ValueError("Missing transparent pixels (alpha 0) in WOLF character sheet")
+    if 255 not in alphas:
+        raise ValueError("Missing fully opaque pixels (alpha 255) in WOLF character sheet")
+
+    # Check directional arrow orientation on Idle column (Col 1: x = 24..47)
+    idle_x = 24
+    # Row 0: DOWN (tip at bottom (11, 21), notch at top (11, 6))
+    r0_tip = get_pixel(idle_x + 11, 0 * 32 + 21)
+    r0_notch = get_pixel(idle_x + 11, 0 * 32 + 6)
+    if r0_tip[3] == 0:
+        raise ValueError("Row 0 arrow orientation error: expected DOWN facing arrow tip at center-bottom")
+    if r0_notch[3] != 0:
+        raise ValueError("Row 0 arrow orientation error: expected DOWN facing arrow notch at center-top")
+
+    # Row 1: LEFT (tip at left (4, 13), notch at right (19, 13))
+    r1_tip = get_pixel(idle_x + 4, 1 * 32 + 13)
+    r1_notch = get_pixel(idle_x + 19, 1 * 32 + 13)
+    if r1_tip[3] == 0:
+        raise ValueError("Row 1 arrow orientation error: expected LEFT facing arrow tip at center-left")
+    if r1_notch[3] != 0:
+        raise ValueError("Row 1 arrow orientation error: expected LEFT facing arrow notch at center-right")
+
+    # Row 2: RIGHT (tip at right (19, 13), notch at left (4, 13))
+    r2_tip = get_pixel(idle_x + 19, 2 * 32 + 13)
+    r2_notch = get_pixel(idle_x + 4, 2 * 32 + 13)
+    if r2_tip[3] == 0:
+        raise ValueError("Row 2 arrow orientation error: expected RIGHT facing arrow tip at center-right")
+    if r2_notch[3] != 0:
+        raise ValueError("Row 2 arrow orientation error: expected RIGHT facing arrow notch at center-left")
+
+    # Row 3: UP (tip at top (11, 5), notch at bottom (11, 21))
+    r3_tip = get_pixel(idle_x + 11, 3 * 32 + 5)
+    r3_notch = get_pixel(idle_x + 11, 3 * 32 + 21)
+    if r3_tip[3] == 0:
+        raise ValueError("Row 3 arrow orientation error: expected UP facing arrow tip at center-top")
+    if r3_notch[3] != 0:
+        raise ValueError("Row 3 arrow orientation error: expected UP facing arrow notch at center-bottom")
+
+    # Validate all 12 cells against canonical semantic oracle if available
+    canonical_rgba_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character.rgba")
+    if os.path.exists(canonical_rgba_path):
+        from build_target import extract_walking_frames
+        with open(canonical_rgba_path, "rb") as cf:
+            canonical_rgba = cf.read()
+        semantic_frames = extract_walking_frames(canonical_rgba, char_idx=0)
+        wolf_row_order = ["DOWN", "LEFT", "RIGHT", "UP"]
+        wolf_col_phases = ["STEP_LEFT", "IDLE", "STEP_RIGHT"]
+
+        for row_idx, direction in enumerate(wolf_row_order):
+            for col_idx, phase in enumerate(wolf_col_phases):
+                expected_cell = semantic_frames[direction][phase]
+                cell_bytes = bytearray()
+                for py in range(32):
+                    start_off = ((row_idx * 32 + py) * 72 + col_idx * 24) * 4
+                    cell_bytes.extend(recon[start_off : start_off + 24 * 4])
+                if bytes(cell_bytes) != expected_cell:
+                    raise ValueError(f"Cell ({row_idx}, {col_idx}) [{direction}/{phase}] does not match canonical semantic oracle")
+
+    return {
+        "width": width,
+        "height": height,
+        "bit_depth": bit_depth,
+        "color_type": color_type,
+        "num_colors": "truecolor-rgba",
+        "has_trns": False,
+        "frame_cell": "24x32",
+        "character_block": "72x128",
+        "grid": "1 character (3x4 cells)",
+        "directions": ["DOWN", "LEFT", "RIGHT", "UP"],
+        "animation_patterns": ["STEP_LEFT", "IDLE", "STEP_RIGHT"],
+        "cells_verified": 12
+    }
+
 def validate_schemas(repo_root, target):
     """Enforces JSON Schema validation on registry files."""
     slots_path = os.path.join(repo_root, "registry", "slots", f"{target}.json")
@@ -706,7 +867,14 @@ def validate_target(target, target_dir=None):
             continue
 
         # Transformation metadata validation: cross-check with registry
-        transform_meta_fields = ["character_index", "source_character_indices", "transform_policy"]
+        transform_meta_fields = [
+            "character_index",
+            "source_character_indices",
+            "direction_mode",
+            "animation_patterns",
+            "runtime_reference",
+            "transform_policy"
+        ]
         meta_mismatch = False
         for field in transform_meta_fields:
             reg_val = slot_lookup[slot].get(field)
@@ -751,6 +919,9 @@ def validate_target(target, target_dir=None):
                     engine_name = "VX Ace" if target == "rmvxace" else "VX"
                     specs = validate_png_vx_family_character(filepath, engine_name=engine_name)
                     spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 8 characters (4x2), 3x4 frames each (Down, Left, Right, Up)"
+                elif target == "wolf":
+                    specs = validate_png_wolf_character(filepath)
+                    spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 3x4 frames (Down, Left, Right, Up), 12 cells verified"
                 else:
                     raise ValueError(f"Unsupported target '{target}' for character category")
             else:

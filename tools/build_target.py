@@ -317,6 +317,65 @@ def transform_canonical_to_rmvxace_character(source_bytes: bytes, source_indices
     ]
     return pack_rmvxace_character_sheet(semantic_characters)
 
+def pack_wolf_character(semantic_frames: dict, frame_w: int = 24, frame_h: int = 32) -> bytes:
+    """
+    Packs a single semantic walking character into a WOLF RPG Editor v3 standard
+    3-pattern x 4-direction character chip (CharaChip).
+
+    Input:
+      semantic_frames: dict of dicts:
+        frames[direction][phase] -> bytes (frame_w * frame_h * 4 RGBA bytes)
+        direction in ("DOWN", "LEFT", "RIGHT", "UP")
+        phase in ("STEP_LEFT", "IDLE", "STEP_RIGHT")
+
+    Target layout policy (WOLF RPG Editor 3-pattern / 4-direction CharaChip):
+      - 3 columns x 4 rows
+      - Rows (directions): DOWN (0), LEFT (1), RIGHT (2), UP (3)
+      - Columns (animation patterns): STEP_LEFT (0), IDLE (1), STEP_RIGHT (2)
+      - Total sheet dimensions: (3 * frame_w) x (4 * frame_h) = 72 x 128 px
+      - Output: 32-bit truecolor RGBA PNG (Color Type 6) with deterministic RFC 1951 stored blocks.
+    """
+    dst_width = 3 * frame_w  # 72 px
+    dst_height = 4 * frame_h  # 128 px
+    dst_rgba = bytearray(dst_width * dst_height * 4)
+
+    wolf_row_order = ["DOWN", "LEFT", "RIGHT", "UP"]
+    wolf_col_phases = ["STEP_LEFT", "IDLE", "STEP_RIGHT"]
+
+    for row_idx, direction in enumerate(wolf_row_order):
+        if direction not in semantic_frames:
+            raise KeyError(f"Missing required direction '{direction}' in semantic frames")
+        for col_idx, phase in enumerate(wolf_col_phases):
+            if phase not in semantic_frames[direction]:
+                raise KeyError(f"Missing required phase '{phase}' for direction '{direction}'")
+            frame_raw = semantic_frames[direction][phase]
+            expected_frame_len = frame_w * frame_h * 4
+            if len(frame_raw) != expected_frame_len:
+                raise ValueError(f"Frame length mismatch for {direction}/{phase}: expected {expected_frame_len}, got {len(frame_raw)}")
+
+            dst_frame_x = col_idx * frame_w
+            dst_frame_y = row_idx * frame_h
+
+            for py in range(frame_h):
+                src_offset = py * frame_w * 4
+                dst_offset = ((dst_frame_y + py) * dst_width + dst_frame_x) * 4
+                dst_rgba[dst_offset : dst_offset + frame_w * 4] = frame_raw[src_offset : src_offset + frame_w * 4]
+
+    return create_rgba_png(dst_width, dst_height, bytes(dst_rgba))
+
+def transform_canonical_to_wolf_character(source_bytes: bytes, char_idx: int = 0) -> bytes:
+    """
+    Transforms neutral 32-bit RGBA canonical 2k-family walking character sheet (288x256)
+    into a WOLF RPG Editor v3 compliant 3-pattern x 4-direction character chip (72x128).
+
+    Decoupled pipeline:
+      Canonical 2k sheet -> extract_walking_frames(char_idx=char_idx)
+      -> Semantic Frames (DOWN/LEFT/RIGHT/UP, STEP_LEFT/IDLE/STEP_RIGHT)
+      -> pack_wolf_character() -> WOLF 3x4 RGBA PNG
+    """
+    semantic_frames = extract_walking_frames(source_bytes, char_idx=char_idx)
+    return pack_wolf_character(semantic_frames)
+
 def get_reproducible_timestamp():
     """Returns a deterministic ISO-8601 timestamp based on SOURCE_DATE_EPOCH if set."""
     sde = os.environ.get("SOURCE_DATE_EPOCH")
@@ -411,6 +470,9 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
         elif target == "rmvxace" and category == "character":
             source_indices = slot_info.get("source_character_indices", list(range(8)))
             target_png = transform_canonical_to_rmvxace_character(source_bytes, source_indices=source_indices)
+        elif target == "wolf" and category == "character":
+            char_idx = slot_info.get("character_index", 0)
+            target_png = transform_canonical_to_wolf_character(source_bytes, char_idx=char_idx)
         else:
             raise NotImplementedError(f"Target transformation for {target}/{category} is not yet implemented")
 
@@ -438,6 +500,12 @@ def build_target(target, output_dir=None, clean=False, timestamp=None):
             manifest_entry["character_index"] = slot_info["character_index"]
         if "source_character_indices" in slot_info:
             manifest_entry["source_character_indices"] = slot_info["source_character_indices"]
+        if "direction_mode" in slot_info:
+            manifest_entry["direction_mode"] = slot_info["direction_mode"]
+        if "animation_patterns" in slot_info:
+            manifest_entry["animation_patterns"] = slot_info["animation_patterns"]
+        if "runtime_reference" in slot_info:
+            manifest_entry["runtime_reference"] = slot_info["runtime_reference"]
         if "transform_policy" in slot_info:
             manifest_entry["transform_policy"] = slot_info["transform_policy"]
 

@@ -1,0 +1,22 @@
+{
+  "target": "wolf",
+  "target_name": "WOLF RPG Editor Material Package",
+  "engine": "WOLF RPG Editor",
+  "reference_source": "WOLF RPG Editor Material Specifications (SilverSecond)",
+  "slots": {
+    "Data/CharaChip/SuperRTP_Calibration.png": {
+      "asset_id": "test.calibration.walking-character",
+      "category": "Character",
+      "slot_path": "Data/CharaChip/SuperRTP_Calibration.png",
+      "runtime_reference": "CharaChip/SuperRTP_Calibration.png",
+      "character_index": 0,
+      "direction_mode": 4,
+      "animation_patterns": 3,
+      "aliases": [],
+      "format": "truecolor-rgba-png",
+      "dimensions": [72, 128],
+      "transform_policy": "rm2k_char0_to_wolf3_p3_d4_character_v1",
+      "test_only": true
+    }
+  }
+}
