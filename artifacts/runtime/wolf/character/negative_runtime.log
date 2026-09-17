@@ -1,10 +1,9 @@
-
-0024:err:environ:init_peb starting L"Z:\\tmp\\wolf_neg_run_fhr7nt70\\game\\Game.exe" in experimental wow64 mode
-011c:fixme:kernelbase:AppPolicyGetThreadInitializationType FFFFFFFA, 02D3FF08
-0024:fixme:ntdll:NtQuerySystemInformation info_class SYSTEM_PERFORMANCE_INFORMATION
-0024:fixme:win:RegisterTouchWindow hwnd 00020064, flags 0 stub!
-0024:fixme:win:WINNLSEnableIME hwnd 00020064 enable 0: stub!
-0024:fixme:d3d:wined3d_guess_card No card selector available for card vendor 0000 (using GL_RENDERER "llvmpipe (LLVM 21.1.8, 256 bits)").
-0024:fixme:ddraw:ddraw7_WaitForVerticalBlank iface 002953A0, flags 0x1, event 00000000 stub!
-0024:fixme:msctf:ThreadMgr_ActivateEx Unimplemented flags 0x4
-0024:fixme:sapi:token_category_GetDefaultTokenId (12A267E0)->(01AB6F6C): semi-stub
+TID:err:environ:init_peb starting L"Z:\\tmp\\wolf_run_tmp\\game\\Game.exe" in experimental wow64 mode
+TID:fixme:kernelbase:AppPolicyGetThreadInitializationType FFFFFFFA, PTR
+TID:fixme:ntdll:NtQuerySystemInformation info_class SYSTEM_PERFORMANCE_INFORMATION
+TID:fixme:win:RegisterTouchWindow hwnd HWND, flags 0 stub!
+TID:fixme:win:WINNLSEnableIME hwnd HWND enable 0: stub!
+TID:fixme:d3d:wined3d_guess_card No card selector available for card vendor 0000 (using GL_RENDERER "llvmpipe (LLVM 21.1.8, 256 bits)").
+TID:fixme:ddraw:ddraw7_WaitForVerticalBlank iface IFACE, flags 0xHEX, event 00000000 stub!
+TID:fixme:msctf:ThreadMgr_ActivateEx Unimplemented flags 0xHEX
+TID:fixme:sapi:token_category_GetDefaultTokenId (PTR)->(PTR): semi-stub

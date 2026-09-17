@@ -1,0 +1,6 @@
+LoadGraphic ERROR: Cannot find the following files
+  *Continuing play can result in shutdown errors
+ERROR: Cannot find [CharaChip/SuperRTP_Calibration.png]
+
+Process mark:[Map 0 Ev 0 P 1  A problem has been detected in external event processing ]
+--------------------

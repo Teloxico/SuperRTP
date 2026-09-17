@@ -107,6 +107,11 @@ jobs:
           python3 tools/validate_target.py --target rmvxace
           python3 tools/validate_target.py --target wolf
 
+      - name: Execute live WOLF RPG Editor runtime capture and verify zero diff
+        run: |
+          python3 tools/verify_wolf_runtime.py --run-capture
+          git diff --exit-code artifacts/runtime/wolf/character/
+
       - name: Verify runtime evidence chain
         run: |
           python3 tools/verify_runtime.py --target all --verify

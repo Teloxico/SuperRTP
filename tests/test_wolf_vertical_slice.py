@@ -439,5 +439,105 @@ class TestWolfVerticalSlice(unittest.TestCase):
         res = check_evidence_file(evidence_file)
         self.assertEqual(res, 0, "Evidence file verification failed")
 
+    def test_14_adversarial_runtime_verifier_rejection(self):
+        """
+        Adversarially tests that runtime verifiers reject fabricated lookup,
+        swapped directional orientations, corrupted animation phases, and tampered error controls.
+        """
+        artifacts_dir = os.path.join(REPO_ROOT, "artifacts", "runtime", "wolf", "character")
+        target_char_path = os.path.join(REPO_ROOT, "generated", "wolf", "Data", "CharaChip", "SuperRTP_Calibration.png")
+
+        # 1. Dynamic lookup tampering in positive screenshot: erase OCR text area
+        pos_path = os.path.join(artifacts_dir, "wolf_character_positive.png")
+        w, h, pos_rgb = decode_png_rgb(pos_path)
+        bad_pos_rgb = [list(r) for r in pos_rgb]
+        # Overwrite lines 380..479 with black
+        for y in range(380, 480):
+            for x in range(200):
+                bad_pos_rgb[y][x] = (0, 0, 0)
+        with tempfile.TemporaryDirectory() as td:
+            bad_pos_path = os.path.join(td, "bad_pos.png")
+            flat_bytes = bytearray()
+            for row in bad_pos_rgb:
+                for r, g, b in row:
+                    flat_bytes.extend((r, g, b, 255))
+            with open(bad_pos_path, "wb") as f:
+                f.write(create_rgba_png(w, h, bytes(flat_bytes)))
+            with self.assertRaises(ValueError) as ctx:
+                verify_wolf_screenshot(bad_pos_path, target_char_path=target_char_path, mode="positive")
+            self.assertIn("Extracted lookup dimensions mismatch", str(ctx.exception))
+
+        # 2. Tampered lookup result in evidence JSON
+        evidence_file = os.path.join(artifacts_dir, "verification_evidence.json")
+        with open(evidence_file, "r", encoding="utf-8") as f:
+            ev_data = json.load(f)
+        bad_ev = dict(ev_data)
+        bad_ev["positive_lookup_result"] = "64 128"
+        with tempfile.TemporaryDirectory() as td:
+            bad_ev_path = os.path.join(td, "bad_ev.json")
+            with open(bad_ev_path, "w", encoding="utf-8") as f:
+                json.dump(bad_ev, f)
+            with self.assertRaises(ValueError) as ctx:
+                check_evidence_file(bad_ev_path)
+            self.assertIn("Positive lookup result mismatch", str(ctx.exception))
+
+        # 3. Directional map-event tampering: Down arrow tested against Up arrow pattern (11)
+        down_path = os.path.join(artifacts_dir, "wolf_character_down.png")
+        with self.assertRaises(ValueError) as ctx:
+            verify_wolf_screenshot(down_path, target_char_path=target_char_path, mode="directional", expected_pat=11)
+        self.assertIn("not found in directional screenshot", str(ctx.exception))
+
+        # 4. Directional tampering: erase character in wolf_character_down.png
+        w, h, down_rgb = decode_png_rgb(down_path)
+        bad_down_rgb = [list(r) for r in down_rgb]
+        for y in range(160, 224):
+            for x in range(280, 328):
+                bad_down_rgb[y][x] = (0, 0, 0)
+        with tempfile.TemporaryDirectory() as td:
+            bad_down_path = os.path.join(td, "bad_down.png")
+            flat_bytes = bytearray()
+            for row in bad_down_rgb:
+                for r, g, b in row:
+                    flat_bytes.extend((r, g, b, 255))
+            with open(bad_down_path, "wb") as f:
+                f.write(create_rgba_png(w, h, bytes(flat_bytes)))
+            with self.assertRaises(ValueError) as ctx:
+                verify_wolf_screenshot(bad_down_path, target_char_path=target_char_path, mode="directional", expected_pat=2)
+            self.assertIn("not found in directional screenshot", str(ctx.exception))
+
+        # 5. Animation phase tampering: StepLeft screenshot tested against Idle pattern (2)
+        step1_path = os.path.join(artifacts_dir, "wolf_character_walk_step1.png")
+        with self.assertRaises(ValueError) as ctx:
+            verify_wolf_screenshot(step1_path, target_char_path=target_char_path, mode="directional", expected_pat=2)
+        self.assertTrue("not found in directional screenshot" in str(ctx.exception) or "Transparent pixel did not expose black background" in str(ctx.exception) or "Pixel mismatch in directional shot" in str(ctx.exception))
+
+        # 6. Negative control tampering: erase error banner in negative control screenshot
+        neg_path = os.path.join(artifacts_dir, "wolf_character_negative_control.png")
+        w, h, neg_rgb = decode_png_rgb(neg_path)
+        bad_neg_rgb = [[(0, 0, 0) for _ in range(w)] for _ in range(h)]
+        with tempfile.TemporaryDirectory() as td:
+            bad_neg_path = os.path.join(td, "bad_neg.png")
+            flat_bytes = bytearray()
+            for row in bad_neg_rgb:
+                for r, g, b in row:
+                    flat_bytes.extend((r, g, b, 255))
+            with open(bad_neg_path, "wb") as f:
+                f.write(create_rgba_png(w, h, bytes(flat_bytes)))
+            with self.assertRaises(ValueError) as ctx:
+                verify_wolf_screenshot(bad_neg_path, mode="negative_control")
+            self.assertIn("Negative control missing green error banner", str(ctx.exception))
+
+        # 7. Missing Game_ErrorLog.txt check in evidence chain
+        with tempfile.TemporaryDirectory() as td:
+            for item in os.listdir(artifacts_dir):
+                if item != "Game_ErrorLog.txt":
+                    shutil.copy2(os.path.join(artifacts_dir, item), os.path.join(td, item))
+            from verify_wolf_runtime import get_target_config, verify_evidence_chain
+            custom_cfg = get_target_config()
+            custom_cfg["artifacts_dir"] = td
+            with self.assertRaises(FileNotFoundError) as ctx:
+                verify_evidence_chain(os.path.join(td, "verification_evidence.json"), cfg=custom_cfg)
+            self.assertIn("Game_ErrorLog.txt", str(ctx.exception))
+
 if __name__ == "__main__":
     unittest.main()
