@@ -28,6 +28,8 @@ import shutil
 import hashlib
 import argparse
 import subprocess
+import time
+import signal
 import tempfile
 from datetime import datetime, timezone
 
@@ -441,6 +443,180 @@ def verify_wolf_screenshot(shot_path, target_char_path=None, mode="positive", ex
             "position": found_pos
         }
 
+def clean_stale_x_locks():
+    """Cleans up leftover Xvfb locks in /tmp where the holding process is dead."""
+    if not os.path.exists("/tmp"):
+        return
+    for f in os.listdir("/tmp"):
+        if f.startswith(".X") and f.endswith("-lock"):
+            try:
+                num_str = f[2:-5]
+                num = int(num_str)
+                # Only clean virtual displays >= 90 to protect system desktop displays (:0, :1)
+                if num < 90:
+                    continue
+                with open(os.path.join("/tmp", f), "r") as fp:
+                    pid = int(fp.read().strip())
+                try:
+                    os.kill(pid, 0)
+                except OSError:
+                    # Process is dead, stale lock
+                    try:
+                        os.remove(os.path.join("/tmp", f))
+                    except OSError:
+                        pass
+                    sock = f"/tmp/.X11-unix/X{num}"
+                    if os.path.exists(sock):
+                        try:
+                            os.remove(sock)
+                        except OSError:
+                            pass
+            except Exception:
+                pass
+
+
+def find_available_display(start=99, max_try=10):
+    """Finds an available X11 virtual display, cleaning stale Xvfb locks if needed."""
+    clean_stale_x_locks()
+    for d in range(start, start + max_try):
+        lock_file = f"/tmp/.X{d}-lock"
+        sock_file = f"/tmp/.X11-unix/X{d}"
+        if not os.path.exists(lock_file) and not os.path.exists(sock_file):
+            return f":{d}"
+    return f":{start}"
+
+
+def execute_wolf_and_capture(
+    game_dir,
+    output_screenshot_path,
+    wine_bin,
+    readiness_verifier,
+    timeout_sec=20.0,
+    poll_interval=0.5,
+    stdout_capture_path=None,
+    stderr_capture_path=None,
+):
+    """
+    Spawns Xvfb and WOLF Game.exe under Wine, polling every poll_interval seconds
+    until readiness_verifier(temp_screenshot_path) returns True or timeout is reached.
+    This eliminates race conditions and premature capture on slow, multi-core, or virtualized CI runners.
+    """
+    display = find_available_display()
+    xvfb_cmd = ["Xvfb", display, "-screen", "0", "640x480x24"]
+    xvfb_proc = subprocess.Popen(
+        xvfb_cmd,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+    out_f = open(stdout_capture_path, "w", encoding="utf-8") if stdout_capture_path else subprocess.DEVNULL
+    err_f = open(stderr_capture_path, "w", encoding="utf-8") if stderr_capture_path else subprocess.DEVNULL
+    temp_shot = output_screenshot_path + ".tmp.png"
+
+    try:
+        # Wait up to 2.0s for Xvfb socket to appear
+        sock_path = f"/tmp/.X11-unix/X{display[1:]}"
+        for _ in range(20):
+            if os.path.exists(sock_path):
+                break
+            time.sleep(0.1)
+
+        env = os.environ.copy()
+        env["DISPLAY"] = display
+
+        game_proc = subprocess.Popen(
+            [wine_bin, "Game.exe"],
+            cwd=game_dir,
+            env=env,
+            stdout=out_f,
+            stderr=err_f,
+            start_new_session=True,
+        )
+
+        start_time = time.time()
+        rendered = False
+        focused = False
+
+        while time.time() - start_time < timeout_sec:
+            time.sleep(poll_interval)
+
+            # Optional window focus using class "game.exe" (locale-independent)
+            if not focused and shutil.which("xdotool"):
+                try:
+                    wids = subprocess.check_output(
+                        ["xdotool", "search", "--class", "game.exe"],
+                        env=env, stderr=subprocess.DEVNULL
+                    ).decode().split()
+                    if wids:
+                        subprocess.run(
+                            ["xdotool", "windowfocus", "--sync", wids[0]],
+                            env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                        )
+                        focused = True
+                except Exception:
+                    pass
+
+            cap_cmd = [
+                "ffmpeg", "-y", "-f", "x11grab", "-draw_mouse", "0",
+                "-video_size", "640x480", "-i", f"{display}.0",
+                "-vframes", "1", temp_shot,
+            ]
+            cap_res = subprocess.run(
+                cap_cmd,
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+            if cap_res.returncode == 0 and os.path.exists(temp_shot):
+                try:
+                    if readiness_verifier(temp_shot):
+                        os.replace(temp_shot, output_screenshot_path)
+                        rendered = True
+                        break
+                except Exception:
+                    pass
+
+        if not rendered:
+            if os.path.exists(temp_shot):
+                os.replace(temp_shot, output_screenshot_path)
+            raise TimeoutError(
+                f"WOLF Game.exe did not render expected content within {timeout_sec}s for {output_screenshot_path}"
+            )
+
+    finally:
+        if stdout_capture_path and out_f != subprocess.DEVNULL:
+            out_f.close()
+        if stderr_capture_path and err_f != subprocess.DEVNULL:
+            err_f.close()
+
+        # Cleanly terminate game process and its process group
+        try:
+            os.killpg(os.getpgid(game_proc.pid), signal.SIGTERM)
+            game_proc.wait(timeout=2.0)
+        except Exception:
+            try:
+                os.killpg(os.getpgid(game_proc.pid), signal.SIGKILL)
+            except Exception:
+                pass
+
+        # Cleanly terminate Xvfb process and its process group
+        try:
+            os.killpg(os.getpgid(xvfb_proc.pid), signal.SIGTERM)
+            xvfb_proc.wait(timeout=2.0)
+        except Exception:
+            try:
+                os.killpg(os.getpgid(xvfb_proc.pid), signal.SIGKILL)
+            except Exception:
+                pass
+
+        if os.path.exists(temp_shot):
+            try:
+                os.remove(temp_shot)
+            except OSError:
+                pass
+
+
 def run_capture(cfg):
     """Executes live WOLF Game.exe under Xvfb and captures positive composite, individual frames, and negative control."""
     game_exe = os.path.expanduser("~/.local/share/wolf-3.717/Game.exe")
@@ -461,6 +637,15 @@ def run_capture(cfg):
     pos_shot_path = os.path.join(cfg["artifacts_dir"], "wolf_character_positive.png")
     pos_log_path = os.path.join(cfg["artifacts_dir"], "positive_runtime.log")
 
+    def check_pos_ready(shot_file):
+        w, h, px = decode_png_rgb(shot_file)
+        if px[64][120] == (0, 0, 0):
+            return False
+        verify_wolf_screenshot(shot_file, target_char_path=target_char_path, mode="positive")
+        return True
+
+    stdout_tmp = "/tmp/wolf_pos_stdout.log"
+    stderr_tmp = "/tmp/wolf_pos_stderr.log"
     with tempfile.TemporaryDirectory(prefix="wolf_pos_run_") as tmp_pos_dir:
         game_pos = os.path.join(tmp_pos_dir, "game")
         shutil.copytree(cfg["fixture_dir"], game_pos)
@@ -468,30 +653,19 @@ def run_capture(cfg):
         shutil.copy2(target_char_path, os.path.join(game_pos, "Data", "CharaChip", "SuperRTP_Calibration.png"))
         shutil.copy2(game_exe, os.path.join(game_pos, "Game.exe"))
 
-        cmd = f"""
-        export DISPLAY=:99
-        Xvfb :99 -screen 0 640x480x24 &
-        XVFB_PID=$!
-        sleep 1
+        execute_wolf_and_capture(
+            game_dir=game_pos,
+            output_screenshot_path=pos_shot_path,
+            wine_bin=wine_bin,
+            readiness_verifier=check_pos_ready,
+            timeout_sec=20.0,
+            stdout_capture_path=stdout_tmp,
+            stderr_capture_path=stderr_tmp,
+        )
 
-        cd {game_pos}
-        {wine_bin} Game.exe > /tmp/wolf_pos_stdout.log 2> /tmp/wolf_pos_stderr.log &
-        GAME_PID=$!
-        sleep 3
-        WID=$(xdotool search --name "新規ゲーム" | head -n 1)
-        if [ -n "$WID" ]; then
-            xdotool windowfocus --sync $WID
-            sleep 0.5
-        fi
-        ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i "$DISPLAY.0" -vframes 1 {pos_shot_path}
-        kill -9 $GAME_PID 2>/dev/null || true
-        kill -9 $XVFB_PID 2>/dev/null || true
-        """
-        subprocess.run(cmd, shell=True, check=True)
-
-    with open("/tmp/wolf_pos_stdout.log", "r", encoding="utf-8", errors="replace") as f:
+    with open(stdout_tmp, "r", encoding="utf-8", errors="replace") as f:
         pos_stdout = f.read()
-    with open("/tmp/wolf_pos_stderr.log", "r", encoding="utf-8", errors="replace") as f:
+    with open(stderr_tmp, "r", encoding="utf-8", errors="replace") as f:
         pos_stderr = f.read()
     with open(pos_log_path, "w", encoding="utf-8") as f:
         f.write(sanitize_wine_log(pos_stdout + "\n" + pos_stderr))
@@ -511,6 +685,15 @@ def run_capture(cfg):
     with open(mps_file, "rb") as f:
         hdr, body = decompress_mps(f.read())
     base_map = parse_mps_body(body, version=hdr[0])
+
+    def make_check_dir(expected_pat):
+        def check_dir_ready(shot_file):
+            w, h, px = decode_png_rgb(shot_file)
+            if px[160][280] == (0, 0, 0):
+                return False
+            verify_wolf_screenshot(shot_file, target_char_path=target_char_path, mode="directional", expected_pat=expected_pat)
+            return True
+        return check_dir_ready
 
     for shot_fname, (gdir, gframe, pat_num, s_desc) in dir_shots.items():
         shot_out_path = os.path.join(cfg["artifacts_dir"], shot_fname)
@@ -536,26 +719,13 @@ def run_capture(cfg):
             with open(os.path.join(game_dir, "Data", "MapData", "SampleMap.mps"), "wb") as f:
                 f.write(new_mps)
 
-            cmd = f"""
-            export DISPLAY=:99
-            Xvfb :99 -screen 0 640x480x24 &
-            XVFB_PID=$!
-            sleep 1
-
-            cd {game_dir}
-            {wine_bin} Game.exe > /dev/null 2>&1 &
-            GAME_PID=$!
-            sleep 3
-            WID=$(xdotool search --name "新規ゲーム" | head -n 1)
-            if [ -n "$WID" ]; then
-                xdotool windowfocus --sync $WID
-                sleep 0.5
-            fi
-            ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i "$DISPLAY.0" -vframes 1 {shot_out_path}
-            kill -9 $GAME_PID 2>/dev/null || true
-            kill -9 $XVFB_PID 2>/dev/null || true
-            """
-            subprocess.run(cmd, shell=True, check=True)
+            execute_wolf_and_capture(
+                game_dir=game_dir,
+                output_screenshot_path=shot_out_path,
+                wine_bin=wine_bin,
+                readiness_verifier=make_check_dir(pat_num),
+                timeout_sec=20.0,
+            )
             print(f"  Captured {shot_fname} ({s_desc})")
 
     # 3. Negative Control Run
@@ -564,40 +734,35 @@ def run_capture(cfg):
     neg_log_path = os.path.join(cfg["artifacts_dir"], "negative_runtime.log")
     neg_errlog_dest = os.path.join(cfg["artifacts_dir"], "Game_ErrorLog.txt")
 
+    def check_neg_ready(shot_file):
+        verify_wolf_screenshot(shot_file, mode="negative_control")
+        return True
+
+    stdout_neg_tmp = "/tmp/wolf_neg_stdout.log"
+    stderr_neg_tmp = "/tmp/wolf_neg_stderr.log"
     with tempfile.TemporaryDirectory(prefix="wolf_neg_run_") as tmp_neg_dir:
         game_neg = os.path.join(tmp_neg_dir, "game")
         shutil.copytree(cfg["fixture_dir"], game_neg)
         # Intentionally omit Data/CharaChip/SuperRTP_Calibration.png
         shutil.copy2(game_exe, os.path.join(game_neg, "Game.exe"))
 
-        cmd = f"""
-        export DISPLAY=:99
-        Xvfb :99 -screen 0 640x480x24 &
-        XVFB_PID=$!
-        sleep 1
-
-        cd {game_neg}
-        {wine_bin} Game.exe > /tmp/wolf_neg_stdout.log 2> /tmp/wolf_neg_stderr.log &
-        GAME_PID=$!
-        sleep 3
-        WID=$(xdotool search --name "新規ゲーム" | head -n 1)
-        if [ -n "$WID" ]; then
-            xdotool windowfocus --sync $WID
-            sleep 0.5
-        fi
-        ffmpeg -y -f x11grab -draw_mouse 0 -video_size 640x480 -i "$DISPLAY.0" -vframes 1 {neg_shot_path}
-        kill -9 $GAME_PID 2>/dev/null || true
-        kill -9 $XVFB_PID 2>/dev/null || true
-        """
-        subprocess.run(cmd, shell=True, check=True)
+        execute_wolf_and_capture(
+            game_dir=game_neg,
+            output_screenshot_path=neg_shot_path,
+            wine_bin=wine_bin,
+            readiness_verifier=check_neg_ready,
+            timeout_sec=20.0,
+            stdout_capture_path=stdout_neg_tmp,
+            stderr_capture_path=stderr_neg_tmp,
+        )
 
         neg_errlog_src = os.path.join(game_neg, "Game_ErrorLog.txt")
         if os.path.exists(neg_errlog_src):
             shutil.copy2(neg_errlog_src, neg_errlog_dest)
 
-    with open("/tmp/wolf_neg_stdout.log", "r", encoding="utf-8", errors="replace") as f:
+    with open(stdout_neg_tmp, "r", encoding="utf-8", errors="replace") as f:
         neg_stdout = f.read()
-    with open("/tmp/wolf_neg_stderr.log", "r", encoding="utf-8", errors="replace") as f:
+    with open(stderr_neg_tmp, "r", encoding="utf-8", errors="replace") as f:
         neg_stderr = f.read()
     with open(neg_log_path, "w", encoding="utf-8") as f:
         f.write(sanitize_wine_log(neg_stdout + "\n" + neg_stderr))
