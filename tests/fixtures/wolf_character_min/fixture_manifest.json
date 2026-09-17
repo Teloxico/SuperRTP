@@ -21,8 +21,8 @@
       "purpose": "Game system settings with MIDI initialization prompt disabled"
     },
     "Data/BasicData/CommonEvent.dat": {
-      "sha256": "4b6efa0cd56d682e0a555c240e0e92dc45a32d6d6693b747530a821a4574afb7",
-      "purpose": "Event 0 boot harness configured to instantiate test pad and CharaChip"
+      "sha256": "6b010cbb8f303dc346f2e639d22ffc844260e9fed9fe2ac98167de590dbcaad0",
+      "purpose": "Boot harness executing dynamic image size lookup and rendering result"
     },
     "Data/BasicData/MapTree.dat": {
       "sha256": "8feac2b3d323e766e74d96e00a064d2b08d4c4fa9a63f5c894d0c47b4facce6c",
@@ -61,8 +61,8 @@
       "purpose": "Map tileset definitions"
     },
     "Data/MapData/SampleMap.mps": {
-      "sha256": "a5fa4ada7ffaa755ae36fe2de4931a667285322da673b0277bc9ecbf4f0af99a",
-      "purpose": "Clean-room empty sample map"
+      "sha256": "ceb3cf22c02d6b7e6c1a5dbb24f5a400781f7bc385acc55c7d73b28df598c0ba",
+      "purpose": "Clean-room sample map with 7 native character events displaying all 4 directions and 3 walking animation phases"
     }
   },
   "support_assets": {
