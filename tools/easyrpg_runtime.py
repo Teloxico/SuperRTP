@@ -64,10 +64,17 @@ def check_pinned_version(version_line: str) -> None:
         raise ValueError(f"EasyRPG version pin violation: expected {PINNED_EASYRPG_VERSION} in '{version_line}'")
 
 
-def player_command(player: str, fixture_dir: str, engine: str, rtp_dir: str = None, log_file: str = None) -> list:
-    """Command line for a headless verification session (rtp_dir=None disables the RTP)."""
+def player_command(player: str, fixture_dir: str, engine: str, rtp_dir: str = None, log_file: str = None,
+                   discover_rtp: bool = False) -> list:
+    """
+    Command line for a headless verification session. rtp_dir=None disables the RTP, unless
+    `discover_rtp` leaves the player to find an installed RTP itself (registry, XDG paths).
+    """
     cmd = [player, "--project-path", fixture_dir]
-    cmd += ["--rtp-path", rtp_dir] if rtp_dir else ["--no-rtp"]
+    if rtp_dir:
+        cmd += ["--rtp-path", rtp_dir]
+    elif not discover_rtp:
+        cmd += ["--no-rtp"]
     cmd += ["--engine", engine, "--new-game", "--disable-audio", "--no-pause-focus-lost",
             "--fullscreen", "--no-log-color", "--seed", "42"]
     if log_file:
@@ -75,8 +82,13 @@ def player_command(player: str, fixture_dir: str, engine: str, rtp_dir: str = No
     return cmd
 
 
-def _session_env(display: str) -> dict:
-    return x11_env(display, SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy")
+def _session_env(display: str, env: dict = None) -> dict:
+    """`env` (default: the current environment) pointed at the private display."""
+    if env is None:
+        return x11_env(display, SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy")
+    session_env = dict(env, SDL_VIDEODRIVER="x11", SDL_AUDIODRIVER="dummy", DISPLAY=display)
+    session_env.pop("WAYLAND_DISPLAY", None)
+    return session_env
 
 
 def _prepare_log(log_file: str) -> None:
@@ -97,14 +109,16 @@ def finalize_log(log_file: str) -> str:
 
 
 @contextlib.contextmanager
-def session(cmd: list, log_file: str = None):
+def session(cmd: list, log_file: str = None, env: dict = None):
     """
     Runs one player session under a private Xvfb display and yields that display.
+    `env` replaces the environment (e.g. with HOME, XDG_DATA_HOME, WINEPREFIX for RTP discovery);
+    DISPLAY always points at the private display.
     The session is always stopped on exit, and its log is then made portable.
     """
     _prepare_log(log_file)
     with xvfb_display(SCREEN_W, SCREEN_H) as display:
-        with managed(spawn(cmd, env=_session_env(display))):
+        with managed(spawn(cmd, env=_session_env(display, env))):
             yield display
     if log_file:
         finalize_log(log_file)

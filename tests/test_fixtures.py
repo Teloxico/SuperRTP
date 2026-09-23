@@ -51,7 +51,7 @@ def _liblcf_env():
 class TestFixtures(unittest.TestCase):
     def test_every_fixture_matches_its_manifest(self):
         manifests = sorted(glob.glob(os.path.join(FIXTURES, "*", "fixture_manifest.json")))
-        self.assertEqual(len(manifests), 8)
+        self.assertEqual(len(manifests), 9)
         for path in manifests:
             fixture = os.path.dirname(path)
             manifest = load_json(path)

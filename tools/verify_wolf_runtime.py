@@ -237,6 +237,24 @@ def _check_semantics(cells):
         raise ValueError("Movement animation assertion failed: step foot positions equal idle foot positions")
 
 
+def verify_charachip_composite(shot_path, char_path):
+    """
+    Positive composite check for any 72x128 CharaChip (tools/verify_generated_packs.py): all
+    seven events show exactly the sheet's cells and the engine reports the size 72 128. The
+    calibration-only semantics (arrow directions, foot markers) are not checked.
+    """
+    w, h, pixels = decode_png_rgb(shot_path)
+    if (w, h) != (wolf.SCREEN_W, wolf.SCREEN_H):
+        raise ValueError(f"Expected 640x480 screenshot, got {w}x{h}")
+    cells = _cells(char_path)
+    for name, sx, sy, pattern in COMPOSITE_SLOTS:
+        _check_cell(pixels, cells[pattern], sx, sy, name)
+    lookup = decode_lookup_dimensions(pixels)
+    if lookup != EXPECTED_LOOKUP:
+        raise ValueError(f"Extracted lookup dimensions mismatch: expected '{EXPECTED_LOOKUP}', got '{lookup}'")
+    return lookup
+
+
 def _verify_negative(pixels):
     green_bar = text = 0
     for y in range(192, 288):
