@@ -68,7 +68,8 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
 - **Runtime & Visual Verification:**
   - Executed in EasyRPG Player 0.8.1.1 against distinct clean-room game fixtures ([`tests/fixtures/rm2000_min/`](tests/fixtures/rm2000_min) and [`tests/fixtures/rm2003_min/`](tests/fixtures/rm2003_min)).
   - RM2003 fixture explicitly requests `Hero1` to test the engine-specific alias boundary.
-  - Replayed deterministic turning input across all 4 directions with verified clean logs.
+  - The hero is turned through all 4 directions with real X11 key presses (xdotool); each facing is captured once the screen shows it. EasyRPG's `--replay-input` is not used because its reader applies an input only on an exact frame match ([docs/engine-facts.md](docs/engine-facts.md)).
+  - Live re-capture is intermittent on this slice; see [docs/known-issues.md](docs/known-issues.md). The committed evidence verifies.
   - Directional runtime states visually inspected and verified in:
     - [`artifacts/runtime/rm2000/charset/`](artifacts/runtime/rm2000/charset/) (`rm2000_charset_down.png`, `left`, `up`, `right`, and `negative_control.png`)
     - [`artifacts/runtime/rm2003/charset/`](artifacts/runtime/rm2003/charset/) (`rm2003_charset_down.png`, `left`, `up`, `right`, and `negative_control.png`)
@@ -106,17 +107,18 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
     - **Row 1**: Facing **Left** (`<`)
     - **Row 2**: Facing **Right** (`>`)
     - **Row 3**: Facing **Up** (`^`)
-  - Adapts 3 animation phases (`STEP_LEFT`, `IDLE`, `STEP_RIGHT`) into standard 4-column XP layout:
-    - **Column 0**: Step Left
-    - **Column 1**: Idle / Standing
-    - **Column 2**: Step Right
-    - **Column 3**: Idle / Standing (duplicated from Column 1)
+  - Adapts 3 animation phases (`STEP_LEFT`, `IDLE`, `STEP_RIGHT`) into the 4-column XP layout. RGSS1 draws a standing character from column 0 and walks through columns 0-3 (`@original_pattern = 0`, `sx = pattern * width / 4`; see [docs/engine-facts.md](docs/engine-facts.md)), so the idle frame comes first:
+    - **Column 0**: Idle / Standing
+    - **Column 1**: Step Right
+    - **Column 2**: Idle / Standing
+    - **Column 3**: Step Left
+  - Policy: `rm2k_to_rgss1_character_4x4_idle_first_v2`.
   - Output sheet dimensions: **96×128** pixels.
 - **Deterministic 32-bit Truecolor RGBA Encoder:**
   - Encodes directly into 32-bit truecolor RGBA PNG (Color Type 6, bit depth 8) using RFC 1951 stored blocks for bit-level determinism across platforms.
   - Strictly omits `PLTE` chunk and preserves full alpha channel ($0 \le \alpha \le 255$).
 - **Target Slot Mapping:**
-  - `rmxp`: Emits `Graphics/Characters/001-Fighter01.png` (SHA-256: `b4e81694247632b5580b5eef55a17e61c6afd709092de0e574aed70b41759743`).
+  - `rmxp`: Emits `Graphics/Characters/001-Fighter01.png` (SHA-256: `fbd8e9705577b6c14420fa37b63b1cda0888e7488a80123aa1ae14aac236e6dd`).
 - **Runtime & Visual Verification (mkxp-z):**
   - Executed using pinned `mkxp-z` (commit `826929eeb3ebc4b887c011604919217a790770f4`) with clean-room RGSS1 test harness ([`tests/fixtures/rmxp_character_min/`](tests/fixtures/rmxp_character_min/)).
   - Positive control: Renders 96×128 sprite over a centered high-contrast test pad (260, 164, 120×152) with distinct corner alignment markers (Red TL, Green TR, Blue BL, Yellow BR).
@@ -188,7 +190,7 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
     - **Column 2**: Step Right
 - **Cross-Target Semantic Invariants:**
   - The 12 cells of WOLF CharaChip are byte-for-byte identical to the top-left $72 \times 128$ block of both RPG Maker VX (`rmvx`) and RPG Maker VX Ace (`rmvxace`) `Actor1.png` sheets.
-  - The 12 cells match RMXP Character 0 walking frames (columns 0, 1, 2 for directions Down, Left, Right, Up).
+  - The 12 cells match the RMXP walking frames (Step Left, Idle, Step Right = RMXP columns 3, 0, 1 for directions Down, Left, Right, Up).
 - **Target Pack & Slot Mapping:**
   - `wolf`: Emits `Data/CharaChip/SuperRTP_Calibration.png` (SHA-256: `da3f32ef170575ff49abb04197413b663b1010735154ac2435771eeab02dc6e7`), 32-bit truecolor RGBA (Color Type 6, bit depth 8, no PLTE, no tRNS).
   - Policy: `rm2k_char0_to_wolf3_p3_d4_character_v1`.
@@ -221,8 +223,11 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
 │   └── slots/        # Target engine slot mappings
 ├── schemas/          # JSON schemas for assets, provenance, and slots
 ├── tests/
-│   ├── fixtures/     # Clean-room game fixtures and fixture manifests
-│   └── test_vertical_slice.py # Automated test suite
+│   ├── fixtures/                 # Clean-room game fixtures and fixture manifests
+│   ├── support.py                # Shared test helpers (runtime gating, PNG rewrite)
+│   ├── test_foundation.py        # PNG codec, schemas, registry, transforms, builder, validator
+│   ├── test_fixtures.py          # Fixture manifests and deterministic generators
+│   └── test_runtime_evidence.py  # Evidence binding, tamper rejection, live engine captures
 └── tools/            # Generators, target builders, validators, and runtime verifiers
 ```
 
@@ -230,27 +235,14 @@ The compatibility slices are implemented, hardened, and verified for **cross-tar
 
 ### 1. Run Automated Test Suites
 ```bash
-# Tasks 1–3: RM2000 & RM2003 CharSet and ChipSet test suite (23 tests)
-SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_vertical_slice.py
-
-# Task 4: RPG Maker XP / RGSS1 Character test suite (12 tests)
-SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmxp_vertical_slice.py
-
-# Task 5: RPG Maker VX / RGSS2 Character test suite (14 tests)
-SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmvx_vertical_slice.py
-
-# Task 6: RPG Maker VX Ace / RGSS3 Character test suite (15 tests)
-SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_rmvxace_vertical_slice.py
-
-# Task 7: WOLF RPG Editor v3 Character / CharaChip test suite (13 tests)
-SUPERRTP_REQUIRE_RUNTIME=1 python3 tests/test_wolf_vertical_slice.py
+cd tests && python3 -m unittest discover -v
 ```
-Executes 77 mechanical checks across all targets:
-- **Tasks 1–3 Suite (23 tests)**: Canonical master RGBA/PNG reproducibility, 8-bit indexed format compliance, provenance schemas, deterministic target builder, validator rejections, liblcf fixture generation, headless EasyRPG positive/negative controls, 4-direction turning verification, ChipSet fixed-tile geometry (Blocks E/F), layer transparency composition, and adversarial evidence tamper suites.
-- **Task 4 Suite (12 tests)**: Deterministic truecolor RGBA PNG encoding with full alpha range, semantic walking frame extraction, 4×4 RGSS1 packing and direction remapping from canonical sheet, RMXP target build reproducibility, frozen baseline regression integrity across all 3 engines, target validation for RMXP, validator rejections (bad dimensions, paletted PNG, missing alpha, idle column mismatch), clean-room RGSS1 fixture manifest integrity, live headless mkxp-z positive resolution, live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and 20+ field adversarial tamper rejection.
-- **Task 5 Suite (14 tests)**: Canonical walking character asset integrity, semantic 8-character extraction against independent physical crop oracle, RGSS2 standard $4\times 2$ character sheet packing geometry, 96-cell exact byte equality directly against independent physical source crops, single-frame mutation locality (one cell mutation alters only that target cell and leaves all 95 others 100% byte-identical), character index preservation and non-scrambling test, adversarial packer validation, RMVX target build reproducibility, frozen baseline regression integrity across all 4 targets, RMVX target validator adversarial rejections (wrong source indices, missing/wrong transform policy, wrong category, wrong target hash, directional-row permutation), live headless mkxp-z RGSS2 positive resolution ($544\times 416$), live headless mkxp-z negative control (`Errno::ENOENT`, exit code 1), complete durable evidence chain verification, and expanded adversarial tamper rejection including build config options, diagnostics, and actual screenshot pixel corruption.
-- **Task 6 Suite (15 tests)**: Canonical walking character asset integrity, 8-character semantic extraction against independent physical crop oracle, shared VX-family 8-character packing and thin wrapper verification, 96-cell exact byte equality directly against independent physical crops, single-frame mutation locality (1 frame mutated, 95 cells byte-identical), cross-target byte equality (`rmvx` Actor1 bytes == `rmvxace` Actor1 bytes) alongside distinct engine/target manifests and transform policies, independent build without reading `generated/rmvx`, A/B deterministic build reproducibility, frozen baseline regression integrity across all 5 targets, RMVXAce validator adversarial rejections (wrong category, wrong target SHA, corrupted indices, wrong/missing transform policy, row permutation), clean-room RGSS3 fixture integrity, live headless mkxp-z RGSS3 positive resolution (`RGSS version 3 (RPG Maker VX Ace)` banner, $544\times 416$ screen), live headless mkxp-z negative control (`SUPERRTP_RMVXACE_MISSING_ASSET: Graphics/Characters/Actor1`, exit code 1), complete durable evidence chain verification, and expanded 22+ field adversarial tamper suite including nested build config and screenshot pixel corruption.
-- **Task 7 Suite (13 tests)**: Canonical walking character asset integrity, semantic frame extraction for character index 0 against independent physical crop oracle, WOLF 3-pattern $\times$ 4-direction CharaChip packing geometry ($72 \times 128$), 12-cell exact byte equality directly against independent physical crops, cross-target pixel equality with RMVX/RMVXAce top-left character block, cross-target cell equality with RMXP walking frames, WOLF slot registry and schema validation, target validation for WOLF, deterministic A/B target rebuild reproducibility, frozen baseline regression integrity across all 6 targets, adversarial validator tamper suite (corrupted header, bad dimensions, paletted PNG, permuted directional rows), clean-room WOLF fixture integrity, and complete durable runtime verification evidence chain.
+Three suites:
+- **`test_foundation.py`**: the PNG codec (byte-identical encoders, truecolor and paletted decoding), JSON schema validation, registry/provenance lookups, the semantic frame transforms of every target layout against an independent crop oracle, deterministic target builds, and validator rejections (wrong dimensions, partial packs, stray files, permuted rows, wrong idle column).
+- **`test_fixtures.py`**: fixture manifests and byte-identical regeneration of fixture and calibration graphics.
+- **`test_runtime_evidence.py`**: every committed evidence set verifies; *every* recorded field is bound (a generic tamper test mutates or removes each field and requires rejection); rehashed screenshots with altered sprite pixels are rejected; and a fresh live capture through each real engine (EasyRPG Player, mkxp-z, WOLF Game.exe under Wine) must verify with the same checks. Live captures write to temporary directories.
+
+Live tests skip when an engine is missing. Set `SUPERRTP_REQUIRE_RUNTIME=1` (as CI does) to make a missing engine a failure instead.
 
 ### 2. Generate Clean-Room Fixture Graphics
 ```bash
@@ -294,8 +286,8 @@ python3 tools/verify_rmvx_runtime.py --verify
 python3 tools/verify_rmvxace_runtime.py --verify
 python3 tools/verify_wolf_runtime.py --verify
 
-# Re-run live replay / capture under virtual X11:
-python3 tools/verify_runtime.py --target all --run-replay
+# Re-capture under virtual X11 (overwrites artifacts/runtime/ unless --artifacts-dir is given):
+python3 tools/verify_runtime.py --target all --run-capture
 python3 tools/verify_chipset_runtime.py --target all --run-capture
 python3 tools/verify_rmxp_runtime.py --run-capture
 python3 tools/verify_rmvx_runtime.py --run-capture
