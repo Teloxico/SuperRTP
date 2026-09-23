@@ -43,6 +43,7 @@ IDLE, STEP_RIGHT, IDLE, STEP_LEFT. The RMXP transform therefore writes columns
 `IDLE, STEP_RIGHT, IDLE, STEP_LEFT` (policy `rm2k_to_rgss1_character_4x4_idle_first_v2`).
 The earlier layout `STEP_LEFT, IDLE, STEP_RIGHT, IDLE` made standing XP characters show a
 mid-stride frame.
+| VX/VX Ace character sheets may be any size: the frame is 1/12 of the width and 1/8 of the height (1/3 and 1/4 for `$` single-character files). The stock sprite is 32x32, i.e. a 384x256 sheet | Generated VX/VX Ace sheets use 32x32 frames (384x256); the 288x256 calibration sheet (24x32 frames) loads for the same reason | RPG Maker VX Ace manual, Resource Standards (rpgvxace/6100_resource.html); stock size per community references (RPG Maker forums, 2018) |
 
 ## WOLF RPG Editor 3.717
 

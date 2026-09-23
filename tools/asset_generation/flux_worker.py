@@ -224,10 +224,21 @@ COMPLETE_PATH = os.path.join(FLUX_DIR, "COMPLETE.json")
 MAX_PASSES = 3                # passes that retry failed jobs before giving up
 
 
-def finish(total: int) -> None:
+def run_runtime_gate() -> dict:
+    """Runs tools/verify_generated_packs.py (real EasyRPG and mkxp-z against the packs). Its
+    outcome is recorded rather than retried: regenerating images cannot fix a failed gate."""
+    import subprocess
+    result = subprocess.run(["python3", os.path.join(TOOLS_DIR, "verify_generated_packs.py")], capture_output=True, text=True)
+    lines = [l for l in result.stdout.splitlines() if l.startswith("[")]
+    print("\n".join(lines) or result.stderr.strip()[-2000:], flush=True)
+    return {"passed": result.returncode == 0, "report": "artifacts/generation/full-inventory/v2/runtime-gate.json",
+            "summary": lines}
+
+
+def finish(total: int, gate: dict) -> None:
     """Everything is generated, structured and packed: record completion and free the model and its
     environment (~12 GB), which setup_flux.sh can recreate. Concepts and structured images are kept."""
-    record = {"completed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "jobs": total,
+    record = {"completed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "jobs": total, "runtime_gate": gate,
               "model": MODEL_ID, "model_revision": MODEL_REVISION,
               "freed": [os.path.relpath(p, REPO_ROOT) for p in (MODEL_DIR, os.path.join(FLUX_DIR, "venv"))]}
     _atomic_write(COMPLETE_PATH, (json.dumps(record, indent=2) + "\n").encode())
@@ -269,7 +280,7 @@ def main():
         if not build_packs():
             sys.exit(f"Pack build or verification failed; see {FAILURES_PATH}")
         del pipe
-        finish(total)
+        finish(total, run_runtime_gate())
         return
     while True:
         total, remaining, failures = run_pass(pipe, env, args.family, args.limit)
