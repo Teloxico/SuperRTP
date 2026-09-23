@@ -20,16 +20,14 @@ Total color palette is strictly limited (< 32 colors) with index 0 reserved for 
 Contains ZERO proprietary RTP creative content; 100% CC0-1.0 geometric primitives.
 """
 
+import hashlib
+import json
 import os
 import sys
-import json
-import struct
-import zlib
-import hashlib
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
-from png_utils import deterministic_zlib_compress, make_png_chunk
+from png_utils import create_rgba_png
 
 WIDTH = 480
 HEIGHT = 256
@@ -67,25 +65,6 @@ COLOR_E_FILLER_BG = (22, 30, 46, 255)
 COLOR_E_FILLER_BD = (42, 58, 86, 255)
 COLOR_F_FILLER_FG = (100, 150, 220, 255)
 COLOR_F_FILLER_BD = (50, 80, 140, 255)
-
-def create_master_png(width, height, rgba_data):
-    """Creates a standard 32-bit RGBA PNG for the canonical master image."""
-    png_sig = b'\x89PNG\r\n\x1a\n'
-    ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)
-    ihdr_chunk = make_png_chunk('IHDR', ihdr_data)
-
-    scanlines = bytearray()
-    bpp = 4
-    for y in range(height):
-        scanlines.append(0)  # filter None
-        start = y * width * bpp
-        scanlines.extend(rgba_data[start:start + width * bpp])
-
-    compressed_idat = deterministic_zlib_compress(bytes(scanlines))
-    idat_chunk = make_png_chunk('IDAT', compressed_idat)
-    iend_chunk = make_png_chunk('IEND', b'')
-
-    return png_sig + ihdr_chunk + idat_chunk + iend_chunk
 
 def generate_chipset():
     # 480x256 pixels, each (r, g, b, a)
@@ -220,7 +199,7 @@ def generate_chipset():
 
     print(f"Generated ChipSet: {WIDTH}x{HEIGHT} ({COLS}x{ROWS} tiles), unique RGBA colors: {len(unique_colors)}")
     rgba_bytes = bytes(raw_rgba)
-    master_png_data = create_master_png(WIDTH, HEIGHT, rgba_bytes)
+    master_png_data = create_rgba_png(WIDTH, HEIGHT, rgba_bytes)
     return rgba_bytes, master_png_data
 
 def main():
@@ -237,11 +216,6 @@ def main():
     with open(master_png_path, "wb") as f:
         f.write(master_png_data)
     print(f"Written: {master_png_path}")
-
-    # Compute generator script hash
-    script_path = os.path.abspath(__file__)
-    with open(script_path, "rb") as f:
-        generator_sha256 = hashlib.sha256(f.read()).hexdigest()
 
     # Asset metadata
     asset_meta = {

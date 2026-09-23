@@ -11,13 +11,13 @@ GLSL Version : 4.50
 Loading path cache... 
 Path cache completed. 
 
-(process:547092): GLib-GObject-CRITICAL **: 11:09:36.345: g_param_spec_enum: assertion 'g_enum_get_value (enum_class, default_value) != NULL' failed
+(process:111195): GLib-GObject-CRITICAL **: 10:52:24.994: g_param_spec_enum: assertion 'g_enum_get_value (enum_class, default_value) != NULL' failed
 
-(process:547092): GLib-GObject-CRITICAL **: 11:09:36.345: validate_pspec_to_install: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+(process:111195): GLib-GObject-CRITICAL **: 10:52:24.994: validate_pspec_to_install: assertion 'G_IS_PARAM_SPEC (pspec)' failed
 
-(process:547092): GLib-GObject-CRITICAL **: 11:09:36.345: g_param_spec_ref_sink: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+(process:111195): GLib-GObject-CRITICAL **: 10:52:24.994: g_param_spec_ref_sink: assertion 'G_IS_PARAM_SPEC (pspec)' failed
 
-(process:547092): GLib-GObject-CRITICAL **: 11:09:36.345: g_param_spec_unref: assertion 'G_IS_PARAM_SPEC (pspec)' failed
+(process:111195): GLib-GObject-CRITICAL **: 10:52:24.994: g_param_spec_unref: assertion 'G_IS_PARAM_SPEC (pspec)' failed
 Warning: No soundfont specified, sound might be mute 
 Warning: No soundfont specified, sound might be mute 
 Primary font not found: UmePlus Gothic 

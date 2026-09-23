@@ -7,13 +7,17 @@
   "target_manifest_sha256": "2e1eea3d5b656074d9761326fa48f35689bfb20afffa706777d9700bf5b77798",
   "target_actor1_sha256": "7fde5157142d929404f3fc3b599cbd6c558ef74b2135ac1172db53dd88641ee6",
   "fixture_manifest_sha256": "49f5b9b40bc518bd7930f12443b6975773792b199c13cba3df4234d4a61a2812",
-  "replay_input_sha256": "3ba0ca86afcc75d63ccc7440f3f7b4c289672b917db75355b1d1968d11a6f7b1",
+  "input_keys": [
+    "Left",
+    "Up",
+    "Right"
+  ],
   "positive_runtime_log": "positive_runtime.log",
-  "positive_runtime_log_sha256": "5c95d5647556b43d39e8f0d99b4d771855e093eb568b39ee41621827a60bb2de",
+  "positive_runtime_log_sha256": "be9bd3915e3c4456f12ae9ccd6ed9797d0efed12657cd6e1b299e57f575f7a45",
   "negative_runtime_log": "negative_runtime.log",
-  "negative_runtime_log_sha256": "44efdb32a606ce119c5ca6fd9eaa9fbc1f93fa1f8a843887e6bf96764ec3e0e0",
+  "negative_runtime_log_sha256": "1daf388859288b51350d2050dea730f73a85ae96a32f3a2112bd4b472a70a811",
   "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
-  "recorded_at": "2026-09-14T23:35:09.560831+00:00",
+  "recorded_at": "2026-09-23T06:12:50.571475+00:00",
   "negative_control": {
     "status": "VERIFIED",
     "expected_missing_asset": "CharSet/Actor1",
@@ -22,10 +26,10 @@
     "screenshot_sha256": "ceaf57e9cec5d456ca0aa1ece18a51bc9fe17fde3d50c8759eb859b7904aaeb2"
   },
   "screenshots": {
-    "rm2000_charset_down.png": "ed22b27bddfac24e500ac157a4b251bbb4442ca0477cdb576099575c158cdc9a",
-    "rm2000_charset_left.png": "cdc8a593f0f09b2d5b0004e63f733f1562a33ea3a74bc71ebcf492a02e9442e9",
-    "rm2000_charset_up.png": "e06d3fcb4131eaa1c2bc3ad24c2bc9287c333af81688b54341d2044730a790a3",
-    "rm2000_charset_right.png": "149de2ef0062b475aa805c0caef30b82172bcc35a64164c616a17f147c371e78",
+    "rm2000_charset_down.png": "5d3de40919e5a4260a4dcf3ef7718d0bbf4809503be6620480dba9b9d817ab4a",
+    "rm2000_charset_left.png": "9a942b25a922d8f5a6621007d6f1ab6f89af8232cb879dd504f8225fd001a932",
+    "rm2000_charset_up.png": "f40bb5dc2f5d90545ccf39cdadb4eaf0562b5a9b743bc068c2e013baab9a6896",
+    "rm2000_charset_right.png": "cd380c0ce7abf634914fe8a758b61b7c90ddec9f07f873d5ef37cd604d0c7926",
     "rm2000_charset_negative_control.png": "ceaf57e9cec5d456ca0aa1ece18a51bc9fe17fde3d50c8759eb859b7904aaeb2"
   },
   "directional_evidence": {
@@ -95,7 +99,7 @@
     },
     "negative_control": {
       "status": "VERIFIED",
-      "error_text_pixels": 6125
+      "error_text_pixels": 1440
     }
   }
 }

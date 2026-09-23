@@ -6,9 +6,8 @@ Based on WOLF RPG Editor v3.x binary file specifications.
 from __future__ import annotations
 
 import ctypes
-import os
 import struct
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 _LZ4_LIB = None
 
@@ -29,11 +28,13 @@ def decompress_mps(raw: bytes) -> Tuple[bytes, bytes]:
     header = raw[:25]
     dec_size = struct.unpack("<I", raw[25:29])[0]
     enc_size = struct.unpack("<I", raw[29:33])[0]
+    if len(raw) < 33 + enc_size:
+        raise ValueError(f"Truncated .mps file: header declares {enc_size} compressed bytes, file has {len(raw) - 33}")
     lz4 = _get_lz4()
     out_buf = ctypes.create_string_buffer(dec_size)
     res = lz4.LZ4_decompress_safe(raw[33:33 + enc_size], out_buf, enc_size, dec_size)
-    if res < 0:
-        raise ValueError(f"LZ4 decompression failed with error {res}")
+    if res != dec_size:
+        raise ValueError(f"LZ4 decompression failed: expected {dec_size} bytes, got {res}")
     return header, bytes(out_buf)
 
 
@@ -57,25 +58,22 @@ class Coder:
         self.p = 0
 
     def read_bytes(self, n: int) -> bytes:
+        # Lengths come from the file; refuse to read past its end instead of
+        # silently returning a short slice.
+        if n < 0 or self.p + n > len(self.data):
+            raise ValueError(f"Truncated WOLF data: need {n} bytes at offset {self.p}, have {len(self.data) - self.p}")
         res = bytes(self.data[self.p : self.p + n])
         self.p += n
         return res
 
     def read_byte(self) -> int:
-        res = self.data[self.p]
-        self.p += 1
-        return res
+        return self.read_bytes(1)[0]
 
     def read_int(self) -> int:
-        res = struct.unpack("<I", self.data[self.p : self.p + 4])[0]
-        self.p += 4
-        return res
+        return struct.unpack("<I", self.read_bytes(4))[0]
 
     def read_string(self) -> bytes:
-        l = self.read_int()
-        s = bytes(self.data[self.p : self.p + l])
-        self.p += l
-        return s
+        return self.read_bytes(self.read_int())
 
     def write_byte(self, b: int) -> None:
         self.data.append(b & 0xFF)
@@ -236,7 +234,7 @@ def parse_mps_body(data: bytes, version: int = 0x67) -> Dict[str, Any]:
     lcnt = c.read_int()
     tiles = c.read_bytes(w * h * lcnt * 4)
     events = []
-    for i in range(ev_cnt):
+    for _ in range(ev_cnt):
         ind = c.read_byte()
         if ind != 0x6F:
             raise ValueError(f"Expected event indicator 0x6F, got {hex(ind)} at offset {c.p}")
@@ -245,7 +243,7 @@ def parse_mps_body(data: bytes, version: int = 0x67) -> Dict[str, Any]:
         ename = c.read_string()
         x = c.read_int()
         y = c.read_int()
-        pcnt = c.read_int()
+        c.read_int()  # page count; dump_mps_body rewrites it from the parsed pages
         m2 = c.read_bytes(4)
         pages = []
         while True:
