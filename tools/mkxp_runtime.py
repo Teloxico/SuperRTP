@@ -18,6 +18,7 @@ mkxp-z.build.json next to the binary; that metadata is required, not optional.
 import json
 import os
 import re
+import shutil
 import tempfile
 import time
 
@@ -131,6 +132,7 @@ def run_session(mkxp_bin: str, conf: dict, screenshot_path: str, record_seconds:
     The saved screenshot is the middle of the stable run of samples for which
     `scene_drawn(rgb24_bytes)` is true (runtime_harness.pick_video_frames), so start-up
     delays cannot shift which frame is captured. Returns the exit code and output.
+    If no frame qualifies, the recording is kept as `<screenshot_path>.failed.mkv`.
     """
     width, height = SCREEN_SIZES[conf["rgssVersion"]]
     runtime_conf = dict(conf, gameFolder=os.path.join(REPO_ROOT, conf["gameFolder"]),
@@ -146,6 +148,11 @@ def run_session(mkxp_bin: str, conf: dict, screenshot_path: str, record_seconds:
                 time.sleep(RECORDER_WARMUP_S)
                 code, out, err = run_to_completion([mkxp_bin], env=env, cwd=workdir, timeout=timeout)
                 finish_recording(recorder, timeout=record_seconds + 30)
-        pick_video_frames(video, width, height, lambda rgb: "scene" if scene_drawn(rgb) else None,
-                          ["scene"], {"scene": screenshot_path})
+        try:
+            pick_video_frames(video, width, height, lambda rgb: "scene" if scene_drawn(rgb) else None,
+                              ["scene"], {"scene": screenshot_path})
+        except ValueError as exc:
+            shutil.copyfile(video, screenshot_path + ".failed.mkv")
+            raise ValueError(f"{exc} (mkxp-z exit {code}; recording kept as {screenshot_path}.failed.mkv; "
+                             f"stderr tail: {err.strip()[-500:]!r})") from exc
     return MkxpRun(code, out, err)
