@@ -24,6 +24,7 @@ from registry import check_provenance_record, find_provenance, list_targets, loa
 from repo import sha256_bytes, sha256_file
 from schema_validator import SchemaValidationError, validate_schema
 from validate_target import validate_png_wolf_character, validate_target
+from validate_upstream_asset_inventory import validate as validate_upstream_asset_inventory
 
 TARGETS = ("rm2000", "rm2003", "rmxp", "rmvx", "rmvxace", "wolf")
 
@@ -88,6 +89,19 @@ class TestRegistry(unittest.TestCase):
         self.assertFalse({"charset/hero1.png", "chipset/main.png", "chipset/basic.png"} & rm2000)
         rm2003 = {a.lower() for s in load_slot_mapping("rm2003")["slots"].values() for a in s["aliases"]}
         self.assertNotIn("chipset/basis.png", rm2003)
+
+    def test_upstream_asset_inventories_are_complete_and_tamper_evident(self):
+        self.assertEqual(
+            validate_upstream_asset_inventory(),
+            {
+                "rm2000": 466,
+                "rm2003": 676,
+                "rmxp": 882,
+                "rmvx": 439,
+                "rmvxace": 748,
+                "wolf": 645,
+            },
+        )
 
 
 class TestCanonicalAssets(unittest.TestCase):

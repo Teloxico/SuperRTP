@@ -1,0 +1,676 @@
+Backdrop/Arena.png
+Backdrop/Bathhouse.png
+Backdrop/Beach.png
+Backdrop/Bridge.png
+Backdrop/Castle.png
+Backdrop/Desert.png
+Backdrop/Dungeon1.png
+Backdrop/Dungeon2.png
+Backdrop/Dungeon3.png
+Backdrop/Dungeon4.png
+Backdrop/Dungeon5.png
+Backdrop/Dungeon6.png
+Backdrop/Forest1.png
+Backdrop/Forest2.png
+Backdrop/Grassland.png
+Backdrop/Graveyard.png
+Backdrop/Mansion.png
+Backdrop/Mountain Road.png
+Backdrop/Old Town.png
+Backdrop/Road.png
+Backdrop/Rocky Road.png
+Backdrop/Ruins1.png
+Backdrop/Ruins2.png
+Backdrop/Sea.png
+Backdrop/Ship.png
+Backdrop/Sky.png
+Backdrop/Snow Field.png
+Backdrop/Space.png
+Backdrop/Swamp.png
+Backdrop/Temple1.png
+Backdrop/Temple2.png
+Backdrop/Town.png
+Backdrop/Universe.png
+Backdrop/Wasteland.png
+Battle/2003 Absorb.png
+Battle/2003 Axe.png
+Battle/2003 Barrier.png
+Battle/2003 Blow.png
+Battle/2003 Bow.png
+Battle/2003 Breath.png
+Battle/2003 Claw.png
+Battle/2003 Cold.png
+Battle/2003 Cure.png
+Battle/2003 Dark.png
+Battle/2003 Earth.png
+Battle/2003 Explosion.png
+Battle/2003 Fire.png
+Battle/2003 Holy.png
+Battle/2003 Light Pillar.png
+Battle/2003 Other1.png
+Battle/2003 Other2.png
+Battle/2003 Paralysis.png
+Battle/2003 Recovery.png
+Battle/2003 Revive.png
+Battle/2003 Spear.png
+Battle/2003 Sword.png
+Battle/2003 Thunder.png
+Battle/2003 Water.png
+Battle/2003 Whip.png
+Battle/2003 Wind.png
+Battle/Arrow.png
+Battle/Axe.png
+Battle/Barrier.png
+Battle/Bite.png
+Battle/Blow.png
+Battle/Breath.png
+Battle/Buff.png
+Battle/Claw.png
+Battle/Dark.png
+Battle/Debuff.png
+Battle/Earth.png
+Battle/Explosion.png
+Battle/Fire1.png
+Battle/Fire2.png
+Battle/Holy.png
+Battle/Ice.png
+Battle/Other.png
+Battle/Paralysis.png
+Battle/Recovery.png
+Battle/Ressurection.png
+Battle/Spear.png
+Battle/Sword1.png
+Battle/Sword2.png
+Battle/Thunder.png
+Battle/Treatment.png
+Battle/Water.png
+Battle/Whip.png
+Battle/Wind.png
+BattleCharSet/Armored Warror A.png
+BattleCharSet/Armored Warror B.png
+BattleCharSet/Chinese Man A.png
+BattleCharSet/Chinese Man B.png
+BattleCharSet/Chinese Woman A.png
+BattleCharSet/Chinese Woman B.png
+BattleCharSet/Female Bandit A.png
+BattleCharSet/Female Bandit B.png
+BattleCharSet/Female Elf A.png
+BattleCharSet/Female Elf B.png
+BattleCharSet/Female Fighter A.png
+BattleCharSet/Female Fighter B.png
+BattleCharSet/Female Hero A.png
+BattleCharSet/Female Hero B.png
+BattleCharSet/Female Mage A.png
+BattleCharSet/Female Mage B.png
+BattleCharSet/Female Monk A.png
+BattleCharSet/Female Monk B.png
+BattleCharSet/Female Ninja A.png
+BattleCharSet/Female Ninja B.png
+BattleCharSet/Female Pirate A.png
+BattleCharSet/Female Pirate B.png
+BattleCharSet/Female Warrior A.png
+BattleCharSet/Female Warrior B.png
+BattleCharSet/Male Bandit A.png
+BattleCharSet/Male Bandit B.png
+BattleCharSet/Male Elf A.png
+BattleCharSet/Male Elf B.png
+BattleCharSet/Male Fighter A.png
+BattleCharSet/Male Fighter B.png
+BattleCharSet/Male Hero A.png
+BattleCharSet/Male Hero B.png
+BattleCharSet/Male Mage A.png
+BattleCharSet/Male Mage B.png
+BattleCharSet/Male Monk A.png
+BattleCharSet/Male Monk B.png
+BattleCharSet/Male Ninja A.png
+BattleCharSet/Male Ninja B.png
+BattleCharSet/Male Pirate A.png
+BattleCharSet/Male Pirate B.png
+BattleCharSet/Male Warrior A.png
+BattleCharSet/Male Warrior B.png
+BattleCharSet/Man1 A.png
+BattleCharSet/Man1 B.png
+BattleCharSet/Man2 A.png
+BattleCharSet/Man2 B.png
+BattleCharSet/Man3 A.png
+BattleCharSet/Man3 B.png
+BattleCharSet/Man4 A.png
+BattleCharSet/Man4 B.png
+BattleCharSet/Man5 A.png
+BattleCharSet/Man5 B.png
+BattleCharSet/Samurai A.png
+BattleCharSet/Samurai B.png
+BattleCharSet/Woman1 A.png
+BattleCharSet/Woman1 B.png
+BattleCharSet/Woman2 A.png
+BattleCharSet/Woman2 B.png
+BattleCharSet/Woman3 A.png
+BattleCharSet/Woman3 B.png
+BattleCharSet/Woman4 A.png
+BattleCharSet/Woman4 B.png
+BattleCharSet/Woman5 A.png
+BattleCharSet/Woman5 B.png
+BattleWeapon/Weapon.png
+CharSet/Actor1.png
+CharSet/Actor2.png
+CharSet/Actor3.png
+CharSet/Actor4.png
+CharSet/Animal.png
+CharSet/Monster1.png
+CharSet/Monster2.png
+CharSet/Object1.png
+CharSet/Object2.png
+CharSet/People1.png
+CharSet/People2.png
+CharSet/People3.png
+CharSet/People4.png
+CharSet/People5.png
+CharSet/Vehicles.png
+ChipSet/Dungeon.png
+ChipSet/Exterior.png
+ChipSet/Interior.png
+ChipSet/Ship.png
+ChipSet/World.png
+FaceSet/Actor1.png
+FaceSet/Actor2.png
+FaceSet/Monster.png
+FaceSet/People1.png
+FaceSet/People2.png
+GameOver/Game Over.png
+Monster/Ahriman.png
+Monster/Alligator.png
+Monster/Anaconda.png
+Monster/Asura.png
+Monster/Bahamut.png
+Monster/Basilisk.png
+Monster/Bat.png
+Monster/Behemoth.png
+Monster/Berserker.png
+Monster/Big Foot.png
+Monster/Byakko.png
+Monster/Cait Sith.png
+Monster/Carbuncle.png
+Monster/Carmilla.png
+Monster/Catoblepas.png
+Monster/Centaur.png
+Monster/Centipede.png
+Monster/Cerberus.png
+Monster/Chimera.png
+Monster/Cockatorice.png
+Monster/Crab.png
+Monster/Crawler.png
+Monster/Cyclops.png
+Monster/Dark Elf.png
+Monster/Dark Knight.png
+Monster/Demon.png
+Monster/Dragon Knight.png
+Monster/Dragon.png
+Monster/Elf.png
+Monster/Fenrir.png
+Monster/Gargoyle.png
+Monster/Garuda.png
+Monster/Gazer.png
+Monster/Genbu.png
+Monster/Ghost.png
+Monster/Ghoul.png
+Monster/Giant.png
+Monster/Goblin.png
+Monster/Golem.png
+Monster/Gorgon.png
+Monster/Grell.png
+Monster/Griffon.png
+Monster/Harpy.png
+Monster/Hornet.png
+Monster/Horse.png
+Monster/Hydra.png
+Monster/Ifreet.png
+Monster/Imp.png
+Monster/Jack-O-Lantern.png
+Monster/Kappa.png
+Monster/Kirin.png
+Monster/Kobold.png
+Monster/Kraken.png
+Monster/Kyuubi.png
+Monster/Lakshmi.png
+Monster/Lamia.png
+Monster/Leviathan.png
+Monster/Lich.png
+Monster/Lilith.png
+Monster/Lizard.png
+Monster/Lizardman.png
+Monster/Mammoth.png
+Monster/Manticore.png
+Monster/Mantis.png
+Monster/Medusa.png
+Monster/Midgardsormr.png
+Monster/Mimic.png
+Monster/Minotaur.png
+Monster/Mummy.png
+Monster/Necromancer.png
+Monster/Nepenthes.png
+Monster/Octopus.png
+Monster/Odin.png
+Monster/Ogre.png
+Monster/Oni.png
+Monster/Orc.png
+Monster/Ouroboros.png
+Monster/Parasite.png
+Monster/Phoenix.png
+Monster/Quetzalcoatl.png
+Monster/Remora.png
+Monster/Ryuu.png
+Monster/Sahagin.png
+Monster/Salamander.png
+Monster/Satan.png
+Monster/Scorpion.png
+Monster/Scylla.png
+Monster/Seraphim.png
+Monster/Shadow.png
+Monster/Shark.png
+Monster/Siren.png
+Monster/Skeleton.png
+Monster/Slime.png
+Monster/Snake.png
+Monster/Sorcerer.png
+Monster/Spectre.png
+Monster/Sphinx.png
+Monster/Spirit.png
+Monster/Suzaku.png
+Monster/Sylph.png
+Monster/Tarantula.png
+Monster/Tiamat.png
+Monster/Titan.png
+Monster/Toad.png
+Monster/Treant.png
+Monster/Troll.png
+Monster/Undead Knight.png
+Monster/Unicorn.png
+Monster/Vampire.png
+Monster/Werewolf.png
+Monster/Wight.png
+Monster/Worm.png
+Monster/Wraith.png
+Monster/Wyvern.png
+Monster/Zombie.png
+Music/2003Adventurers.mid
+Music/2003Ancient City.mid
+Music/2003Battle with an Evil God.mid
+Music/2003Beginning of a War.mid
+Music/2003Casino Indulgence.mid
+Music/2003Cathedral.mid
+Music/2003Church.mid
+Music/2003City Bustle.mid
+Music/2003Colosseum.mid
+Music/2003Creeping Darkness.mid
+Music/2003Cyber City.mid
+Music/2003DarkAltar.mid
+Music/2003Deep Memory.mid
+Music/2003Deserted Mansion.mid
+Music/2003Dream Forest.mid
+Music/2003Dream of Striking It Rich.mid
+Music/2003Dreaminess.mid
+Music/2003Empire.mid
+Music/2003Exploring Ruins.mid
+Music/2003Fairy Forest.mid
+Music/2003Far Eastern Land.mid
+Music/2003Final Battleground.mid
+Music/2003Free For All.mid
+Music/2003Healing Spring.mid
+Music/2003Hero's Return.mid
+Music/2003Ice Labyrinth.mid
+Music/2003In the Eternal Flow of Time.mid
+Music/2003Little Army's March.mid
+Music/2003Lonesome Journey.mid
+Music/2003Machine Fortress.mid
+Music/2003Maximum Battle.mid
+Music/2003Otherworldly Corridor.mid
+Music/2003Palace Party.mid
+Music/2003Panic.mid
+Music/2003Repeated Wars.mid
+Music/2003Silence.mid
+Music/2003Snow Town.mid
+Music/2003Sorrow.mid
+Music/2003Steady Breeze.mid
+Music/2003Subterranean Maze.mid
+Music/2003SunnyVillage.mid
+Music/2003Tavern.mid
+Music/2003Tension.mid
+Music/2003Village in the Valley.mid
+Music/2003Village of Savages.mid
+Music/2003Waltz of Blessings.mid
+Music/2003Wings to the Sky.mid
+Music/2003Young Memories.mid
+Music/Animal.mid
+Music/Battle 1.mid
+Music/Battle 2.mid
+Music/Battle 3.mid
+Music/Black Market.mid
+Music/Boss 1.mid
+Music/Boss 2.mid
+Music/Boss 3.mid
+Music/Boss 4.mid
+Music/Castle 1.mid
+Music/Castle 2.mid
+Music/Castle 3.mid
+Music/Church.mid
+Music/Defeat.mid
+Music/Demon Lord.mid
+Music/Dungeon 1.mid
+Music/Dungeon 2.mid
+Music/Dungeon 3.mid
+Music/Dungeon 4.mid
+Music/Dungeon 5.mid
+Music/Ending 1.mid
+Music/Ending 2.mid
+Music/Ending 3.mid
+Music/Exploration.mid
+Music/Fairy 1.mid
+Music/Fairy 2.mid
+Music/Field 1.mid
+Music/Field 2.mid
+Music/Field 3.mid
+Music/Field 4.mid
+Music/Game Over 1.mid
+Music/Game Over 2.mid
+Music/Game Over 3.mid
+Music/Ghost Town 1.mid
+Music/Ghost Town 2.mid
+Music/Hero 1.mid
+Music/Hero 2.mid
+Music/In a Pinch.mid
+Music/J2003Horn.mid
+Music/JDoubt.mid
+Music/JEnd of Battle 1.mid
+Music/JEnd of Battle 2.mid
+Music/JEnd of Battle 3.mid
+Music/JEnd of Battle 4.mid
+Music/JFanfare 1.mid
+Music/JFanfare 2.mid
+Music/JFanfare 3.mid
+Music/JFanfare 4.mid
+Music/JFanfare 5.mid
+Music/JFanfare 6.mid
+Music/JInn 1.mid
+Music/JInn 2.mid
+Music/JItem.mid
+Music/JJoke 1.mid
+Music/JJoke 2.mid
+Music/JMystery.mid
+Music/Liveliness.mid
+Music/Lively Market.mid
+Music/Mystery 1.mid
+Music/Mystery 2.mid
+Music/Mystery 3.mid
+Music/Opening 1.mid
+Music/Opening 2.mid
+Music/Opening 3.mid
+Music/Parting 1.mid
+Music/Parting 2.mid
+Music/Repose 1.mid
+Music/Repose 2.mid
+Music/Repose 3.mid
+Music/SE2003Alarm.wav
+Music/SE2003Bird.wav
+Music/SE2003Bustle.wav
+Music/SE2003Jungle.wav
+Music/SE2003Wind.wav
+Music/SEClock.wav
+Music/SEDownpour.wav
+Music/SEEarthquake.wav
+Music/SERain.wav
+Music/SESea.wav
+Music/Secret Treasure.mid
+Music/Ship 1.mid
+Music/Ship 2.mid
+Music/Ship 3.mid
+Music/Shop 1.mid
+Music/Shop 2.mid
+Music/Shop 3.mid
+Music/Sorrow.mid
+Music/Thief.mid
+Music/Tower 1.mid
+Music/Tower 2.mid
+Music/Tower 3.mid
+Music/Town 1.mid
+Music/Town 2.mid
+Music/Town 3.mid
+Music/Trial.mid
+Music/Vehicle 1.mid
+Music/Vehicle 2.mid
+Music/Vehicle 3.mid
+Music/Victory.mid
+Music/Village 1.mid
+Music/Village 2.mid
+Music/Village 3.mid
+Music/Wrath.mid
+Panorama/Cosmos1.png
+Panorama/Dawn1.png
+Panorama/Dawn2.png
+Panorama/Dimension Rift.png
+Panorama/Night Sky1.png
+Panorama/Night Sky2.png
+Panorama/Planet1.png
+Panorama/Planet2.png
+Panorama/Planet3.png
+Panorama/Sky1.png
+Panorama/Sky2.png
+Panorama/Sunset1.png
+Panorama/Sunset2.png
+Sound/Absorb1.wav
+Sound/Absorb2.wav
+Sound/Attack1.wav
+Sound/Attack2.wav
+Sound/Barrier.wav
+Sound/Barrier1.wav
+Sound/Barrier2.wav
+Sound/Bell.wav
+Sound/Bite.wav
+Sound/Blind.wav
+Sound/Blow1.wav
+Sound/Blow2.wav
+Sound/Blow3.wav
+Sound/Blow4.wav
+Sound/Blow5.wav
+Sound/Blow6.wav
+Sound/Blow7.wav
+Sound/Bow1.wav
+Sound/Bow2.wav
+Sound/Breath.wav
+Sound/Buff.wav
+Sound/Buzzer1.wav
+Sound/Buzzer2.wav
+Sound/Buzzer3.wav
+Sound/Buzzer4.wav
+Sound/Cancel1.wav
+Sound/Cancel2.wav
+Sound/Cat.wav
+Sound/Chicken.wav
+Sound/Chime1.wav
+Sound/Chime2.wav
+Sound/Clock.wav
+Sound/Close1.wav
+Sound/Close2.wav
+Sound/Collapse1.wav
+Sound/Collapse2.wav
+Sound/Combat1.wav
+Sound/Combat2.wav
+Sound/Confusion.wav
+Sound/Cow.wav
+Sound/Cursor1.wav
+Sound/Cursor2.wav
+Sound/Damage1.wav
+Sound/Damage2.wav
+Sound/Darkness1.wav
+Sound/Darkness2.wav
+Sound/Darkness3.wav
+Sound/Darkness4.wav
+Sound/Darkness5.wav
+Sound/Darkness6.wav
+Sound/Debuff.wav
+Sound/Decision1.wav
+Sound/Decision2.wav
+Sound/Dog.wav
+Sound/Earth1.wav
+Sound/Earth10.wav
+Sound/Earth2.wav
+Sound/Earth3.wav
+Sound/Earth4.wav
+Sound/Earth5.wav
+Sound/Earth6.wav
+Sound/Earth7.wav
+Sound/Earth8.wav
+Sound/Earth9.wav
+Sound/Earthquake1.wav
+Sound/Earthquake2.wav
+Sound/Ensnare.wav
+Sound/Escape.wav
+Sound/Evade1.wav
+Sound/Evade2.wav
+Sound/Explosion1.wav
+Sound/Explosion2.wav
+Sound/Explosion3.wav
+Sound/Explosion4.wav
+Sound/Explosion5.wav
+Sound/Explosion6.wav
+Sound/Explosion7.wav
+Sound/Fall1.wav
+Sound/Fall2.wav
+Sound/Fire1.wav
+Sound/Fire2.wav
+Sound/Fire3.wav
+Sound/Fire4.wav
+Sound/Fire5.wav
+Sound/Fire6.wav
+Sound/Fire7.wav
+Sound/Fire8.wav
+Sound/Flash1.wav
+Sound/Flash2.wav
+Sound/Flash3.wav
+Sound/Fog1.wav
+Sound/Fog2.wav
+Sound/Glare.wav
+Sound/GlassShatter.wav
+Sound/Holy1.wav
+Sound/Holy2.wav
+Sound/Holy3.wav
+Sound/Holy4.wav
+Sound/Holy5.wav
+Sound/Holy6.wav
+Sound/Holy7.wav
+Sound/Holy8.wav
+Sound/Holy9.wav
+Sound/Horse.wav
+Sound/Ice1.wav
+Sound/Ice10.wav
+Sound/Ice11.wav
+Sound/Ice2.wav
+Sound/Ice3.wav
+Sound/Ice4.wav
+Sound/Ice5.wav
+Sound/Ice6.wav
+Sound/Ice7.wav
+Sound/Ice8.wav
+Sound/Ice9.wav
+Sound/Item1.wav
+Sound/Item2.wav
+Sound/Jump1.wav
+Sound/Jump2.wav
+Sound/Key.wav
+Sound/Knock.wav
+Sound/Lion.wav
+Sound/Magic1.wav
+Sound/Magic2.wav
+Sound/Monster1.wav
+Sound/Monster2.wav
+Sound/Move.wav
+Sound/Open1.wav
+Sound/Open2.wav
+Sound/Paralyze1.wav
+Sound/Paralyze2.wav
+Sound/Paralyze3.wav
+Sound/Poison.wav
+Sound/Pollen.wav
+Sound/Rain1.wav
+Sound/Rain2.wav
+Sound/Raise1.wav
+Sound/Raise2.wav
+Sound/Raise3.wav
+Sound/Recovery1.wav
+Sound/Recovery2.wav
+Sound/Recovery3.wav
+Sound/Recovery4.wav
+Sound/Recovery5.wav
+Sound/Recovery6.wav
+Sound/Recovery7.wav
+Sound/Recovery8.wav
+Sound/Roar.wav
+Sound/Sandstorm.wav
+Sound/Sea1.wav
+Sound/Sea2.wav
+Sound/Sheep.wav
+Sound/Shot1.wav
+Sound/Shot2.wav
+Sound/Shot3.wav
+Sound/Silence.wav
+Sound/Slash1.wav
+Sound/Slash10.wav
+Sound/Slash11.wav
+Sound/Slash2.wav
+Sound/Slash3.wav
+Sound/Slash4.wav
+Sound/Slash5.wav
+Sound/Slash6.wav
+Sound/Slash7.wav
+Sound/Slash8.wav
+Sound/Slash9.wav
+Sound/Sleep.wav
+Sound/Song.wav
+Sound/Switch1.wav
+Sound/Switch2.wav
+Sound/Sword1.wav
+Sound/Sword2.wav
+Sound/Sword3.wav
+Sound/Teleport1.wav
+Sound/Teleport2.wav
+Sound/Thunder1.wav
+Sound/Thunder10.wav
+Sound/Thunder2.wav
+Sound/Thunder3.wav
+Sound/Thunder4.wav
+Sound/Thunder5.wav
+Sound/Thunder6.wav
+Sound/Thunder7.wav
+Sound/Thunder8.wav
+Sound/Thunder9.wav
+Sound/Tiger.wav
+Sound/Water1.wav
+Sound/Water2.wav
+Sound/Water3.wav
+Sound/Water4.wav
+Sound/Water5.wav
+Sound/Water6.wav
+Sound/Wave1.wav
+Sound/Wave2.wav
+Sound/Wind1.wav
+Sound/Wind10.wav
+Sound/Wind11.wav
+Sound/Wind2.wav
+Sound/Wind3.wav
+Sound/Wind4.wav
+Sound/Wind5.wav
+Sound/Wind6.wav
+Sound/Wind7.wav
+Sound/Wind8.wav
+Sound/Wind9.wav
+System/System.png
+System/SystemA.png
+System/SystemB.png
+System/SystemC.png
+System2/System2A.png
+System2/System2B.png
+System2/System2C.png
+Title/Title1.png
+Title/Title2.png
+Title/Title3.png
+Title/Title4.png
+icon.ico

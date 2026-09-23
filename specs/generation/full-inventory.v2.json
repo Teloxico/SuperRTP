@@ -1,0 +1,75 @@
+{
+  "id": "full-inventory.open-alternatives",
+  "version": 2,
+  "license": "CC0-1.0",
+  "generation_date": "2026-09-23",
+  "scope": {
+    "base_inventory_paths": 3856,
+    "official_localized_alias_paths": 1816,
+    "total_output_paths": 5672,
+    "inventory_index": "registry/upstream-assets/sources.json",
+    "inventory_index_sha256": "1191a340be1b019d448b5b4980a0fca7b732f01be061a02cbd18b1086fd358ba"
+  },
+  "output_root": "artifacts/generation/full-inventory/v2",
+  "art_direction": {
+    "path": "specs/generation/art-direction.v1.json",
+    "sha256": "2b9a33f13f45a3cd02e8043bfda62a2727c57e9fa7841c9dc090859ef03389d5",
+    "role": "prompt text for every FLUX concept (style guide, family briefs, per-subject descriptions)"
+  },
+  "visual_generation": {
+    "backend": "flux2-klein-4b",
+    "model": "black-forest-labs/FLUX.2-klein-4B",
+    "model_revision": "e7b7dc27f91deacad38e78976d1f2b499d76a294",
+    "model_license": "Apache-2.0",
+    "setup": "tools/asset_generation/setup_flux.sh",
+    "concept_worker": "tools/asset_generation/flux_worker.py",
+    "job_planner": "tools/asset_generation/flux_jobs.py",
+    "structurer": "tools/asset_generation/flux_structure.py",
+    "structured_root": ".cache/flux/structured",
+    "procedural_families": [
+      "ui",
+      "mask",
+      "weapon-sheet",
+      "icon-atlas"
+    ],
+    "rule": "each visual uses its structured FLUX asset when one exists; otherwise the procedural renderer, and the manifest records which (visual_source)"
+  },
+  "audio": {
+    "sample_rate": 22050,
+    "wav_sample_width_bits": 16,
+    "ogg_codec": "vorbis",
+    "midi_division": 480
+  },
+  "evaluated_but_blocked_visual_backends": [
+    {
+      "base_model": "black-forest-labs/FLUX.2-klein-9B",
+      "quantized_candidate": "leejet/FLUX.2-klein-9B-GGUF Q4_0",
+      "quantized_size_gb": 5.62,
+      "hardware_assessment": "plausible on the detected 8 GB GPU with CPU offload",
+      "license": "FLUX Non-Commercial License",
+      "status": "blocked-for-production",
+      "reason": "Non-commercial base-model terms are incompatible with an unrestricted reusable game-asset pack unless a separate commercial license is documented."
+    }
+  ],
+  "format_sources": [
+    {
+      "scope": "RPG Maker 2000/2003 media dimensions and indexed PNG requirements",
+      "url": "https://wiki.easyrpg.org/development/rtp-replacement/media-file-format-specifications"
+    },
+    {
+      "scope": "RGSS1/2/3 runtime loading behavior",
+      "url": "https://github.com/mkxp-z/mkxp-z"
+    },
+    {
+      "scope": "WOLF 3.717 inventory and runtime reference",
+      "url": "https://github.com/smokingwolf/tool_wolf_rpg_editor/releases/tag/v3.717"
+    }
+  ],
+  "clean_room_attestation": {
+    "proprietary_creative_inputs_used": false,
+    "proprietary_filename_facts_used": true,
+    "upstream_pixels_or_audio_used": false,
+    "external_creative_assets_used": false,
+    "method": "text-only FLUX.2 [klein] 4B concepts from original art direction (no image inputs), deterministic structuring into engine layouts, procedural synthesis for audio and structural visuals, and filename-derived neutral functional semantics"
+  }
+}

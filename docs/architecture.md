@@ -22,6 +22,12 @@ canonical source (neutral RGBA / metadata)
   └──> runtime verification (EasyRPG / mkxp-z / fixtures)
 ```
 
+`registry/upstream-assets/` is a filename-only backlog ahead of this pipeline. It
+records every pinned upstream creative-media path, but an entry does not enter a built
+pack until an independently created asset, provenance record, semantic identity, and
+verified slot mapping exist. This prevents an exhaustive compatibility inventory from
+becoming thousands of fabricated or placeholder mappings.
+
 ## 2. Engine Compatibility Models
 
 Different RPG engine generations employ fundamentally different resource lookup models:
@@ -182,5 +188,4 @@ Any derived summaries, test reports, walkthroughs, or compatibility documentatio
 2. Target slot registries (`registry/slots/`) and schemas (`schemas/`).
 3. Deterministic code, tests, and build tooling (`tools/`, `tests/`).
 4. Real runtime execution evidence and inspected screenshot artifacts (`artifacts/runtime/`).
-
 
