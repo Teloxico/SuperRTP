@@ -247,7 +247,8 @@ def poll_screen(display: str, width: int, height: int, is_ready, output_png: str
     then copies that frame to `output_png`.
 
     `is_ready` returns False to keep waiting and raises ValueError to reject a frame with
-    a reason; on timeout the last reason is reported and `output_png` is left untouched.
+    a reason. On timeout the last reason is reported, `output_png` is left untouched and
+    the last grabbed frame is kept as `<output_png>.rejected.png` for diagnosis.
     """
     last_reason = "no frame captured yet"
     with tempfile.TemporaryDirectory(prefix="superrtp_poll_") as tmp:
@@ -265,6 +266,8 @@ def poll_screen(display: str, width: int, height: int, is_ready, output_png: str
                 last_reason = "frame not ready"
             except ValueError as exc:
                 last_reason = str(exc)
+        if os.path.exists(candidate):
+            shutil.copyfile(candidate, output_png + ".rejected.png")
     raise TimeoutError(f"Expected screen state not reached within {timeout}s for {output_png}. Last rejection: {last_reason}")
 
 

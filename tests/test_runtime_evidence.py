@@ -6,6 +6,8 @@ engine must pass a fresh live capture.
 Live captures need the engines (EasyRPG Player, mkxp-z, WOLF Game.exe + Wine, Xvfb,
 ffmpeg). They skip when a tool is missing unless SUPERRTP_REQUIRE_RUNTIME=1.
 Captures write into temporary directories; committed artifacts are never modified.
+Set SUPERRTP_CAPTURE_DIR to keep them (one subdirectory per case) for diagnosis, as CI
+does so failed captures can be uploaded.
 """
 
 import copy
@@ -172,6 +174,14 @@ class TestLiveRuntimes(unittest.TestCase):
                 f"{case.name} runtime ({', '.join(case.tools)}, Xvfb, ffmpeg)")
         if case.name == "wolf":
             require(self, _wolf_available(), "WOLF Game.exe 3.717 and Wine")
+        keep = os.environ.get("SUPERRTP_CAPTURE_DIR")
+        if keep:
+            out = os.path.join(keep, case.name)
+            shutil.rmtree(out, ignore_errors=True)
+            os.makedirs(out)
+            case.capture(out)
+            case.verify(None, out)
+            return
         with tempfile.TemporaryDirectory(prefix=f"superrtp_live_{case.name}_") as tmp:
             case.capture(tmp)
             case.verify(None, tmp)

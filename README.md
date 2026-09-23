@@ -1,312 +1,169 @@
 # SuperRTP
 
-A standalone clean-room compatibility and open-resource project for legacy RPG engines.
+**Clean-room, openly licensed replacement runtime packages (RTPs) for legacy RPG engines.**
 
-## Overview
+Many games made with RPG Maker or WOLF RPG Editor expect the engine's Runtime Package
+(RTP) to be installed: a proprietary set of character sprites, tilesets, music and sound
+effects looked up by filename. SuperRTP aims to provide drop-in packs that fill the same
+slots with independently created, redistributable assets. It contains **zero
+proprietary RTP content**, and nothing in it is derived from one.
 
-SuperRTP provides drop-in compatible, independently licensed assets for legacy RPG engines without containing or deriving from proprietary Runtime Package (RTP) creative material.
+| Target | Engine | Verified in |
+|---|---|---|
+| `rm2000` | RPG Maker 2000 | EasyRPG Player 0.8.1.1 |
+| `rm2003` | RPG Maker 2003 | EasyRPG Player 0.8.1.1 |
+| `rmxp` | RPG Maker XP (RGSS1) | mkxp-z, pinned commit `826929e` |
+| `rmvx` | RPG Maker VX (RGSS2) | mkxp-z, pinned commit `826929e` |
+| `rmvxace` | RPG Maker VX Ace (RGSS3) | mkxp-z, pinned commit `826929e` |
+| `wolf` | WOLF RPG Editor 3 | official `Game.exe` 3.717 under Wine |
 
-Target engines:
-- RPG Maker 2000 (`rm2000`)
-- RPG Maker 2003 (`rm2003`)
-- RPG Maker XP (`rmxp`)
-- RPG Maker VX (`rmvx`)
-- RPG Maker VX Ace (`rmvxace`)
-- WOLF RPG Editor (`wolf`)
+## Project status
 
-## Core Architecture
+> **Early stage.** The pipeline and its verification exist, but the actual replacement
+> art does not yet. Packs built today are not usable for playing real games.
 
-SuperRTP maintains **one canonical source of truth** for compatibility and creative assets. Engine-specific RTP packs are generated artifacts rather than manually maintained independent packs:
+**Working:**
+- **Builds for all six engines:** one set of canonical assets is transformed into all
+  six engine formats, and the builds are deterministic (byte-for-byte reproducible).
+- **Every output is checked in the real engine:** it is launched headlessly, and the
+  on-screen result is checked pixel by pixel.
+- **Negative controls:** each is a run with the asset removed, and it must show the
+  engine's own missing-file error.
+- **Evidence files:** they bind every hash, log and screenshot. Changing any recorded
+  field makes verification fail.
 
-```
-Canonical Source Asset (Neutral RGBA raw + metadata)
-        │
-        ▼
-Provenance Record (Licensing & Clean-Room Attestation)
-        │
-        ▼
-Semantic Identity (Neutral Asset Specification & Geometry)
-        │
-        ▼
-Compatibility Slot Mapping (Target Engine Slots & Aliases)
-        │
-        ▼
-Deterministic Target Builder (Format, Palette Quantization & Chunk Encoding)
-        │
-        ▼
-Engine-Specific Target Pack (`generated/<target>/`)
-        │
-        ▼
-Runtime Verification (EasyRPG Player, mkxp-z, WOLF tools)
-```
+**Not there yet:**
+- **Assets:** the only assets are two synthetic calibration images. One is a walking
+  character sheet made of arrows and markers; the other is a map tileset.
+- **Slots:** only about 10 filename slots are mapped. A full RM2000 RTP has roughly a
+  thousand.
+- **Resource types:** there are no face sets, battlers, autotiles, music or sound yet.
+- **Known issue:** see [docs/known-issues.md](docs/known-issues.md).
 
-See [docs/architecture.md](docs/architecture.md) for full architectural specifications and compatibility models.
+## How it works
 
-## Current Status: Phase 1, 2, 3, 4, 5 & 6 Cross-Target Vertical Slices (Hardened)
-
-The compatibility slices are implemented, hardened, and verified for **cross-target compatibility** across **RPG Maker 2000 (`rm2000`)**, **RPG Maker 2003 (`rm2003`)**, **RPG Maker XP (`rmxp`)**, **RPG Maker VX (`rmvx`)**, **RPG Maker VX Ace (`rmvxace`)**, and **WOLF RPG Editor (`wolf`)** from shared canonical source assets:
-
-### 1. CharSet Walking Character Compatibility Slice (Tasks 1 & 2)
-- **Single Canonical Asset:** `test.calibration.walking-character`
-  - Neutral 32-bit RGBA source ([`registry/assets/test_calibration_walking_character.rgba`](registry/assets/test_calibration_walking_character.rgba)) and preview ([`test_calibration_walking_character_master.png`](registry/assets/test_calibration_walking_character_master.png)).
-  - 100% synthetic geometric primitives (directional chevrons, step markers, frame boundary calibration ticks).
-- **Physical CharSet Geometry & Direction Rows:**
-  - Strict 2k-family layout: 288×256 pixels, 4×2 character grid (8 characters, 72×128 px), 3×4 frame cells (24×32 px).
-  - Physical row ordering (verified against EasyRPG upstream `game_character.h` enum `Up=0, Right=1, Down=2, Left=3`):
-    - **Row 0**: Facing **Up** (`^`)
-    - **Row 1**: Facing **Right** (`>`)
-    - **Row 2**: Facing **Down** (`v`)
-    - **Row 3**: Facing **Left** (`<`)
-- **Deterministic Cross-Target Transformation:**
-  - `tools/build_target.py` transforms canonical neutral RGBA into strict 8-bit indexed PNG (Color Type 3, $\le 256$ colors).
-  - Produces bit-for-bit identical primary `Actor1.png` across both `rm2000` and `rm2003` targets.
-  - Preserves index 0 as transparent background color, and includes `tRNS` chunk for modern tool compatibility.
-  - Generates byte-for-byte reproducible targets (`SOURCE_DATE_EPOCH` supported, static default timestamp).
-- **Engine-Specific Slot Mappings:**
-  - `rm2000`: Maps to `CharSet/Actor1.png` with upstream `rtp_table_2k` aliases (`actor1.png`, `Chara1.png`, `chara1.png`, `主人公1.png`). Strictly **excludes** `Hero1.png`.
-  - `rm2003`: Maps to `CharSet/Actor1.png` with upstream `rtp_table_2k3` aliases (`actor1.png`, `hero1.png`, `Hero1.png`, `Chara1.png`, `chara1.png`, `protagonist1.png`, `Protagonist1.png`, `主人公1.png`, `주인공1.png`, `主角1.png`).
-- **Runtime & Visual Verification:**
-  - Executed in EasyRPG Player 0.8.1.1 against distinct clean-room game fixtures ([`tests/fixtures/rm2000_min/`](tests/fixtures/rm2000_min) and [`tests/fixtures/rm2003_min/`](tests/fixtures/rm2003_min)).
-  - RM2003 fixture explicitly requests `Hero1` to test the engine-specific alias boundary.
-  - The hero is turned through all 4 directions with real X11 key presses (xdotool); each facing is captured once the screen shows it. EasyRPG's `--replay-input` is not used because its reader applies an input only on an exact frame match ([docs/engine-facts.md](docs/engine-facts.md)).
-  - Live re-capture is intermittent on this slice; see [docs/known-issues.md](docs/known-issues.md). The committed evidence verifies.
-  - Directional runtime states visually inspected and verified in:
-    - [`artifacts/runtime/rm2000/charset/`](artifacts/runtime/rm2000/charset/) (`rm2000_charset_down.png`, `left`, `up`, `right`, and `negative_control.png`)
-    - [`artifacts/runtime/rm2003/charset/`](artifacts/runtime/rm2003/charset/) (`rm2003_charset_down.png`, `left`, `up`, `right`, and `negative_control.png`)
-  - Isolated negative controls verified (`Image not found: CharSet/Actor1` for RM2000; `Image not found: CharSet/Hero1` for RM2003).
-
-### 2. ChipSet Fixed-Tile & Layer Composition Slice (Task 3)
-- **Single Canonical Asset:** `test.calibration.map-chipset`
-  - Neutral 32-bit RGBA source ([`registry/assets/test_calibration_map_chipset.rgba`](registry/assets/test_calibration_map_chipset.rgba)) and preview ([`test_calibration_map_chipset.master.png`](registry/assets/test_calibration_map_chipset.master.png)).
-  - 100% synthetic geometric primitives (Blocks E & F fixed tiles).
-  - Autotiles (Blocks A–D): Clearly labeled clean-room placeholder tiles; autotile animation and multi-subtile reconstruction are outside the scope of this slice.
-- **Physical ChipSet Geometry & Tile Mapping:**
-  - Standard 2k-family layout: 480×256 pixels, 30 columns × 16 rows of 16×16 tile units.
-  - Fixed-tile bank coordinates mathematically aligned with EasyRPG Player upstream source (`tilemap_layer.cpp`):
-    - **Block E Bank 1 (Lower Layer)**: Tile 5000 at col 12, row 0 (blue background, cyan border, yellow center).
-    - **Block E Bank 2 (Lower Layer)**: Tile 5096 at col 18, row 0 (green background, lime border, magenta center).
-    - **Block F Bank 2 (Upper Layer)**: Tile 10048 at col 24, row 0 (orange diamond on transparent background).
-    - **Block F Bank 1 (Upper Layer)**: Tile 10000 at col 18, row 8 (opaque red cross on transparent background).
-- **Engine-Specific Slot Mappings:**
-  - `rm2000`: `ChipSet/World.png` with aliases `world`, `basis`, `基本`. Emits `Basis.png`. Strictly **excludes** `Main.png` and `Basic.png`.
-  - `rm2003`: `ChipSet/World.png` with aliases `world`, `main`, `basic`, `기본`, `基本`. Emits `Main.png` and `Basic.png`. Strictly **excludes** `Basis.png`.
-- **Runtime, Layer Transparency & Composition Verification:**
-  - Dedicated clean-room fixtures ([`tests/fixtures/rm2000_chipset_min/`](tests/fixtures/rm2000_chipset_min/) and [`tests/fixtures/rm2003_chipset_min/`](tests/fixtures/rm2003_chipset_min/)).
-  - Fixtures place party at (0, 0) and position test tiles at (2, 2), (4, 2), (6, 2), and (8, 2).
-  - Position (8, 2) composites upper-layer Tile 10000 over lower-layer Tile 5000. Through the transparent corners of the upper red cross, the lower tile's blue background and cyan border are rendered and verified.
-  - Positive controls verify clean resolution via RTP alias `Basis` (RM2000) and `Main` (RM2003).
-  - Negative controls isolate missing asset detection (`Image not found: ChipSet/Basis` for RM2000; `Image not found: ChipSet/Main` for RM2003).
-  - Screenshots inspected and verified under [`artifacts/runtime/rm2000/chipset/`](artifacts/runtime/rm2000/chipset/) and [`artifacts/runtime/rm2003/chipset/`](artifacts/runtime/rm2003/chipset/).
-
-### 3. RPG Maker XP (RGSS1) Character Compatibility Slice (Task 4)
-- **Shared Canonical Source:** Reuses the exact same canonical `test.calibration.walking-character` raw source (SHA-256: `78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790`).
-- **RGSS1 Character Layout & Geometry:**
-  - Extracts Character 0 (top-left 72×128 region, 24×32 frames).
-  - Remaps 4 directional rows from RM2k order (`UP`, `RIGHT`, `DOWN`, `LEFT`) to RGSS1 order:
-    - **Row 0**: Facing **Down** (`v`)
-    - **Row 1**: Facing **Left** (`<`)
-    - **Row 2**: Facing **Right** (`>`)
-    - **Row 3**: Facing **Up** (`^`)
-  - Adapts 3 animation phases (`STEP_LEFT`, `IDLE`, `STEP_RIGHT`) into the 4-column XP layout. RGSS1 draws a standing character from column 0 and walks through columns 0-3 (`@original_pattern = 0`, `sx = pattern * width / 4`; see [docs/engine-facts.md](docs/engine-facts.md)), so the idle frame comes first:
-    - **Column 0**: Idle / Standing
-    - **Column 1**: Step Right
-    - **Column 2**: Idle / Standing
-    - **Column 3**: Step Left
-  - Policy: `rm2k_to_rgss1_character_4x4_idle_first_v2`.
-  - Output sheet dimensions: **96×128** pixels.
-- **Deterministic 32-bit Truecolor RGBA Encoder:**
-  - Encodes directly into 32-bit truecolor RGBA PNG (Color Type 6, bit depth 8) using RFC 1951 stored blocks for bit-level determinism across platforms.
-  - Strictly omits `PLTE` chunk and preserves full alpha channel ($0 \le \alpha \le 255$).
-- **Target Slot Mapping:**
-  - `rmxp`: Emits `Graphics/Characters/001-Fighter01.png` (SHA-256: `fbd8e9705577b6c14420fa37b63b1cda0888e7488a80123aa1ae14aac236e6dd`).
-- **Runtime & Visual Verification (mkxp-z):**
-  - Executed using pinned `mkxp-z` (commit `826929eeb3ebc4b887c011604919217a790770f4`) with clean-room RGSS1 test harness ([`tests/fixtures/rmxp_character_min/`](tests/fixtures/rmxp_character_min/)).
-  - Positive control: Renders 96×128 sprite over a centered high-contrast test pad (260, 164, 120×152) with distinct corner alignment markers (Red TL, Green TR, Blue BL, Yellow BR).
-  - Deterministic pixel assertions verify directional arrow tips and transparency notches exposing underlying pad color across all 4 rows.
-  - Negative control: With empty RTP, `Bitmap.new` raises `Errno::ENOENT`, logged as `SUPERRTP_RMXP_MISSING_ASSET: No such file or directory - Graphics/Characters/001-Fighter01` with clean non-zero exit (exit code 1). Negative screenshot captures blank pad with no sprite rendered.
-  - Durable evidence recorded and verified in [`artifacts/runtime/rmxp/character/verification_evidence.json`](artifacts/runtime/rmxp/character/verification_evidence.json).
-
-### 4. RPG Maker VX (RGSS2) Standard 8-Character Compatibility Slice (Task 5)
-- **Shared Canonical Source:** Reuses the exact same canonical `test.calibration.walking-character` raw source (SHA-256: `78ad9a170ac0ba06eb4756f9c9c19923e754e82c22025dab7dfbc46de5c1b790`).
-- **Standard 8-Character Sheet Geometry & Direction Rows:**
-### 4. RPG Maker VX (RGSS2) Standard 8-Character Slice (Task 5)
-- **Standard 8-Character Sheet Packing:**
-  - Extracts all 8 characters ($0..7$) semantically via `extract_walking_frames()`.
-  - Packs characters in a $4 \times 2$ grid ($288 \times 256$ pixels), strictly preserving character indices without permutation.
-  - Each character is $72 \times 128$ pixels, comprising $3 \times 4$ cells of $24 \times 32$ pixels (96 cells total).
-  - Remaps 4 directional rows to RGSS2 standard order:
-    - **Row 0**: Facing **Down** (`v`)
-    - **Row 1**: Facing **Left** (`<`)
-    - **Row 2**: Facing **Right** (`>`)
-    - **Row 3**: Facing **Up** (`^`)
-  - Three animation columns per character:
-    - **Column 0**: Step Left
-    - **Column 1**: Idle / Standing
-    - **Column 2**: Step Right
-- **Clean-Room Boundary & Scope Invariant:**
-  - Zero proprietary RPG Maker VX RTP creative content. The official `Actor1.png` pixels were never downloaded, viewed, or traced.
-  - Prefix behaviors (`$` for single-character sheets, `!` for disabling the 4-pixel shift and bush transparency depth) are documented as unverified and are not implemented in this slice.
-- **Deterministic 32-bit Truecolor RGBA Encoder:**
-  - Encodes directly into 32-bit truecolor RGBA PNG (Color Type 6, bit depth 8) with RFC 1951 stored blocks for deterministic byte output across platforms.
-- **Target Slot Mapping:**
-  - `rmvx`: Emits `Graphics/Characters/Actor1.png` (SHA-256: `c6ed8cba9025b982c6300ed5e57a82aee99cc29f7929d81cf1b517ded47550bf`). Slot provenance documented from Steam Depot 521881.
-- **Runtime & Visual Verification (mkxp-z in RGSS2 mode):**
-  - Executed using pinned `mkxp-z` (commit `826929eeb3ebc4b887c011604919217a790770f4`) in RGSS2 mode (`rgssVersion: 2`, screen resolution $544 \times 416$) against clean-room test harness ([`tests/fixtures/rmvx_character_min/`](tests/fixtures/rmvx_character_min/)).
-  - Positive control: Renders $288 \times 256$ sheet centered at $(128, 80)$ over high-contrast test pad $(116, 68, 312 \times 280)$ with 4 distinct corner alignment markers. Verified 100% pixel composite match across the $288 \times 256$ region against underlying pad, verified all 8 character block placements, and verified directional arrow orientations and transparency notches.
-  - Negative control: With empty RTP, `Bitmap.new` raises `Errno::ENOENT`, logged as `SUPERRTP_RMVX_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1` with clean non-zero exit (exit code 1). Negative screenshot captures blank pad with no sprite rendered.
-  - Durable evidence recorded and verified in [`artifacts/runtime/rmvx/character/verification_evidence.json`](artifacts/runtime/rmvx/character/verification_evidence.json).
-
-### 5. RPG Maker VX Ace (RGSS3) Standard 8-Character Slice (Task 6)
-- **Engine-Identity Separation with Shared Physical Geometry:**
-  - Proves that RPG Maker VX (`rmvx`, RGSS2) and RPG Maker VX Ace (`rmvxace`, RGSS3) share identical physical 8-character sheet layout ($288 \times 256$ RGBA PNG, $4 \times 2$ grid, 3 animation columns $\times$ 4 direction rows) while maintaining strictly separated target identities, manifests, transform policies, and runtime proofs.
-  - Core physical layout is packaged once via `pack_vx_family_standard_character_sheet()`, avoiding code duplication or speculative class hierarchies.
-- **Byte-for-Byte Payload Equality:**
-  - `generated/rmvx/Graphics/Characters/Actor1.png` and `generated/rmvxace/Graphics/Characters/Actor1.png` are byte-identical (SHA-256: `c6ed8cba9025b982c6300ed5e57a82aee99cc29f7929d81cf1b517ded47550bf`).
-- **Separate Target Contracts & Metadata:**
-  - `rmvx`: target `rmvx`, engine `RPG Maker VX`, mode `rgss2`, policy `rm2k8_to_rgss2_standard_character_sheet_v1`.
-  - `rmvxace`: target `rmvxace`, engine `RPG Maker VX Ace`, mode `rgss3`, policy `rm2k8_to_rgss3_standard_character_sheet_v1`.
-  - Manifest and registry cross-validation enforces target, category, indices, and policy integrity.
-- **Runtime & Visual Verification (mkxp-z in RGSS3 mode):**
-  - Executed using pinned `mkxp-z` in RGSS3 mode (`rgssVersion: 3`, screen resolution $544 \times 416$) against clean-room test harness ([`tests/fixtures/rmvxace_character_min/`](tests/fixtures/rmvxace_character_min/)).
-  - Startup verified via explicit mkxp-z startup log: `RGSS version 3 (RPG Maker VX Ace) `.
-  - Positive control renders $288 \times 256$ sheet centered at $(128, 80)$ on pad; 100% composite match and alpha transparency verified.
-  - Negative control isolates missing asset with deterministic diagnostic `SUPERRTP_RMVXACE_MISSING_ASSET: No such file or directory - Graphics/Characters/Actor1` and exit code 1.
-  - Durable evidence recorded and verified in [`artifacts/runtime/rmvxace/character/verification_evidence.json`](artifacts/runtime/rmvxace/character/verification_evidence.json).
-
-### 6. WOLF RPG Editor v3 Character / CharaChip Slice (Task 7)
-- **First Non-RPG-Maker Engine Family Vertical Slice:**
-  - Establishes native support for WOLF RPG Editor v3 (`wolf`) directly from canonical walking character semantics (`test.calibration.walking-character`, character index 0).
-  - Validates WOLF's native resource model: direct relative lookup under project directories (e.g. `Data/CharaChip/SuperRTP_Calibration.png`), distinct from RGSS RTP search-path fallbacks.
-- **Physical CharaChip Layout & Packing Geometry:**
-  - Standard 3-pattern $\times$ 4-direction character chip ($72 \times 128$ pixels, 12 cells of $24 \times 32$ pixels).
-  - Row order:
-    - **Row 0**: Facing **Down** (`v`, pattern numbers 1, 2, 3)
-    - **Row 1**: Facing **Left** (`<`, pattern numbers 4, 5, 6)
-    - **Row 2**: Facing **Right** (`>`, pattern numbers 7, 8, 9)
-    - **Row 3**: Facing **Up** (`^`, pattern numbers 10, 11, 12)
-  - Column order:
-    - **Column 0**: Step Left
-    - **Column 1**: Idle / Standing (Default direction facing)
-    - **Column 2**: Step Right
-- **Cross-Target Semantic Invariants:**
-  - The 12 cells of WOLF CharaChip are byte-for-byte identical to the top-left $72 \times 128$ block of both RPG Maker VX (`rmvx`) and RPG Maker VX Ace (`rmvxace`) `Actor1.png` sheets.
-  - The 12 cells match the RMXP walking frames (Step Left, Idle, Step Right = RMXP columns 3, 0, 1 for directions Down, Left, Right, Up).
-- **Target Pack & Slot Mapping:**
-  - `wolf`: Emits `Data/CharaChip/SuperRTP_Calibration.png` (SHA-256: `da3f32ef170575ff49abb04197413b663b1010735154ac2435771eeab02dc6e7`), 32-bit truecolor RGBA (Color Type 6, bit depth 8, no PLTE, no tRNS).
-  - Policy: `rm2k_char0_to_wolf3_p3_d4_character_v1`.
-- **Runtime & Visual Verification (Official WOLF Game.exe v3.717 under Wine/Xvfb):**
-  - Executed using the official WOLF RPG Editor v3.717 runtime (`Game.exe`, SHA-256: `91821bd2439f562811060904498086709b8ac603640551e4f2fca45a0ff5f999`).
-  - Native clean-room fixture ([`tests/fixtures/wolf_character_min/`](tests/fixtures/wolf_character_min/)) with GuruGuru MIDI popup suppressed (`Game.dat` byte 17=0 and byte 20=0) and boot CommonEvent (ID 0) configured to run `parallel_process_always` (`0x23`).
-  - Positive composite control: Renders 4 directions on Pad 1 (Down, Left, Right, Up) and 3 walking animation phases on Pad 2 (Step Left, Idle, Step Right) over high-contrast test pad `Data/Picture/test_pad.png` with 8 corner alignment markers. Verified 100% pixel composite match at 2x integer scaling ($640 \times 480$), opaque sprite equality, transparent alpha revealing pad color, directional chevron orientation, and walking step foot differentiation.
-  - Individual directional & walking phase screenshots captured and verified:
-    - [`wolf_character_down.png`](artifacts/runtime/wolf/character/wolf_character_down.png) (Down Idle, Pattern 2)
-    - [`wolf_character_left.png`](artifacts/runtime/wolf/character/wolf_character_left.png) (Left Idle, Pattern 5)
-    - [`wolf_character_right.png`](artifacts/runtime/wolf/character/wolf_character_right.png) (Right Idle, Pattern 8)
-    - [`wolf_character_up.png`](artifacts/runtime/wolf/character/wolf_character_up.png) (Up Idle, Pattern 11)
-    - [`wolf_character_walk_step1.png`](artifacts/runtime/wolf/character/wolf_character_walk_step1.png) (Down Step Left, Pattern 1)
-    - [`wolf_character_walk_step2.png`](artifacts/runtime/wolf/character/wolf_character_walk_step2.png) (Down Step Right, Pattern 3)
-  - Negative control: With `Data/CharaChip/SuperRTP_Calibration.png` omitted, WOLF runtime halts and renders native green error banner (`[Picture display] File Read Error / Cannot find  CharaChip/SuperRTP_Calibration.png / Process mark:[CommonEv 0 Line 1]`) at screen region $y=192..288$ on black background. Verified in [`wolf_character_negative_control.png`](artifacts/runtime/wolf/character/wolf_character_negative_control.png).
-  - Durable cryptographic evidence recorded and verified in [`artifacts/runtime/wolf/character/verification_evidence.json`](artifacts/runtime/wolf/character/verification_evidence.json).
-
-## Repository Layout
+Engine packs are *generated*. They are never edited by hand. Everything flows from one
+canonical source:
 
 ```
-├── .agents/          # Workspace verification skills
-├── artifacts/
-│   └── runtime/      # Verified real runtime screenshots and logs (CharSet & ChipSet)
-├── docs/             # Technical architecture and research specifications
-├── generated/        # Built runtime packages (gitignored)
-├── legal/            # Legal documentation and clean-room policies
-├── registry/
-│   ├── assets/       # Canonical source assets (raw RGBA + metadata)
-│   ├── provenance/   # Clean-room provenance sidecars and attestations
-│   └── slots/        # Target engine slot mappings
-├── schemas/          # JSON schemas for assets, provenance, and slots
-├── tests/
-│   ├── fixtures/                 # Clean-room game fixtures and fixture manifests
-│   ├── support.py                # Shared test helpers (runtime gating, PNG rewrite)
-│   ├── test_foundation.py        # PNG codec, schemas, registry, transforms, builder, validator
-│   ├── test_fixtures.py          # Fixture manifests and deterministic generators
-│   └── test_runtime_evidence.py  # Evidence binding, tamper rejection, live engine captures
-└── tools/            # Generators, target builders, validators, and runtime verifiers
+canonical asset (registry/assets/)            neutral RGBA + metadata
+  -> provenance record (registry/provenance/)   who made it, under what license
+  -> slot mapping (registry/slots/<target>.json) which engine filenames it fills
+  -> deterministic transform (tools/transforms.py) engine layout, palette, PNG encoding
+  -> target pack (generated/<target>/)          + manifest.json
+  -> runtime verification (tools/verify_*.py)   real engine, screenshots, evidence
 ```
 
-## Verification & Build Commands
+A slot (a filename an engine looks up) and an asset (a picture SuperRTP owns) are kept
+separate. Filling `CharSet/Actor1.png` only satisfies a lookup. It does not recreate
+the proprietary image that historically lived there. See
+[docs/architecture.md](docs/architecture.md) for the design.
 
-### 1. Run Automated Test Suites
+## Quick start
+
+The build and validation tools need only **Python 3.12+** (standard library, no
+packages).
+
+```bash
+python3 tools/build_target.py --target rm2000 --clean   # -> generated/rm2000/
+python3 tools/validate_target.py --target rm2000
+```
+
+Replace `rm2000` with any target from the table. To use a pack with EasyRPG Player,
+point it at the output: `easyrpg-player --rtp-path generated/rm2000`.
+
+## Testing
+
 ```bash
 cd tests && python3 -m unittest discover -v
 ```
-Three suites:
-- **`test_foundation.py`**: the PNG codec (byte-identical encoders, truecolor and paletted decoding), JSON schema validation, registry/provenance lookups, the semantic frame transforms of every target layout against an independent crop oracle, deterministic target builds, and validator rejections (wrong dimensions, partial packs, stray files, permuted rows, wrong idle column).
-- **`test_fixtures.py`**: fixture manifests and byte-identical regeneration of fixture and calibration graphics.
-- **`test_runtime_evidence.py`**: every committed evidence set verifies; *every* recorded field is bound (a generic tamper test mutates or removes each field and requires rejection); rehashed screenshots with altered sprite pixels are rejected; and a fresh live capture through each real engine (EasyRPG Player, mkxp-z, WOLF Game.exe under Wine) must verify with the same checks. Live captures write to temporary directories.
 
-Live tests skip when an engine is missing. Set `SUPERRTP_REQUIRE_RUNTIME=1` (as CI does) to make a missing engine a failure instead.
+| Suite | Covers |
+|---|---|
+| `test_foundation.py` | PNG codec; schemas; registry and provenance; frame transforms for every engine layout, checked against an independent oracle; reproducible builds; validator rejections |
+| `test_fixtures.py` | Fixture manifests; byte-identical regeneration of fixture and calibration graphics |
+| `test_runtime_evidence.py` | Committed evidence verifies. Every evidence field is tamper-checked. Altered screenshot pixels are rejected. A fresh live capture through each real engine must verify. |
 
-### 2. Generate Clean-Room Fixture Graphics
+Live tests skip when an engine is not installed. With `SUPERRTP_REQUIRE_RUNTIME=1`, as
+in CI, a missing engine is a failure instead. The live runs need:
+- **All engines:** Xvfb, ffmpeg and xdotool.
+- **RM2000/2003:** EasyRPG Player 0.8.1.1.
+- **XP/VX/VX Ace:** mkxp-z (build it with `tools/install_mkxp_z_ci.sh`).
+- **WOLF:** Wine with 32-bit support and `Game.exe`. Install `Game.exe` with
+  `tools/install_wolf_ci.sh`; the script checks its SHA-256.
+
+Live captures write to temporary directories, so committed artifacts are never
+modified.
+
+### Runtime evidence
+
+Each slice has committed evidence under `artifacts/runtime/<target>/<category>/`: the
+screenshots, the engine logs, and a `verification_evidence.json` that binds them to the
+exact source, pack, fixture and engine version.
+
 ```bash
-python3 tools/generate_fixture_graphics.py
-```
-Deterministically generates fallback `ChipSet.png`, `System.png`, and `CharSet/Actor1.png` / `Hero1.png` for test fixtures from geometric primitives using pure Python standard library.
-
-### 3. Generate Canonical Assets
-```bash
-python3 tools/generate_calibration_charset.py
-python3 tools/generate_calibration_chipset.py
-```
-
-### 4. Build Target Packs (RM2000, RM2003, RMXP, RMVX, RMVXAce & WOLF)
-```bash
-python3 tools/build_target.py --target rm2000 --clean
-python3 tools/build_target.py --target rm2003 --clean
-python3 tools/build_target.py --target rmxp --clean
-python3 tools/build_target.py --target rmvx --clean
-python3 tools/build_target.py --target rmvxace --clean
-python3 tools/build_target.py --target wolf --clean
-```
-
-### 5. Validate Target Packs
-```bash
-python3 tools/validate_target.py --target rm2000
-python3 tools/validate_target.py --target rm2003
-python3 tools/validate_target.py --target rmxp
-python3 tools/validate_target.py --target rmvx
-python3 tools/validate_target.py --target rmvxace
-python3 tools/validate_target.py --target wolf
-```
-
-### 6. Runtime Verification & Evidence Verification (EasyRPG Player, mkxp-z & WOLF Game.exe)
-```bash
-# Verify existing evidence chains, screenshot hashes, and logs:
-python3 tools/verify_runtime.py --target all --verify
-python3 tools/verify_chipset_runtime.py --target all --verify
+python3 tools/verify_runtime.py --target all --verify           # RM2000/2003 CharSet
+python3 tools/verify_chipset_runtime.py --target all --verify   # RM2000/2003 ChipSet
 python3 tools/verify_rmxp_runtime.py --verify
 python3 tools/verify_rmvx_runtime.py --verify
 python3 tools/verify_rmvxace_runtime.py --verify
 python3 tools/verify_wolf_runtime.py --verify
-
-# Re-capture under virtual X11 (overwrites artifacts/runtime/ unless --artifacts-dir is given):
-python3 tools/verify_runtime.py --target all --run-capture
-python3 tools/verify_chipset_runtime.py --target all --run-capture
-python3 tools/verify_rmxp_runtime.py --run-capture
-python3 tools/verify_rmvx_runtime.py --run-capture
-python3 tools/verify_rmvxace_runtime.py --run-capture
-python3 tools/verify_wolf_runtime.py --run-capture
 ```
-Generates and validates cryptographic evidence chains:
-- [`artifacts/runtime/rm2000/charset/verification_evidence.json`](artifacts/runtime/rm2000/charset/verification_evidence.json)
-- [`artifacts/runtime/rm2003/charset/verification_evidence.json`](artifacts/runtime/rm2003/charset/verification_evidence.json)
-- [`artifacts/runtime/rm2000/chipset/verification_evidence.json`](artifacts/runtime/rm2000/chipset/verification_evidence.json)
-- [`artifacts/runtime/rm2003/chipset/verification_evidence.json`](artifacts/runtime/rm2003/chipset/verification_evidence.json)
-- [`artifacts/runtime/rmxp/character/verification_evidence.json`](artifacts/runtime/rmxp/character/verification_evidence.json)
-- [`artifacts/runtime/rmvx/character/verification_evidence.json`](artifacts/runtime/rmvx/character/verification_evidence.json)
-- [`artifacts/runtime/rmvxace/character/verification_evidence.json`](artifacts/runtime/rmvxace/character/verification_evidence.json)
-- [`artifacts/runtime/wolf/character/verification_evidence.json`](artifacts/runtime/wolf/character/verification_evidence.json)
 
+Replace `--verify` with `--run-capture` to re-capture through the live engine. Add
+`--artifacts-dir <dir>` to write somewhere other than the committed artifacts.
 
-## Clean-Room Policy & Licensing
+## Repository layout
 
-- Code, build tooling, validators, and schemas are licensed under the **MIT License** ([`LICENSE`](LICENSE)).
-- Test calibration assets are dedicated to the public domain under **CC0-1.0 Universal**.
-- See [legal/CLEAN_ROOM_POLICY.md](legal/CLEAN_ROOM_POLICY.md) for strict contributor clean-room invariants.
+```
+registry/     assets/ (canonical sources), provenance/, slots/ (per-engine filename maps)
+schemas/      JSON schemas for assets, provenance and slot maps
+tools/        builder, validator, transforms, runtime drivers and verifiers
+tests/        test suites and clean-room engine fixtures (tests/fixtures/)
+artifacts/    committed runtime evidence (screenshots, logs, evidence JSON)
+generated/    build output (git-ignored)
+docs/         architecture, engine facts, per-slice specs, known issues
+legal/        clean-room policy
+```
+
+Most `tools/` modules are shared:
+- **`png_utils`:** deterministic PNG encoding and decoding.
+- **`transforms`:** sheet layouts per engine.
+- **`registry`:** slot and provenance lookups.
+- **`evidence`:** evidence checks.
+- **`runtime_harness`:** Xvfb, recording and input.
+- **Engine drivers:** `easyrpg_runtime`, `mkxp_runtime`, `wolf_runtime`.
+
+The `verify_*.py` scripts are thin per-slice verifiers on top of them.
+
+## Documentation
+
+- [docs/architecture.md](docs/architecture.md): design, pipeline and per-engine layout.
+- [docs/engine-facts.md](docs/engine-facts.md): researched engine behavior, with
+  sources (lookup tables, sheet layouts, transparency, animation order).
+- [docs/verified-slices.md](docs/verified-slices.md): detailed specification and
+  evidence for each slice.
+- [docs/known-issues.md](docs/known-issues.md): open problems and what is known about
+  them.
+- [legal/CLEAN_ROOM_POLICY.md](legal/CLEAN_ROOM_POLICY.md): rules for anything entering
+  the repository.
+
+## Contributing
+
+Read [legal/CLEAN_ROOM_POLICY.md](legal/CLEAN_ROOM_POLICY.md) and
+[AGENTS.md](AGENTS.md) first. In short:
+- **Never use proprietary RTP material,** not as a source and not as a reference, and
+  never in a derived form.
+- **Every asset needs a provenance record** with a redistribution-compatible license.
+  "Free for games" is not enough.
+- **Engine behavior claims need a source.** Record it in `docs/engine-facts.md`.
+- **A change to a pack isn't done until it has been verified in the real engine.**
+
+## License
+
+- **Code, tooling and schemas:** [MIT](LICENSE).
+- **Calibration assets:** CC0-1.0.
+- **Engines used only for verification, not distributed here:**
+  - EasyRPG Player (GPLv3);
+  - mkxp-z (GPLv2);
+  - WOLF RPG Editor `Game.exe` (its own terms).
