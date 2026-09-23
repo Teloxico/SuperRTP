@@ -17,35 +17,35 @@ Generates a neutral canonical walking character sprite sheet:
   downstream by tools/build_target.py.
 """
 
-import os
-import sys
-import struct
-import zlib
 import hashlib
 import json
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from png_utils import deterministic_zlib_compress, make_png_chunk
+from png_utils import create_rgba_png
 
-def create_rgba_png(width, height, rgba_bytes):
-    """Encodes 32-bit RGBA pixels into standard 32-bit PNG using deterministic compression."""
-    png_sig = b'\x89PNG\r\n\x1a\n'
-    # IHDR: width, height, bit depth (8), color type (6 = RGBA), compression (0), filter (0), interlace (0)
-    ihdr_data = struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)
-    ihdr_chunk = make_png_chunk('IHDR', ihdr_data)
+# Color theme per character slot 0..7. Runtime verifiers import this to know which
+# outline color each slot's arrow tip must have.
+SLOT_THEMES = [
+    # Slot 0 (Protagonist / Actor 1): Cyan / Amber / Gold
+    {"body": (0, 210, 230), "outline": (10, 40, 70), "accent": (255, 230, 80), "foot": (240, 160, 20)},
+    # Slot 1: Emerald / Forest / Lemon
+    {"body": (40, 220, 120), "outline": (10, 60, 30), "accent": (220, 255, 80), "foot": (180, 200, 30)},
+    # Slot 2: Crimson / Maroon / Orange
+    {"body": (240, 60, 60), "outline": (70, 10, 20), "accent": (255, 180, 60), "foot": (220, 100, 30)},
+    # Slot 3: Indigo / Deep Blue / Sky
+    {"body": (80, 120, 250), "outline": (20, 20, 80), "accent": (140, 220, 255), "foot": (60, 80, 200)},
+    # Slot 4: Magenta / Dark Purple / Pink
+    {"body": (220, 60, 200), "outline": (60, 10, 60), "accent": (255, 160, 240), "foot": (180, 40, 140)},
+    # Slot 5: Amber / Rust / Cream
+    {"body": (250, 160, 30), "outline": (70, 40, 10), "accent": (255, 240, 160), "foot": (200, 110, 20)},
+    # Slot 6: Teal / Slate / Mint
+    {"body": (30, 200, 190), "outline": (20, 50, 60), "accent": (180, 255, 230), "foot": (20, 140, 130)},
+    # Slot 7: Silver / Charcoal / Bronze
+    {"body": (210, 215, 220), "outline": (50, 55, 60), "accent": (255, 255, 255), "foot": (150, 110, 70)},
+]
 
-    raw_data = bytearray()
-    row_bytes = width * 4
-    for y in range(height):
-        raw_data.append(0)  # Filter type 0 (None)
-        start = y * row_bytes
-        raw_data.extend(rgba_bytes[start:start + row_bytes])
-
-    compressed_idat = deterministic_zlib_compress(bytes(raw_data))
-    idat_chunk = make_png_chunk('IDAT', compressed_idat)
-    iend_chunk = make_png_chunk('IEND', b'')
-
-    return png_sig + ihdr_chunk + idat_chunk + iend_chunk
 
 def generate_canonical_rgba():
     width = 288
@@ -53,25 +53,6 @@ def generate_canonical_rgba():
     # 4 bytes per pixel: R, G, B, A (0 = fully transparent)
     rgba = bytearray(width * height * 4)
 
-    # 8 Character slot color themes
-    slot_themes = [
-        # Slot 0 (Protagonist / Actor 1): Cyan / Amber / Gold
-        {"body": (0, 210, 230), "outline": (10, 40, 70), "accent": (255, 230, 80), "foot": (240, 160, 20)},
-        # Slot 1: Emerald / Forest / Lemon
-        {"body": (40, 220, 120), "outline": (10, 60, 30), "accent": (220, 255, 80), "foot": (180, 200, 30)},
-        # Slot 2: Crimson / Maroon / Orange
-        {"body": (240, 60, 60), "outline": (70, 10, 20), "accent": (255, 180, 60), "foot": (220, 100, 30)},
-        # Slot 3: Indigo / Deep Blue / Sky
-        {"body": (80, 120, 250), "outline": (20, 20, 80), "accent": (140, 220, 255), "foot": (60, 80, 200)},
-        # Slot 4: Magenta / Dark Purple / Pink
-        {"body": (220, 60, 200), "outline": (60, 10, 60), "accent": (255, 160, 240), "foot": (180, 40, 140)},
-        # Slot 5: Amber / Rust / Cream
-        {"body": (250, 160, 30), "outline": (70, 40, 10), "accent": (255, 240, 160), "foot": (200, 110, 20)},
-        # Slot 6: Teal / Slate / Mint
-        {"body": (30, 200, 190), "outline": (20, 50, 60), "accent": (180, 255, 230), "foot": (20, 140, 130)},
-        # Slot 7: Silver / Charcoal / Bronze
-        {"body": (210, 215, 220), "outline": (50, 55, 60), "accent": (255, 255, 255), "foot": (150, 110, 70)},
-    ]
 
     # Frame boundary calibration color (dark subtle tick)
     calibration_color = (30, 30, 35)
@@ -81,7 +62,7 @@ def generate_canonical_rgba():
         char_grid_y = char_idx // 4
         char_base_x = char_grid_x * 72
         char_base_y = char_grid_y * 128
-        theme = slot_themes[char_idx]
+        theme = SLOT_THEMES[char_idx]
 
         for row in range(4):        # 4 directions
             for col in range(3):    # 3 walking frames

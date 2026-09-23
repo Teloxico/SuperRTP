@@ -10,9 +10,12 @@
       "slot_path": "Graphics/Characters/001-Fighter01.png",
       "aliases": [],
       "format": "truecolor-rgba-png",
-      "dimensions": [96, 128],
+      "dimensions": [
+        96,
+        128
+      ],
       "character_index": 0,
-      "transform_policy": "rm2k_to_rgss1_character_4x4",
+      "transform_policy": "rm2k_to_rgss1_character_4x4_idle_first_v2",
       "test_only": true
     }
   }

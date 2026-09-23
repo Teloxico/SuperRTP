@@ -7,22 +7,30 @@
   "target_manifest_sha256": "1956829cd3234a6088cd480461761eac20b471d1984ebb19b5aa5d96a9014ec8",
   "target_actor1_sha256": "7fde5157142d929404f3fc3b599cbd6c558ef74b2135ac1172db53dd88641ee6",
   "fixture_manifest_sha256": "025dc34bb1b63b272f853405f5bc3e45deb9ee2f877fd247ee3d15b842aad348",
-  "replay_input_sha256": "3ba0ca86afcc75d63ccc7440f3f7b4c289672b917db75355b1d1968d11a6f7b1",
+  "input_keys": [
+    "Left",
+    "Up",
+    "Right"
+  ],
+  "positive_runtime_log": "positive_runtime.log",
+  "positive_runtime_log_sha256": "4f992533456f3f34e1fb8f3870e3e8cb170760ad7b26c6fda4ce0392d3a9a9c5",
+  "negative_runtime_log": "negative_runtime.log",
+  "negative_runtime_log_sha256": "bbbb0af38937caedfac1635ecd1789d25dc1956304b69905753ecb0b66b4b3bf",
   "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
-  "recorded_at": "2026-09-14T14:26:35.970695+00:00",
+  "recorded_at": "2026-09-23T06:13:01.913841+00:00",
   "negative_control": {
     "status": "VERIFIED",
     "expected_missing_asset": "CharSet/Hero1",
     "diagnostic": "Image not found: CharSet/Hero1",
     "screenshot": "rm2003_charset_negative_control.png",
-    "screenshot_sha256": "82d95b6bc87eb442f872a987752bfa6f646713d0fb302988f677abfce8c7e68a"
+    "screenshot_sha256": "e376680804291e8409aec8be2c34a5ea463d8df8324399144f01c90132fe48e4"
   },
   "screenshots": {
-    "rm2003_charset_down.png": "ed22b27bddfac24e500ac157a4b251bbb4442ca0477cdb576099575c158cdc9a",
-    "rm2003_charset_left.png": "cdc8a593f0f09b2d5b0004e63f733f1562a33ea3a74bc71ebcf492a02e9442e9",
-    "rm2003_charset_up.png": "e06d3fcb4131eaa1c2bc3ad24c2bc9287c333af81688b54341d2044730a790a3",
-    "rm2003_charset_right.png": "149de2ef0062b475aa805c0caef30b82172bcc35a64164c616a17f147c371e78",
-    "rm2003_charset_negative_control.png": "82d95b6bc87eb442f872a987752bfa6f646713d0fb302988f677abfce8c7e68a"
+    "rm2003_charset_down.png": "5d3de40919e5a4260a4dcf3ef7718d0bbf4809503be6620480dba9b9d817ab4a",
+    "rm2003_charset_left.png": "9a942b25a922d8f5a6621007d6f1ab6f89af8232cb879dd504f8225fd001a932",
+    "rm2003_charset_up.png": "f40bb5dc2f5d90545ccf39cdadb4eaf0562b5a9b743bc068c2e013baab9a6896",
+    "rm2003_charset_right.png": "cd380c0ce7abf634914fe8a758b61b7c90ddec9f07f873d5ef37cd604d0c7926",
+    "rm2003_charset_negative_control.png": "e376680804291e8409aec8be2c34a5ea463d8df8324399144f01c90132fe48e4"
   },
   "directional_evidence": {
     "down": {
@@ -91,11 +99,7 @@
     },
     "negative_control": {
       "status": "VERIFIED",
-      "error_text_pixels": 6125
+      "error_text_pixels": 1404
     }
-  },
-  "positive_runtime_log": "positive_runtime.log",
-  "positive_runtime_log_sha256": "9ba289ed64f9f65a73e872531774d6ebbca931fbac11ff43c6e498a240df6029",
-  "negative_runtime_log": "negative_runtime.log",
-  "negative_runtime_log_sha256": "0dee2d389041f98ca5001014b1c6136e2bd2eceeafb95cec6cad81c66187cd25"
+  }
 }

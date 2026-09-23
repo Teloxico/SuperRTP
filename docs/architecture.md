@@ -98,11 +98,13 @@ Test fixtures under `tests/fixtures/` (`rm2000_min`, `rm2003_min`, `rm2000_chips
 
 Runtime verification is executed through `tools/verify_runtime.py` and `tools/verify_chipset_runtime.py`:
 - Drives headless EasyRPG Player via an Xvfb virtual frame buffer.
-- For CharSet: replays deterministic multi-frame inputs navigating all 4 directional faces, verifying facing arrows.
+- For CharSet: turns the hero through all 4 directions with X11 key presses, capturing each facing once the screen shows it and checking its arrow shape and position.
 - For ChipSet: boots new game into 20×15 map with fixed test tiles, capturing 640×480 screenshots with lossless RGB recording (`-c:v libx264rgb -crf 0`).
 - Performs mechanical pixel assertions on all key tile regions and layer composition transparency.
 - Generates `verification_evidence.json` under `artifacts/runtime/<target>/<category>/`, cryptographically binding canonical source SHA-256, target manifest hash, fixture manifest hash, EasyRPG pinned version (0.8.1.1), log hashes, negative control diagnostics, and screenshot hashes.
-- All recorded fields in `verification_evidence.json` are strictly enforced by `--verify` across both `verify_runtime.py` and `verify_chipset_runtime.py`. Automated adversarial tamper tests (`test_23`) deliberately corrupt each bound input and assert immediate rejection.
+- All recorded fields in `verification_evidence.json` are strictly enforced by `--verify` across both `verify_runtime.py` and `verify_chipset_runtime.py`. `tests/test_runtime_evidence.py` mutates or removes every field of every evidence file and requires rejection.
+
+Shared runtime code lives in `tools/runtime_harness.py` (Xvfb via `-displayfd`, lossless recording, frame selection by content, key presses, screen polling) with per-engine drivers `tools/easyrpg_runtime.py`, `tools/mkxp_runtime.py` and `tools/wolf_runtime.py`. Researched engine behavior is recorded in [engine-facts.md](engine-facts.md).
 
 ## 8. RPG Maker XP (RGSS1) Character Architecture
 
@@ -116,8 +118,8 @@ SuperRTP's single-source architecture enables generating RGSS1-compliant charact
      - RGSS1 physical rows: Row 0 (DOWN), Row 1 (LEFT), Row 2 (RIGHT), Row 3 (UP).
    - **Animation Column Adaptation:**
      - RM2000 uses 3 frame columns: Step Left (Col 0), Idle (Col 1), Step Right (Col 2).
-     - RGSS1 expects 4 frame columns: Step Left (Col 0), Idle (Col 1), Step Right (Col 2), Idle (Col 3).
-     - The transformation duplicates Col 1 into Col 3, producing a 96×128 pixel sheet (4 cols × 24 px, 4 rows × 32 px).
+     - RGSS1 stands on column 0 and walks through columns 0, 1, 2, 3 (`Game_Character#@original_pattern = 0`; `Sprite_Character` uses `sx = pattern * width / 4`). The idle frame must therefore be in column 0.
+     - Output columns: Idle (Col 0), Step Right (Col 1), Idle (Col 2), Step Left (Col 3), giving a 96×128 pixel sheet (4 cols × 24 px, 4 rows × 32 px). Policy `rm2k_to_rgss1_character_4x4_idle_first_v2` (the v1 policy put a stepping frame in column 0).
 
 2. **Deterministic Truecolor RGBA Encoding (Color Type 6):**
    - RPG Maker XP and mkxp-z use full 32-bit RGBA PNGs rather than indexed palettes.
@@ -158,7 +160,7 @@ SuperRTP's semantic walking-frame abstraction enables feeding RPG Maker VX's sta
    - Unlike XP, no fourth repeated idle column is added; VX standard sheets natively use 3 animation patterns.
 
 2. **Architectural Distinction Between XP and VX:**
-   - **XP / RGSS1**: One character per file for Task 4, 4 animation columns (`STEP_LEFT`, `IDLE`, `STEP_RIGHT`, `IDLE`), 96×128 pixels, 640×480 screen.
+   - **XP / RGSS1**: One character per file for Task 4, 4 animation columns (`IDLE`, `STEP_RIGHT`, `IDLE`, `STEP_LEFT`), 96×128 pixels, 640×480 screen.
    - **VX / RGSS2**: Standard 8-character sheet, 3 animation columns (`STEP_LEFT`, `IDLE`, `STEP_RIGHT`), 288×256 pixels, 544×416 screen.
    - Documented `$` (single character) and `!` (no offset / bush translucency) filename prefixes are recognized functional facts of the engine but are intentionally outside the scope of Task 5 and remain unverified.
    - RPG Maker VX Ace (`rmvxace`) is a separate engine target (RGSS3) and is not implemented in Task 5.
