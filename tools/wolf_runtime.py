@@ -17,7 +17,7 @@ import re
 import shutil
 import tempfile
 
-from repo import portable_paths, sha256_file
+from repo import portable_paths, repo_path, sha256_file
 from runtime_harness import find_tool, managed, poll_screen, run_to_completion, spawn, x11_env, xvfb_display
 
 PINNED_WOLF_VERSION = "3.717"
@@ -55,15 +55,38 @@ def wine_version(wine: str) -> str:
     return text.splitlines()[0]
 
 
+# A dedicated, git-ignored Wine prefix, so results never depend on the user's own ~/.wine.
+WINE_PREFIX = os.environ.get("SUPERRTP_WINEPREFIX", repo_path(".cache", "wineprefix"))
+
+# Wine resolves font names through the host's fontconfig, so the fixture's "Courier" text
+# (seen with WINEDEBUG=+font) became Courier New where the Microsoft core fonts are
+# installed and Wine's bundled courier.ttf elsewhere, changing the glyphs
+# verify_wolf_runtime reads. A private fontconfig configuration with no font directories
+# hides the host fonts from Wine only, leaving just the fonts shipped with Wine itself.
+FONTCONFIG_DIR = repo_path(".cache", "wine-fontconfig")
+FONTCONFIG_FILE = os.path.join(FONTCONFIG_DIR, "fonts.conf")
+
 # Keep Wine from offering to download Mono/Gecko installers; the runtime needs neither.
-WINE_ENV = {"WINEDLLOVERRIDES": "mscoree,mshtml=", "WINEDEBUG": os.environ.get("WINEDEBUG", "fixme-all")}
+WINE_ENV = {"WINEPREFIX": WINE_PREFIX, "FONTCONFIG_FILE": FONTCONFIG_FILE, "WINEDLLOVERRIDES": "mscoree,mshtml=",
+            "WINEDEBUG": os.environ.get("WINEDEBUG", "fixme-all")}
+
+
+def _write_fontconfig() -> None:
+    os.makedirs(FONTCONFIG_DIR, exist_ok=True)
+    cache = os.path.join(FONTCONFIG_DIR, "cache")
+    with open(FONTCONFIG_FILE, "w", encoding="utf-8") as f:
+        f.write('<?xml version="1.0"?>\n<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">\n'
+                f"<fontconfig><cachedir>{cache}</cachedir></fontconfig>\n")
 
 
 def prepare_wine_prefix(wine: str, timeout: float = 300.0) -> None:
     """
-    Creates or updates the Wine prefix before any timed capture. The first Wine start
-    on a fresh machine builds the prefix, which can take far longer than a render wait.
+    Creates or updates the Wine prefix (WINE_PREFIX) before any timed capture. The first
+    Wine start on a fresh machine builds the prefix, which can take far longer than a
+    render wait.
     """
+    os.makedirs(WINE_PREFIX, exist_ok=True)
+    _write_fontconfig()
     with xvfb_display(SCREEN_W, SCREEN_H) as display:
         code, _, err = run_to_completion([wine, "wineboot", "--init"], env=x11_env(display, **WINE_ENV), timeout=timeout)
     if code != 0:
@@ -103,6 +126,7 @@ def run_session(fixture_dir: str, game_exe: str, wine: str, output_png: str, is_
     keep waiting and raises to report why a frame was rejected. On timeout the last
     rejection and the Wine output are included in the error, and `output_png` is untouched.
     """
+    _write_fontconfig()
     with tempfile.TemporaryDirectory(prefix="superrtp_wolf_") as tmp:
         game_dir = os.path.join(tmp, "game")
         shutil.copytree(fixture_dir, game_dir)

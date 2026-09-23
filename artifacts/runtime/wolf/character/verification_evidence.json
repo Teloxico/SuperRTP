@@ -44,16 +44,16 @@
   "positive_runtime_log_sha256": "3ffea399efb20f9e235f239e538abcca4d99e537489d56ea6c645e4b575bd0c0",
   "negative_runtime_log_sha256": "3ffea399efb20f9e235f239e538abcca4d99e537489d56ea6c645e4b575bd0c0",
   "positive_screenshots": {
-    "wolf_character_positive.png": "2aa86a0d12ce970eafcbcbf95180b45cca4e2aea84458bf7194adb5f331605e4",
-    "wolf_character_down.png": "8afcb99876ff719152bdf57ab62ff5a6e1dc099cca5da1e3e013e0787b4acda7",
-    "wolf_character_left.png": "13b489da815014e5be5b6b8014ca2e7f1e404573b734ee7b2da3b2c29fed9436",
-    "wolf_character_right.png": "c699ceea8d3d9460b06ea5b1f7a9467b10ae3c480985c482b0bfeefe01b43048",
-    "wolf_character_up.png": "6bee1cda08527d8cecbcc7237e0bbc74bf2180650474d97a45e77b010fb1c71f",
-    "wolf_character_walk_step1.png": "ba9de0f4b9dc95850fe85ce02011dee0be9fb46e437015464267463517420c45",
-    "wolf_character_walk_step2.png": "cdcadb8a2dfc89b723ac867770c44722c586fb9afc253d3ee11508a8645464d3"
+    "wolf_character_positive.png": "272f914df8b3713ba1fd1a2af09054ca3e6669ebe5cfbfc6ec5b15260a8fb02a",
+    "wolf_character_down.png": "e23f47daf0d5ae1c7734000b3ec7fa8a16c9869dd72130e6a1d3a99bb133b996",
+    "wolf_character_left.png": "126e0b53f62dd7062eda068070e717ed763998ee70e8a0ffee78c7fca67f8f86",
+    "wolf_character_right.png": "004a78ca1d99f7e4785f0aff3c9fda100f1ae8541b8b59c3111f13ff80034b5b",
+    "wolf_character_up.png": "ec92d79f1c373b2585f494436fd5fd878da4d06bb838d5685c2c97c147c1bba0",
+    "wolf_character_walk_step1.png": "85a619d8f7183c532f58a8a061fb74e8c400050b4e062680dc0e47356bb9deb0",
+    "wolf_character_walk_step2.png": "31ffa837b5baf11513963e44c26f571ea15fbc3b098855a1cc6346390536cfcd"
   },
   "negative_screenshot": {
-    "wolf_character_negative_control.png": "f9f093218963b3637139595af40ef1e7fd58818552abed46b7356dcbc65a4bea"
+    "wolf_character_negative_control.png": "3308caee653914386c3ada685b00830df5ce2690340598a06a0b4da8be95e836"
   },
   "directional_captures": {
     "wolf_character_down.png": {
@@ -104,5 +104,5 @@
     "wine_version": "wine-10.0 (Ubuntu 10.0~repack-12ubuntu1)",
     "capture_method": "xvfb_ffmpeg_x11grab_640x480"
   },
-  "timestamp": "2026-09-23T05:29:31.462448+00:00"
+  "timestamp": "2026-09-23T06:56:27.402614+00:00"
 }
