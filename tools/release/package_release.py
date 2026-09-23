@@ -12,8 +12,9 @@ installed on its own:
       SuperRTP-<pack>/rtp/...               the pack's files at their engine paths
     dist/SHA256SUMS
 
-Archives are reproducible: sorted entries, fixed timestamps and permissions. The packs
-must first pass generate_full_inventory.py --check, which this script runs.
+Archives are reproducible: sorted entries, fixed timestamps and permissions. A pack is
+packaged only if generate_full_inventory.py --check passes (run here) and the runtime gate
+(tools/verify_generated_packs.py) passed every case on this exact manifest.
 
     python3 tools/release/package_release.py [--pack rm2000-en ...] [--out dist]
 """
@@ -73,7 +74,7 @@ Windows games under Wine (Linux/macOS)
     python3 install.py --wine-prefix ~/.wine --register machine""",
     "wolf": """WOLF RPG Editor has no shared runtime package: every game carries its own Data
 folder. To fill in files a game folder is missing:
-    python3 install.py --game /path/to/game/Data""",
+    python3 install.py --game /path/to/game""",
 }
 HOW_TO["rm2003"] = HOW_TO["rm2000"].replace("2000", "2003").replace(
     "HKCU\\Software\\ASCII\\RPG2003 (RuntimePackagePath)", "HKCU\\Software\\Enterbrain\\RPG2003 (RUNTIMEPACKAGEPATH)")
@@ -184,11 +185,32 @@ def build_archive(pack: str, entries: list, root: str, manifest_sha: str, versio
     return path
 
 
+GATE_REPORT = "runtime-gate.json"
+GATE_CASES = ("installed", "rtp-path", "character", "scan", "wolf")
+
+
+def check_runtime_gate(root: str, manifest_sha: str) -> dict:
+    """The runtime gate report for this manifest; refuses a missing, partial, failed or stale one."""
+    path = os.path.join(root, GATE_REPORT)
+    if not os.path.isfile(path):
+        raise ValueError(f"No runtime gate report at {path}; run tools/verify_generated_packs.py first")
+    with open(path, encoding="utf-8") as f:
+        report = json.load(f)
+    if report.get("manifest_sha256") != manifest_sha:
+        raise ValueError("The runtime gate report is for a different manifest; rerun tools/verify_generated_packs.py")
+    if sorted(report.get("cases_run", [])) != sorted(GATE_CASES):
+        raise ValueError(f"The runtime gate ran only {report.get('cases_run')}; run every case")
+    if report.get("failures") or not report.get("results"):
+        raise ValueError(f"The runtime gate failed: {report.get('failures')}")
+    return report
+
+
 def main():
     parser = argparse.ArgumentParser(description="Package the verified packs as per-pack installable archives")
     parser.add_argument("--pack", action="append", help="only these packs (repeatable)")
     parser.add_argument("--out", default=os.path.join(REPO_ROOT, "dist"))
-    parser.add_argument("--skip-check", action="store_true", help="skip the full pack verification (tests only)")
+    parser.add_argument("--skip-check", action="store_true",
+                        help="skip the pack verification and runtime gate (local testing only; never for a release)")
     args = parser.parse_args()
 
     spec = inventory.load_spec()
@@ -205,8 +227,10 @@ def main():
     if unknown:
         sys.exit(f"Unknown packs: {sorted(unknown)}; available: {sorted(by_pack)}")
     version = read_version()
-    os.makedirs(args.out, exist_ok=True)
     manifest_sha = sha256_file(manifest_path)
+    if not args.skip_check:
+        check_runtime_gate(root, manifest_sha)
+    os.makedirs(args.out, exist_ok=True)
     sums = []
     for pack in sorted(args.pack or by_pack):
         path = build_archive(pack, by_pack[pack], root, manifest_sha, version, args.out)

@@ -63,3 +63,17 @@ mid-stride frame.
 | `Game.exe` from the WOLF 3.717 mini archive is a 32-bit (PE32, i386) executable | Wine on the host must be able to run 32-bit programs (WoW64 or a wine32 install) | `file Game.exe` on the checksum-verified binary |
 | Wine resolves a requested font face through the host's fontconfig. The WOLF fixture's lookup text uses the "Courier" face, which became Courier New where the Microsoft core fonts are installed and another font elsewhere | WOLF runs point `FONTCONFIG_FILE` at a private configuration with no font directories, so only Wine's bundled fonts are visible (`tools/wolf_runtime.py`) | `WINEDEBUG=+font` traces (`NtGdiHfontCreate ... L"Courier"`, `select_font Chosen: ...`) on the local host; CI screenshots of the same fixture |
 | Ubuntu 24.04 (noble) ships `wine32:i386` (Wine 9.0) in universe; it needs `dpkg --add-architecture i386` | CI installs `wine wine32:i386` | packages.ubuntu.com/noble/wine32 |
+
+## Where runtimes find an installed RTP
+
+Used by `tools/release/install.py`; see [installing.md](installing.md) for what is verified.
+
+| Fact | Where SuperRTP relies on it | Source |
+|---|---|---|
+| EasyRPG builds for Linux, BSD and macOS define `USE_WINE_REGISTRY` and `USE_XDG_RTP` | The installer's default on non-Windows desktops is the XDG folder, macOS included | `src/system.h` at `0.8.1.1` ("Everything not catched above, e.g. Linux/*BSD/macOS") |
+| EasyRPG adds `$XDG_DATA_HOME/rtp/<2000\|2003>` (default `~/.local/share/rtp/...`) and each `$XDG_DATA_DIRS/rtp/...` that exists, after `--rtp-path` and `RPG_RTP_PATH`, `RPG2K_RTP_PATH`, `RPG2K3_RTP_PATH` | Default install folder; the runtime gate isolates these variables | `src/filefinder_rtp.cpp` at `0.8.1.1` |
+| EasyRPG reads `Software\ASCII\RPG2000` `RuntimePackagePath` and `Software\KADOKAWA\RPG2000` for 2000, and `Software\Enterbrain\RPG2003` `RUNTIMEPACKAGEPATH` and `Software\KADOKAWA\RPG2003` `RuntimePackagePath` for 2003, from HKCU then HKLM in the 32-bit view, plus `Software\EasyRPG\RTP` `path` | Registry values the installer writes | `src/filefinder_rtp.cpp` at `0.8.1.1` |
+| On non-Windows, EasyRPG reads those values from `$WINEPREFIX/user.reg` (HKCU) or `system.reg` (HKLM, `Software\` redirected to `Software\Wow6432Node\` in a 64-bit prefix), and maps a `Z:\` path to `/` | `--wine-prefix` installs, and the gate's Wine cases | `src/registry_wine.cpp` at `0.8.1.1` |
+| The RGSS `Game.exe` takes the RTP name from `Game.ini` (`RTP1`–`RTP3` in XP, `RTP` in VX and VX Ace; standard names `Standard`, `RPGVX`, `RPGVXAce`) and reads the folder from that string value under `HKLM\SOFTWARE\Enterbrain\RGSS\RTP`, `RGSS2\RTP` or `RGSS3\RTP`; installers default to `[CommonFilesFolder]\Enterbrain\RGSS*\<name>` | `--register machine` for XP, VX and VX Ace | RGSS reference manuals, "RGSS Specifications", RTP section (XP, VX and VX Ace help files; mirrors at rpg-maker.fr and enls.gitbook.io) |
+| mkxp-z takes RTP folders or `.zip` files from the `"RTP"` list of `mkxp.json`, and merges a second `mkxp.json` from the game's user data folder | `--mkxp-json` | `mkxp.json` sample and `src/config.cpp` at `826929e` |
+| Wine's `reg.exe` accepts `/reg:32` and writes HKLM values to `Wow6432Node` in a 64-bit prefix; its server saves `user.reg`/`system.reg` shortly after its last client exits | The installer's Wine path; the gate waits for the change to reach the files | Local Wine run (`reg add ... /reg:32`, then `system.reg`) |

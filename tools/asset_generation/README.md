@@ -8,7 +8,7 @@ for the design, the model choice and known limits.
 
 ```
 specs/generation/art-direction.v1.json   style guide, family briefs, one description per subject
-  -> flux_jobs.py        plans 2,797 text-only concept jobs (prompt, size, key colour, seed)
+  -> flux_jobs.py        plans 4,311 concept jobs (prompt, size, key colour, seed, reference view)
   -> flux_worker.py      runs FLUX.2 [klein] 4B locally; .cache/flux/concepts/ + provenance sidecars
   -> flux_structure.py   keys, crops, fits and lays out frames; .cache/flux/structured/
   -> generate_full_inventory.py --spec specs/generation/full-inventory.v2.json
@@ -40,8 +40,11 @@ python3 tools/asset_generation/generate_full_inventory.py --check               
 
 ## Clean-room rules
 
-- Prompts are text only. No image, proprietary or otherwise, is ever passed to the model.
+- The only image ever passed to the model is the front view it generated for the same
+  character, which conditions that character's side and back views. No outside image,
+  proprietary or otherwise, is ever an input.
 - Descriptions are written for this project. They never name or describe an engine,
   product, franchise, artist or existing asset.
-- `tests/test_full_inventory_generation.py` enforces the first two mechanically: every
-  job must have an authored brief and no prompt may name an engine or vendor.
+- `tests/test_full_inventory_generation.py` enforces these mechanically: every
+  job must have an authored brief, no prompt may name an engine or vendor, and a view may
+  only reference its own character's front view.

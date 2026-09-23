@@ -265,7 +265,7 @@ def generate(spec, entries):
         "generation_spec": os.path.relpath(spec["_path"], REPO_ROOT),
         "generation_spec_sha256": sha256_file(spec["_path"]),
         "license": spec["license"],
-        "status": "candidate-not-active",
+        "status": "generated",   # released only by tools/release/package_release.py after the runtime gate
         "clean_room_attestation": spec["clean_room_attestation"],
         "visual_direction_sha256": spec.get("visual_direction", {}).get("sha256"),
         "art_direction_sha256": spec.get("art_direction", {}).get("sha256"),
@@ -297,7 +297,7 @@ def generate(spec, entries):
         "ffmpeg_version": manifest["ffmpeg_version"],
         "manifest_sha256": sha256_file(os.path.join(root, "manifest.json")),
         "path_count": len(manifest_entries),
-        "status": "candidate-not-active",
+        "status": "generated",   # released only by tools/release/package_release.py after the runtime gate
     }
     write_json(os.path.join(root, "provenance.json"), provenance)
     print(f"Generated {len(manifest_entries)} exact compatibility paths across {len(counts)} packs")
