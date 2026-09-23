@@ -19,14 +19,14 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
 sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
 
-from build_target import (
+from transforms import (
     extract_walking_frames,
     pack_wolf_character,
     transform_canonical_to_wolf_character,
-    build_target,
     pack_rmvx_character_sheet,
     pack_rmvxace_character_sheet
 )
+from build_target import build_target
 from validate_target import validate_target, validate_png_wolf_character
 from png_utils import decode_png_rgb, decode_png_rgba, create_rgba_png
 from schema_validator import validate_schema

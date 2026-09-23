@@ -33,9 +33,9 @@ sys.path.insert(0, REPO_ROOT)
 sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
 
 from png_utils import create_rgba_png, decode_png_rgb
-from build_target import (
-    build_target,
-    compute_sha256,
+from build_target import build_target
+from repo import sha256_file as compute_sha256
+from transforms import (
     extract_walking_frames,
     pack_rmxp_character,
     transform_canonical_to_rmxp_character
