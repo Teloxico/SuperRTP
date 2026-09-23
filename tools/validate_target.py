@@ -1,977 +1,398 @@
 #!/usr/bin/env python3
 """
-Deterministic Validator for SuperRTP Targets.
+Deterministic validator for generated SuperRTP target packs.
 
-Mechanically verifies that generated target packs conform to strict compatibility,
-provenance, and structural invariants without relying on assumptions.
+Checks, in order:
+  1. Registry records (slot mapping, asset metadata, provenance) conform to their schemas,
+     and alias lists are a disjoint union of upstream aliases and emitted case variants.
+  2. The manifest identifies the right target, and its entries are exactly the files the
+     registry declares (every primary slot and alias, nothing else, no stray files).
+  3. Each entry agrees with the registry (category, asset id, transform metadata) and its
+     file hash matches the manifest.
+  4. Each PNG meets its engine format spec (dimensions, color type, chunks, palette and
+     alpha rules) and its idle-column arrows point the way its row says.
+  5. Each file's pixels equal the deterministic transform of the canonical source, and the
+     source's provenance passes the clean-room rules.
 
-Validates:
-  1. JSON Schema conformance for slot mapping, asset metadata, and provenance records
-  2. File existence & PNG binary chunk structure (IHDR, PLTE, IDAT, IEND)
-  3. Resolution (288x256 for RM2000 CharSet)
-  4. Color model (8-bit indexed colormap, Color Type 3, <= 256 palette entries)
-  5. Transparency semantics (Palette index 0 transparent; tRNS checked if present)
-  6. Geometric frame divisibility (72x128 character slot, 24x32 frame cell)
-  7. Provenance completeness (matching SHA-256, CC0-1.0, clean-room attestation)
-  8. Test-only designation verification
+Engine rules are documented with sources in docs/engine-facts.md.
 
 Usage:
   python3 tools/validate_target.py --target rm2000 [--target-dir generated/rm2000]
 """
 
-import os
-import sys
-import json
-import struct
-import zlib
-import hashlib
 import argparse
+import os
+import struct
+import sys
+from dataclasses import dataclass
 
-REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from build_target import load_canonical_source, transform_slot
+from png_utils import COLOR_TYPE_INDEXED, COLOR_TYPE_RGBA, PngFormatError, parse_png_chunks, read_png
+from registry import find_asset, find_provenance, list_targets, load_schema, load_slot_mapping, verify_provenance
+from repo import REPO_ROOT, load_json, resolve_within, sha256_file
 from schema_validator import validate_schema
 
-PNG_SIGNATURE = b'\x89PNG\r\n\x1a\n'
+# ---------------------------------------------------------------------------
+# PNG format specifications
+# ---------------------------------------------------------------------------
 
-def parse_png_chunks(data):
-    """Parses PNG chunks and returns a dictionary of chunk lists."""
-    if not data.startswith(PNG_SIGNATURE):
-        raise ValueError("Invalid PNG: missing or incorrect PNG signature")
+@dataclass(frozen=True)
+class PngSpec:
+    label: str               # used in messages, e.g. "XP Character"
+    width: int
+    height: int
+    color_type: int
+    forbidden_chunks: tuple = ()
 
-    offset = 8
-    chunks = []
-    data_len = len(data)
 
-    while offset < data_len:
-        if offset + 8 > data_len:
-            raise ValueError("Corrupt PNG: truncated chunk header")
-        length, chunk_type = struct.unpack('>I4s', data[offset:offset+8])
-        chunk_type = chunk_type.decode('ascii', errors='replace')
-        offset += 8
+CHARSET_SPEC = PngSpec("CharSet", 288, 256, COLOR_TYPE_INDEXED)
+CHIPSET_SPEC = PngSpec("ChipSet", 480, 256, COLOR_TYPE_INDEXED)
+RMXP_SPEC = PngSpec("XP Character", 96, 128, COLOR_TYPE_RGBA, ("PLTE",))
+VX_SPEC = PngSpec("VX Character", 288, 256, COLOR_TYPE_RGBA, ("PLTE",))
+VXACE_SPEC = PngSpec("VX Ace Character", 288, 256, COLOR_TYPE_RGBA, ("PLTE",))
+WOLF_SPEC = PngSpec("WOLF Character", 72, 128, COLOR_TYPE_RGBA, ("PLTE", "tRNS"))
 
-        if offset + length + 4 > data_len:
-            raise ValueError(f"Corrupt PNG: chunk {chunk_type} extends past EOF")
+_COLOR_TYPE_NAMES = {COLOR_TYPE_INDEXED: "3 (indexed-color)", COLOR_TYPE_RGBA: "6 (RGBA truecolor)"}
 
-        chunk_data = data[offset:offset+length]
-        offset += length
-        crc = struct.unpack('>I', data[offset:offset+4])[0]
-        offset += 4
 
-        # Verify CRC
-        expected_crc = zlib.crc32(chunk_type.encode('ascii') + chunk_data) & 0xffffffff
-        if crc != expected_crc:
-            raise ValueError(f"CRC mismatch in {chunk_type} chunk: expected {expected_crc}, got {crc}")
+def _read_checked(filepath: str, spec: PngSpec):
+    """Reads a PNG and enforces chunk structure, dimensions and color model for `spec`."""
+    with open(filepath, "rb") as f:
+        data = f.read()
+    chunks = parse_png_chunks(data)
+    chunk_types = [ctype for ctype, _ in chunks]
+    if not chunk_types or chunk_types[0] != "IHDR" or len(chunks[0][1]) != 13:
+        raise ValueError("PNG must start with IHDR chunk")
+    if chunk_types[-1] != "IEND":
+        raise ValueError("PNG must terminate with IEND chunk")
+    if "IDAT" not in chunk_types:
+        raise ValueError("Missing IDAT chunk")
+    for ctype in spec.forbidden_chunks:
+        if ctype in chunk_types:
+            raise ValueError(f"Unexpected {ctype} chunk: {spec.label} sheets must be truecolor RGBA with the alpha channel stored directly")
+    if spec.color_type == COLOR_TYPE_INDEXED and "PLTE" not in chunk_types:
+        raise ValueError(f"Missing required PLTE (Palette) chunk for indexed {spec.label}")
 
-        chunks.append((chunk_type, chunk_data))
+    # Header checks come before decoding so a wrong size reports as a size error.
+    width, height, _, color_type = struct.unpack(">IIBB", chunks[0][1][:10])
+    if (width, height) != (spec.width, spec.height):
+        raise ValueError(f"Invalid {spec.label} dimensions: expected {spec.width}x{spec.height}, got {width}x{height}")
+    if color_type != spec.color_type:
+        raise ValueError(f"Invalid color type: expected {_COLOR_TYPE_NAMES[spec.color_type]}, got {color_type}")
+    return read_png(data)
 
-    return chunks
+
+def _check_indexed_palette(image) -> dict:
+    """RM2000/2003: <= 256 colors; palette index 0 is the transparent color."""
+    if len(image.palette) > 256:
+        raise ValueError(f"Palette exceeds 256 colors: {len(image.palette)}")
+    has_trns = "tRNS" in image.chunk_types
+    if has_trns and image.trns and image.trns[0] != 0:
+        raise ValueError(f"Transparency index 0 in tRNS has non-zero alpha ({image.trns[0]})")
+    return {"num_colors": len(image.palette), "transparent_index": 0, "has_trns": has_trns}
+
+
+def _check_alpha_range(rgba: bytes, spec: PngSpec) -> None:
+    alphas = set(rgba[3::4])
+    if 0 not in alphas:
+        raise ValueError(f"Missing transparent pixels (alpha 0) in {spec.label} sheet")
+    if 255 not in alphas:
+        raise ValueError(f"Missing fully opaque pixels (alpha 255) in {spec.label} sheet")
+
+
+# Calibration arrow probes inside one 24x32 idle cell: direction -> (tip, notch, tip side, notch side).
+# The calibration sprite draws an opaque arrow tip and leaves a transparent notch opposite it.
+_ARROW_PROBES = {
+    "DOWN": ((11, 21), (11, 6), "center-bottom", "center-top"),
+    "LEFT": ((4, 13), (19, 13), "center-left", "center-right"),
+    "RIGHT": ((19, 13), (4, 13), "center-right", "center-left"),
+    "UP": ((11, 5), (11, 21), "center-top", "center-bottom"),
+}
+_TARGET_ROWS = ("DOWN", "LEFT", "RIGHT", "UP")  # XP, VX, VX Ace and WOLF row order
+
+
+def _check_idle_arrows(rgba: bytes, width: int, origin_x: int, origin_y: int, prefix: str = "") -> None:
+    """Checks that each row's idle cell (column 1) at the given origin shows its direction's arrow."""
+    idle_x = origin_x + 24
+    for row, direction in enumerate(_TARGET_ROWS):
+        (tx, ty), (nx, ny), tip_side, notch_side = _ARROW_PROBES[direction]
+        cell_y = origin_y + row * 32
+        tip_alpha = rgba[((cell_y + ty) * width + idle_x + tx) * 4 + 3]
+        notch_alpha = rgba[((cell_y + ny) * width + idle_x + nx) * 4 + 3]
+        if tip_alpha == 0:
+            raise ValueError(f"{prefix}Row {row} arrow orientation error: expected {direction} facing arrow tip at {tip_side}")
+        if notch_alpha != 0:
+            raise ValueError(f"{prefix}Row {row} arrow orientation error: expected {direction} facing arrow notch at {notch_side}")
+
 
 def validate_png_charset(filepath):
-    """Validates RM2000 CharSet technical specifications."""
-    with open(filepath, "rb") as f:
-        data = f.read()
+    """RPG Maker 2000/2003 CharSet: 288x256 indexed, 4x2 characters of 3x4 24x32 cells."""
+    image = _read_checked(filepath, CHARSET_SPEC)
+    palette_info = _check_indexed_palette(image)
+    return {"width": image.width, "height": image.height, "bit_depth": image.bit_depth, "color_type": image.color_type,
+            **palette_info, "characters_grid": "4x2", "frame_cell": "24x32"}
 
-    chunks = parse_png_chunks(data)
-    chunk_types = [c[0] for c in chunks]
-
-    # Required chunks in order
-    if not chunk_types or chunk_types[0] != "IHDR":
-        raise ValueError("PNG must start with IHDR chunk")
-    if "PLTE" not in chunk_types:
-        raise ValueError("Missing required PLTE (Palette) chunk for indexed RM2000 CharSet")
-    if "IDAT" not in chunk_types:
-        raise ValueError("Missing IDAT chunk")
-    if chunk_types[-1] != "IEND":
-        raise ValueError("PNG must terminate with IEND chunk")
-
-    # Inspect IHDR
-    ihdr_data = next(c[1] for c in chunks if c[0] == "IHDR")
-    width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
-
-    if width != 288 or height != 256:
-        raise ValueError(f"Invalid CharSet dimensions: expected 288x256, got {width}x{height}")
-    if bit_depth != 8:
-        raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
-    if color_type != 3:
-        raise ValueError(f"Invalid color type: expected 3 (indexed-color), got {color_type}")
-    if compression != 0 or filter_method != 0 or interlace != 0:
-        raise ValueError("Unsupported compression/filter/interlace method")
-
-    # Inspect PLTE (Palette index 0 is the engine compatibility transparent color)
-    plte_data = next(c[1] for c in chunks if c[0] == "PLTE")
-    if len(plte_data) % 3 != 0:
-        raise ValueError(f"PLTE data length ({len(plte_data)}) is not a multiple of 3")
-    num_colors = len(plte_data) // 3
-    if num_colors > 256:
-        raise ValueError(f"Palette exceeds 256 colors: {num_colors}")
-
-    # Inspect tRNS if present (modern viewer enhancement, optional for original RM2000 engine)
-    has_trns = "tRNS" in chunk_types
-    if has_trns:
-        trns_data = next(c[1] for c in chunks if c[0] == "tRNS")
-        if len(trns_data) > 0 and trns_data[0] != 0:
-            raise ValueError(f"Transparency index 0 in tRNS has non-zero alpha ({trns_data[0]})")
-
-    # Check grid divisibility
-    char_w, char_h = width // 4, height // 2
-    if char_w != 72 or char_h != 128:
-        raise ValueError(f"Invalid character grid: expected 72x128, got {char_w}x{char_h}")
-    frame_w, frame_h = char_w // 3, char_h // 4
-    if frame_w != 24 or frame_h != 32:
-        raise ValueError(f"Invalid frame cell: expected 24x32, got {frame_w}x{frame_h}")
-
-    return {
-        "width": width,
-        "height": height,
-        "bit_depth": bit_depth,
-        "color_type": color_type,
-        "num_colors": num_colors,
-        "transparent_index": 0,
-        "has_trns": has_trns,
-        "characters_grid": "4x2",
-        "frame_cell": f"{frame_w}x{frame_h}"
-    }
 
 def validate_png_chipset(filepath):
-    """Validates RM2000/RM2003 ChipSet technical specifications."""
-    with open(filepath, "rb") as f:
-        data = f.read()
+    """RPG Maker 2000/2003 ChipSet: 480x256 indexed, 30x16 tiles of 16x16."""
+    image = _read_checked(filepath, CHIPSET_SPEC)
+    palette_info = _check_indexed_palette(image)
+    return {"width": image.width, "height": image.height, "bit_depth": image.bit_depth, "color_type": image.color_type,
+            **palette_info, "tile_grid": "30x16", "tile_size": "16x16"}
 
-    chunks = parse_png_chunks(data)
-    chunk_types = [c[0] for c in chunks]
-
-    # Required chunks in order
-    if not chunk_types or chunk_types[0] != "IHDR":
-        raise ValueError("PNG must start with IHDR chunk")
-    if "PLTE" not in chunk_types:
-        raise ValueError("Missing required PLTE (Palette) chunk for indexed ChipSet")
-    if "IDAT" not in chunk_types:
-        raise ValueError("Missing IDAT chunk")
-    if chunk_types[-1] != "IEND":
-        raise ValueError("PNG must terminate with IEND chunk")
-
-    # Inspect IHDR
-    ihdr_data = next(c[1] for c in chunks if c[0] == "IHDR")
-    width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
-
-    if width != 480 or height != 256:
-        raise ValueError(f"Invalid ChipSet dimensions: expected 480x256, got {width}x{height}")
-    if bit_depth != 8:
-        raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
-    if color_type != 3:
-        raise ValueError(f"Invalid color type: expected 3 (indexed-color), got {color_type}")
-    if compression != 0 or filter_method != 0 or interlace != 0:
-        raise ValueError("Unsupported compression/filter/interlace method")
-
-    # Inspect PLTE (Palette index 0 is the engine compatibility transparent color)
-    plte_data = next(c[1] for c in chunks if c[0] == "PLTE")
-    if len(plte_data) % 3 != 0:
-        raise ValueError(f"PLTE data length ({len(plte_data)}) is not a multiple of 3")
-    num_colors = len(plte_data) // 3
-    if num_colors > 256:
-        raise ValueError(f"Palette exceeds 256 colors: {num_colors}")
-
-    # Inspect tRNS if present
-    has_trns = "tRNS" in chunk_types
-    if has_trns:
-        trns_data = next(c[1] for c in chunks if c[0] == "tRNS")
-        if len(trns_data) > 0 and trns_data[0] != 0:
-            raise ValueError(f"Transparency index 0 in tRNS has non-zero alpha ({trns_data[0]})")
-
-    # Check tile divisibility (30 columns x 16 rows of 16x16 tiles)
-    cols = width // 16
-    rows = height // 16
-    if cols != 30 or rows != 16:
-        raise ValueError(f"Invalid tile grid: expected 30x16 tiles (16x16), got {cols}x{rows}")
-
-    return {
-        "width": width,
-        "height": height,
-        "bit_depth": bit_depth,
-        "color_type": color_type,
-        "num_colors": num_colors,
-        "transparent_index": 0,
-        "has_trns": has_trns,
-        "tile_grid": f"{cols}x{rows}",
-        "tile_size": "16x16"
-    }
 
 def validate_png_rmxp_character(filepath):
-    """Validates RPG Maker XP / RGSS1 Character technical specifications and calibration geometry."""
-    with open(filepath, "rb") as f:
-        data = f.read()
+    """RPG Maker XP character: 96x128 RGBA, 4x4 cells; column 3 repeats the idle column 1."""
+    image = _read_checked(filepath, RMXP_SPEC)
+    rgba = image.pixels
+    _check_alpha_range(rgba, RMXP_SPEC)
+    for y in range(image.height):
+        row = y * image.width * 4
+        if rgba[row + 24 * 4:row + 48 * 4] != rgba[row + 72 * 4:row + 96 * 4]:
+            raise ValueError(f"Column 3 (idle step) does not match Column 1 at row {y // 32}, local y {y % 32}")
+    _check_idle_arrows(rgba, image.width, 0, 0)
+    return {"width": image.width, "height": image.height, "bit_depth": image.bit_depth, "color_type": image.color_type,
+            "num_colors": "truecolor-rgba", "has_trns": False, "frame_cell": "24x32", "grid": "4x4",
+            "directions": list(_TARGET_ROWS)}
 
-    chunks = parse_png_chunks(data)
-    chunk_types = [c[0] for c in chunks]
-
-    # Required chunks in order
-    if not chunk_types or chunk_types[0] != "IHDR":
-        raise ValueError("PNG must start with IHDR chunk")
-    if "PLTE" in chunk_types:
-        raise ValueError("Unexpected PLTE (Palette) chunk: RPG Maker XP character sheets must be truecolor RGBA")
-    if "IDAT" not in chunk_types:
-        raise ValueError("Missing IDAT chunk")
-    if chunk_types[-1] != "IEND":
-        raise ValueError("PNG must terminate with IEND chunk")
-
-    # Inspect IHDR
-    ihdr_data = next(c[1] for c in chunks if c[0] == "IHDR")
-    width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
-
-    if width != 96 or height != 128:
-        raise ValueError(f"Invalid XP Character dimensions: expected 96x128, got {width}x{height}")
-    if bit_depth != 8:
-        raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
-    if color_type != 6:
-        raise ValueError(f"Invalid color type: expected 6 (RGBA truecolor), got {color_type}")
-    if compression != 0 or filter_method != 0 or interlace != 0:
-        raise ValueError("Unsupported compression/filter/interlace method")
-
-    # Decompress IDAT and reconstruct 32-bit RGBA pixel grid
-    idat_data = b''.join(c[1] for c in chunks if c[0] == "IDAT")
-    raw = bytearray(zlib.decompress(idat_data))
-    bpp = 4
-    stride = 1 + width * bpp
-    if len(raw) != height * stride:
-        raise ValueError(f"Decompressed IDAT size mismatch: expected {height * stride}, got {len(raw)}")
-
-    recon = bytearray(width * height * bpp)
-    prior = bytearray(width * bpp)
-
-    for y in range(height):
-        filter_type = raw[y * stride]
-        filt = raw[y * stride + 1 : (y + 1) * stride]
-        line = bytearray(width * bpp)
-
-        if filter_type == 0:
-            line[:] = filt
-        elif filter_type == 1:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                line[x] = (filt[x] + a) & 0xff
-        elif filter_type == 2:
-            for x in range(width * bpp):
-                line[x] = (filt[x] + prior[x]) & 0xff
-        elif filter_type == 3:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                line[x] = (filt[x] + ((a + prior[x]) >> 1)) & 0xff
-        elif filter_type == 4:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                b = prior[x]
-                c = prior[x - bpp] if x >= bpp else 0
-                p = a + b - c
-                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
-                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
-                line[x] = (filt[x] + pr) & 0xff
-        else:
-            raise ValueError(f"Unknown PNG filter type {filter_type}")
-
-        prior[:] = line
-        recon[y * width * bpp : (y + 1) * width * bpp] = line
-
-    def get_pixel(x, y):
-        idx = (y * width + x) * 4
-        return (recon[idx], recon[idx + 1], recon[idx + 2], recon[idx + 3])
-
-    # Check alpha distribution
-    alphas = set(recon[3::4])
-    if 0 not in alphas:
-        raise ValueError("Missing transparent pixels (alpha 0) in XP character sheet")
-    if 255 not in alphas:
-        raise ValueError("Missing fully opaque pixels (alpha 255) in XP character sheet")
-
-    # Check Column 3 duplication (Col 3 == Col 1 for all rows)
-    for row in range(4):
-        for py in range(32):
-            y = row * 32 + py
-            for px in range(24):
-                col1_px = get_pixel(24 + px, y)
-                col3_px = get_pixel(72 + px, y)
-                if col1_px != col3_px:
-                    raise ValueError(f"Column 3 (idle step) does not match Column 1 at row {row}, local ({px},{py})")
-
-    # Check directional arrow orientation on Idle column (Col 1, x=24..47) for all 4 rows:
-    # Row 0: DOWN, Row 1: LEFT, Row 2: RIGHT, Row 3: UP
-    r0_tip = get_pixel(24 + 11, 0 * 32 + 21)
-    r0_notch = get_pixel(24 + 11, 0 * 32 + 6)
-    if r0_tip[3] == 0:
-        raise ValueError("Row 0 arrow orientation error: expected DOWN facing arrow tip at center-bottom")
-    if r0_notch[3] != 0:
-        raise ValueError("Row 0 arrow orientation error: expected DOWN facing arrow notch at center-top")
-
-    r3_tip = get_pixel(24 + 11, 3 * 32 + 5)
-    r3_notch = get_pixel(24 + 11, 3 * 32 + 21)
-    if r3_tip[3] == 0:
-        raise ValueError("Row 3 arrow orientation error: expected UP facing arrow tip at center-top")
-    if r3_notch[3] != 0:
-        raise ValueError("Row 3 arrow orientation error: expected UP facing arrow notch at center-bottom")
-
-    r1_tip = get_pixel(24 + 4, 1 * 32 + 13)
-    r1_notch = get_pixel(24 + 19, 1 * 32 + 13)
-    if r1_tip[3] == 0:
-        raise ValueError("Row 1 arrow orientation error: expected LEFT facing arrow tip at center-left")
-    if r1_notch[3] != 0:
-        raise ValueError("Row 1 arrow orientation error: expected LEFT facing arrow notch at center-right")
-
-    r2_tip = get_pixel(24 + 19, 2 * 32 + 13)
-    r2_notch = get_pixel(24 + 4, 2 * 32 + 13)
-    if r2_tip[3] == 0:
-        raise ValueError("Row 2 arrow orientation error: expected RIGHT facing arrow tip at center-right")
-    if r2_notch[3] != 0:
-        raise ValueError("Row 2 arrow orientation error: expected RIGHT facing arrow notch at center-left")
-
-    return {
-        "width": width,
-        "height": height,
-        "bit_depth": bit_depth,
-        "color_type": color_type,
-        "num_colors": "truecolor-rgba",
-        "has_trns": False,
-        "frame_cell": "24x32",
-        "grid": "4x4",
-        "directions": ["DOWN", "LEFT", "RIGHT", "UP"]
-    }
 
 def validate_png_vx_family_character(filepath, engine_name="VX"):
-    """Validates VX-family (RPG Maker VX / VX Ace) standard 8-character sheet technical specifications and calibration geometry."""
-    with open(filepath, "rb") as f:
-        data = f.read()
-
-    chunks = parse_png_chunks(data)
-    chunk_types = [c[0] for c in chunks]
-
-    # Required chunks in order
-    if not chunk_types or chunk_types[0] != "IHDR":
-        raise ValueError("PNG must start with IHDR chunk")
-    if "PLTE" in chunk_types:
-        raise ValueError(f"Unexpected PLTE (Palette) chunk: RPG Maker {engine_name} character sheets must be truecolor RGBA")
-    if "IDAT" not in chunk_types:
-        raise ValueError("Missing IDAT chunk")
-    if chunk_types[-1] != "IEND":
-        raise ValueError("PNG must terminate with IEND chunk")
-
-    # Inspect IHDR
-    ihdr_data = next(c[1] for c in chunks if c[0] == "IHDR")
-    width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
-
-    if width != 288 or height != 256:
-        raise ValueError(f"Invalid {engine_name} Character dimensions: expected 288x256, got {width}x{height}")
-    if bit_depth != 8:
-        raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
-    if color_type != 6:
-        raise ValueError(f"Invalid color type: expected 6 (RGBA truecolor), got {color_type}")
-    if compression != 0 or filter_method != 0 or interlace != 0:
-        raise ValueError("Unsupported compression/filter/interlace method")
-
-    # Decompress IDAT and reconstruct 32-bit RGBA pixel grid
-    idat_data = b''.join(c[1] for c in chunks if c[0] == "IDAT")
-    raw = bytearray(zlib.decompress(idat_data))
-    bpp = 4
-    stride = 1 + width * bpp
-    if len(raw) != height * stride:
-        raise ValueError(f"Decompressed IDAT size mismatch: expected {height * stride}, got {len(raw)}")
-
-    recon = bytearray(width * height * bpp)
-    prior = bytearray(width * bpp)
-
-    for y in range(height):
-        filter_type = raw[y * stride]
-        filt = raw[y * stride + 1 : (y + 1) * stride]
-        line = bytearray(width * bpp)
-
-        if filter_type == 0:
-            line[:] = filt
-        elif filter_type == 1:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                line[x] = (filt[x] + a) & 0xff
-        elif filter_type == 2:
-            for x in range(width * bpp):
-                line[x] = (filt[x] + prior[x]) & 0xff
-        elif filter_type == 3:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                line[x] = (filt[x] + ((a + prior[x]) >> 1)) & 0xff
-        elif filter_type == 4:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                b = prior[x]
-                c = prior[x - bpp] if x >= bpp else 0
-                p = a + b - c
-                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
-                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
-                line[x] = (filt[x] + pr) & 0xff
-        else:
-            raise ValueError(f"Unknown PNG filter type {filter_type}")
-
-        prior[:] = line
-        recon[y * width * bpp : (y + 1) * width * bpp] = line
-
-    def get_pixel(x, y):
-        idx = (y * width + x) * 4
-        return (recon[idx], recon[idx + 1], recon[idx + 2], recon[idx + 3])
-
-    # Check alpha distribution
-    alphas = set(recon[3::4])
-    if 0 not in alphas:
-        raise ValueError("Missing transparent pixels (alpha 0) in VX character sheet")
-    if 255 not in alphas:
-        raise ValueError("Missing fully opaque pixels (alpha 255) in VX character sheet")
-
-    # Check grid divisibility: 4x2 characters, each character 72x128 with 3 columns x 4 rows of 24x32
-    if width % 12 != 0 or height % 8 != 0:
-        raise ValueError(f"Dimensions {width}x{height} not divisible by 12x8 standard VX cells")
-
-    # Check directional arrow orientation on Idle column (Col 1 of each character block) for all 8 characters
+    """RPG Maker VX / VX Ace standard sheet: 288x256 RGBA, 4x2 characters of 3x4 24x32 cells."""
+    spec = VXACE_SPEC if engine_name == "VX Ace" else VX_SPEC
+    image = _read_checked(filepath, spec)
+    rgba = image.pixels
+    _check_alpha_range(rgba, spec)
     for char_idx in range(8):
-        char_x = (char_idx % 4) * 72
-        char_y = (char_idx // 4) * 128
-        idle_x = char_x + 24  # Col 1 (Idle column) starts at +24
+        _check_idle_arrows(rgba, image.width, (char_idx % 4) * 72, (char_idx // 4) * 128, prefix=f"Character {char_idx} ")
+    return {"width": image.width, "height": image.height, "bit_depth": image.bit_depth, "color_type": image.color_type,
+            "num_colors": "truecolor-rgba", "has_trns": False, "frame_cell": "24x32", "character_block": "72x128",
+            "grid": "4x2 characters (12x8 cells)", "directions": list(_TARGET_ROWS)}
 
-        # Row 0: DOWN (tip at bottom, notch at top)
-        r0_tip = get_pixel(idle_x + 11, char_y + 0 * 32 + 21)
-        r0_notch = get_pixel(idle_x + 11, char_y + 0 * 32 + 6)
-        if r0_tip[3] == 0:
-            raise ValueError(f"Character {char_idx} Row 0 arrow orientation error: expected DOWN facing arrow tip at center-bottom")
-        if r0_notch[3] != 0:
-            raise ValueError(f"Character {char_idx} Row 0 arrow orientation error: expected DOWN facing arrow notch at center-top")
-
-        # Row 1: LEFT (tip at left, notch at right)
-        r1_tip = get_pixel(idle_x + 4, char_y + 1 * 32 + 13)
-        r1_notch = get_pixel(idle_x + 19, char_y + 1 * 32 + 13)
-        if r1_tip[3] == 0:
-            raise ValueError(f"Character {char_idx} Row 1 arrow orientation error: expected LEFT facing arrow tip at center-left")
-        if r1_notch[3] != 0:
-            raise ValueError(f"Character {char_idx} Row 1 arrow orientation error: expected LEFT facing arrow notch at center-right")
-
-        # Row 2: RIGHT (tip at right, notch at left)
-        r2_tip = get_pixel(idle_x + 19, char_y + 2 * 32 + 13)
-        r2_notch = get_pixel(idle_x + 4, char_y + 2 * 32 + 13)
-        if r2_tip[3] == 0:
-            raise ValueError(f"Character {char_idx} Row 2 arrow orientation error: expected RIGHT facing arrow tip at center-right")
-        if r2_notch[3] != 0:
-            raise ValueError(f"Character {char_idx} Row 2 arrow orientation error: expected RIGHT facing arrow notch at center-left")
-
-        # Row 3: UP (tip at top, notch at bottom)
-        r3_tip = get_pixel(idle_x + 11, char_y + 3 * 32 + 5)
-        r3_notch = get_pixel(idle_x + 11, char_y + 3 * 32 + 21)
-        if r3_tip[3] == 0:
-            raise ValueError(f"Character {char_idx} Row 3 arrow orientation error: expected UP facing arrow tip at center-top")
-        if r3_notch[3] != 0:
-            raise ValueError(f"Character {char_idx} Row 3 arrow orientation error: expected UP facing arrow notch at center-bottom")
-
-    return {
-        "width": width,
-        "height": height,
-        "bit_depth": bit_depth,
-        "color_type": color_type,
-        "num_colors": "truecolor-rgba",
-        "has_trns": False,
-        "frame_cell": "24x32",
-        "character_block": "72x128",
-        "grid": "4x2 characters (12x8 cells)",
-        "directions": ["DOWN", "LEFT", "RIGHT", "UP"]
-    }
 
 def validate_png_rmvx_character(filepath):
-    """Validates RPG Maker VX / RGSS2 standard 8-character sheet specifications."""
     return validate_png_vx_family_character(filepath, engine_name="VX")
 
+
 def validate_png_rmvxace_character(filepath):
-    """Validates RPG Maker VX Ace / RGSS3 standard 8-character sheet specifications."""
     return validate_png_vx_family_character(filepath, engine_name="VX Ace")
 
+
+# WOLF filename suffixes that switch CharaChip into a different layout (docs/engine-facts.md).
+WOLF_SPECIAL_SUFFIXES = ("T.png", "TX.png", "$.png")
+
+
 def validate_png_wolf_character(filepath):
-    """Validates WOLF RPG Editor v3 standard 3-pattern x 4-direction character chip specifications."""
+    """WOLF RPG Editor 3 CharaChip: 72x128 RGBA, 3 patterns x 4 directions, standard filename."""
     basename = os.path.basename(filepath)
-    if basename.endswith(("T.png", "TX.png", "$.png")):
+    if basename.endswith(WOLF_SPECIAL_SUFFIXES):
         raise ValueError(f"WOLF character filename '{basename}' invokes special filename mode (T, TX, or $); out of scope for standard CharaChip")
+    image = _read_checked(filepath, WOLF_SPEC)
+    rgba = image.pixels
+    _check_alpha_range(rgba, WOLF_SPEC)
+    _check_idle_arrows(rgba, image.width, 0, 0)
+    return {"width": image.width, "height": image.height, "bit_depth": image.bit_depth, "color_type": image.color_type,
+            "num_colors": "truecolor-rgba", "has_trns": False, "frame_cell": "24x32", "character_block": "72x128",
+            "grid": "1 character (3x4 cells)", "directions": list(_TARGET_ROWS),
+            "animation_patterns": ["STEP_LEFT", "IDLE", "STEP_RIGHT"], "cells_verified": 12}
 
-    with open(filepath, "rb") as f:
-        data = f.read()
 
-    chunks = parse_png_chunks(data)
-    chunk_types = [c[0] for c in chunks]
+# (target, lower-case category) -> PNG validator
+PNG_VALIDATORS = {
+    ("rm2000", "charset"): validate_png_charset,
+    ("rm2003", "charset"): validate_png_charset,
+    ("rm2000", "chipset"): validate_png_chipset,
+    ("rm2003", "chipset"): validate_png_chipset,
+    ("rmxp", "character"): validate_png_rmxp_character,
+    ("rmvx", "character"): validate_png_rmvx_character,
+    ("rmvxace", "character"): validate_png_rmvxace_character,
+    ("wolf", "character"): validate_png_wolf_character,
+}
 
-    # Required chunks in order
-    if not chunk_types or chunk_types[0] != "IHDR":
-        raise ValueError("PNG must start with IHDR chunk")
-    if "PLTE" in chunk_types:
-        raise ValueError("Unexpected PLTE (Palette) chunk: WOLF RPG Editor character chips must be truecolor RGBA")
-    if "tRNS" in chunk_types:
-        raise ValueError("Unexpected tRNS chunk: WOLF truecolor RGBA must carry alpha channel directly")
-    if "IDAT" not in chunk_types:
-        raise ValueError("Missing IDAT chunk")
-    if chunk_types[-1] != "IEND":
-        raise ValueError("PNG must terminate with IEND chunk")
+# ---------------------------------------------------------------------------
+# Registry and pack validation
+# ---------------------------------------------------------------------------
 
-    # Inspect IHDR
-    ihdr_data = next(c[1] for c in chunks if c[0] == "IHDR")
-    width, height, bit_depth, color_type, compression, filter_method, interlace = struct.unpack('>IIBBBBB', ihdr_data)
+TRANSFORM_METADATA_FIELDS = ("character_index", "source_character_indices", "direction_mode",
+                             "animation_patterns", "runtime_reference", "transform_policy")
 
-    if width != 72 or height != 128:
-        raise ValueError(f"Invalid WOLF Character dimensions: expected 72x128, got {width}x{height}")
-    if bit_depth != 8:
-        raise ValueError(f"Invalid bit depth: expected 8, got {bit_depth}")
-    if color_type != 6:
-        raise ValueError(f"Invalid color type: expected 6 (RGBA truecolor), got {color_type}")
-    if compression != 0 or filter_method != 0 or interlace != 0:
-        raise ValueError("Unsupported compression/filter/interlace method")
-
-    # Decompress IDAT and reconstruct 32-bit RGBA pixel grid
-    idat_data = b''.join(c[1] for c in chunks if c[0] == "IDAT")
-    raw = bytearray(zlib.decompress(idat_data))
-    bpp = 4
-    stride = 1 + width * bpp
-    if len(raw) != height * stride:
-        raise ValueError(f"Decompressed IDAT size mismatch: expected {height * stride}, got {len(raw)}")
-
-    recon = bytearray(width * height * bpp)
-    prior = bytearray(width * bpp)
-
-    for y in range(height):
-        filter_type = raw[y * stride]
-        filt = raw[y * stride + 1 : (y + 1) * stride]
-        line = bytearray(width * bpp)
-
-        if filter_type == 0:
-            line[:] = filt
-        elif filter_type == 1:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                line[x] = (filt[x] + a) & 0xff
-        elif filter_type == 2:
-            for x in range(width * bpp):
-                line[x] = (filt[x] + prior[x]) & 0xff
-        elif filter_type == 3:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                line[x] = (filt[x] + ((a + prior[x]) >> 1)) & 0xff
-        elif filter_type == 4:
-            for x in range(width * bpp):
-                a = line[x - bpp] if x >= bpp else 0
-                b = prior[x]
-                c = prior[x - bpp] if x >= bpp else 0
-                p = a + b - c
-                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
-                pr = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
-                line[x] = (filt[x] + pr) & 0xff
-        else:
-            raise ValueError(f"Unknown PNG filter type {filter_type}")
-
-        prior[:] = line
-        recon[y * width * bpp : (y + 1) * width * bpp] = line
-
-    def get_pixel(x, y):
-        idx = (y * width + x) * 4
-        return (recon[idx], recon[idx + 1], recon[idx + 2], recon[idx + 3])
-
-    # Check alpha distribution
-    alphas = set(recon[3::4])
-    if 0 not in alphas:
-        raise ValueError("Missing transparent pixels (alpha 0) in WOLF character sheet")
-    if 255 not in alphas:
-        raise ValueError("Missing fully opaque pixels (alpha 255) in WOLF character sheet")
-
-    # Check directional arrow orientation on Idle column (Col 1: x = 24..47)
-    idle_x = 24
-    # Row 0: DOWN (tip at bottom (11, 21), notch at top (11, 6))
-    r0_tip = get_pixel(idle_x + 11, 0 * 32 + 21)
-    r0_notch = get_pixel(idle_x + 11, 0 * 32 + 6)
-    if r0_tip[3] == 0:
-        raise ValueError("Row 0 arrow orientation error: expected DOWN facing arrow tip at center-bottom")
-    if r0_notch[3] != 0:
-        raise ValueError("Row 0 arrow orientation error: expected DOWN facing arrow notch at center-top")
-
-    # Row 1: LEFT (tip at left (4, 13), notch at right (19, 13))
-    r1_tip = get_pixel(idle_x + 4, 1 * 32 + 13)
-    r1_notch = get_pixel(idle_x + 19, 1 * 32 + 13)
-    if r1_tip[3] == 0:
-        raise ValueError("Row 1 arrow orientation error: expected LEFT facing arrow tip at center-left")
-    if r1_notch[3] != 0:
-        raise ValueError("Row 1 arrow orientation error: expected LEFT facing arrow notch at center-right")
-
-    # Row 2: RIGHT (tip at right (19, 13), notch at left (4, 13))
-    r2_tip = get_pixel(idle_x + 19, 2 * 32 + 13)
-    r2_notch = get_pixel(idle_x + 4, 2 * 32 + 13)
-    if r2_tip[3] == 0:
-        raise ValueError("Row 2 arrow orientation error: expected RIGHT facing arrow tip at center-right")
-    if r2_notch[3] != 0:
-        raise ValueError("Row 2 arrow orientation error: expected RIGHT facing arrow notch at center-left")
-
-    # Row 3: UP (tip at top (11, 5), notch at bottom (11, 21))
-    r3_tip = get_pixel(idle_x + 11, 3 * 32 + 5)
-    r3_notch = get_pixel(idle_x + 11, 3 * 32 + 21)
-    if r3_tip[3] == 0:
-        raise ValueError("Row 3 arrow orientation error: expected UP facing arrow tip at center-top")
-    if r3_notch[3] != 0:
-        raise ValueError("Row 3 arrow orientation error: expected UP facing arrow notch at center-bottom")
-
-    # Validate all 12 cells against canonical semantic oracle if available
-    canonical_rgba_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character.rgba")
-    if os.path.exists(canonical_rgba_path):
-        from build_target import extract_walking_frames
-        with open(canonical_rgba_path, "rb") as cf:
-            canonical_rgba = cf.read()
-        semantic_frames = extract_walking_frames(canonical_rgba, char_idx=0)
-        wolf_row_order = ["DOWN", "LEFT", "RIGHT", "UP"]
-        wolf_col_phases = ["STEP_LEFT", "IDLE", "STEP_RIGHT"]
-
-        for row_idx, direction in enumerate(wolf_row_order):
-            for col_idx, phase in enumerate(wolf_col_phases):
-                expected_cell = semantic_frames[direction][phase]
-                cell_bytes = bytearray()
-                for py in range(32):
-                    start_off = ((row_idx * 32 + py) * 72 + col_idx * 24) * 4
-                    cell_bytes.extend(recon[start_off : start_off + 24 * 4])
-                if bytes(cell_bytes) != expected_cell:
-                    raise ValueError(f"Cell ({row_idx}, {col_idx}) [{direction}/{phase}] does not match canonical semantic oracle")
-
-    return {
-        "width": width,
-        "height": height,
-        "bit_depth": bit_depth,
-        "color_type": color_type,
-        "num_colors": "truecolor-rgba",
-        "has_trns": False,
-        "frame_cell": "24x32",
-        "character_block": "72x128",
-        "grid": "1 character (3x4 cells)",
-        "directions": ["DOWN", "LEFT", "RIGHT", "UP"],
-        "animation_patterns": ["STEP_LEFT", "IDLE", "STEP_RIGHT"],
-        "cells_verified": 12
-    }
 
 def validate_schemas(repo_root, target):
-    """Enforces JSON Schema validation on registry files."""
-    slots_path = os.path.join(repo_root, "registry", "slots", f"{target}.json")
-    slots_schema_path = os.path.join(repo_root, "schemas", "slot_mapping.schema.json")
-    with open(slots_path, "r", encoding="utf-8") as sf:
-        slots_data = json.load(sf)
-    with open(slots_schema_path, "r", encoding="utf-8") as ssf:
-        slots_schema = json.load(ssf)
-    validate_schema(slots_data, slots_schema, path=os.path.basename(slots_path))
+    """Schema-validates the slot mapping plus the asset and provenance record of every slot."""
+    slots_data = load_slot_mapping(target)
+    validate_schema(slots_data, load_schema("slot_mapping"), path=f"{target}.json")
+    asset_schema = load_schema("asset")
+    prov_schema = load_schema("provenance")
 
-    asset_schema_path = os.path.join(repo_root, "schemas", "asset.schema.json")
-    with open(asset_schema_path, "r", encoding="utf-8") as asf:
-        asset_schema = json.load(asf)
-
-    prov_schema_path = os.path.join(repo_root, "schemas", "provenance.schema.json")
-    with open(prov_schema_path, "r", encoding="utf-8") as psf:
-        prov_schema = json.load(psf)
-
-    for slot_key, slot_info in slots_data.get("slots", {}).items():
-        asset_id = slot_info["asset_id"]
-
-        # Validate alias taxonomy and disjoint union
+    for slot_key, slot_info in slots_data["slots"].items():
         aliases = slot_info.get("aliases", [])
         upstream = slot_info.get("upstream_aliases")
         case_vars = slot_info.get("emitted_case_variants")
         if upstream is not None or case_vars is not None:
-            up_set = set(upstream or [])
-            cv_set = set(case_vars or [])
-            alias_set = set(aliases)
+            up_set, cv_set = set(upstream or []), set(case_vars or [])
             if not up_set.isdisjoint(cv_set):
-                overlap = up_set & cv_set
-                raise ValueError(f"Slot '{slot_key}' has overlapping upstream and case variant aliases: {overlap}")
-            if up_set | cv_set != alias_set:
+                raise ValueError(f"Slot '{slot_key}' has overlapping upstream and case variant aliases: {up_set & cv_set}")
+            if up_set | cv_set != set(aliases):
                 raise ValueError(f"Slot '{slot_key}' aliases union mismatch: (upstream | case_variants) != aliases")
-        slot_path = slot_info.get("slot_path", slot_key)
-        if slot_path in aliases:
-            raise ValueError(f"Slot '{slot_key}' aliases must not include primary slot_path '{slot_path}'")
+        if slot_info["slot_path"] != slot_key:
+            raise ValueError(f"Slot key '{slot_key}' does not match its slot_path '{slot_info['slot_path']}'")
+        if slot_info["slot_path"] in aliases:
+            raise ValueError(f"Slot '{slot_key}' aliases must not include primary slot_path '{slot_info['slot_path']}'")
 
-        # Find and validate asset metadata against schema
-        asset_file = None
-        for fname in os.listdir(os.path.join(repo_root, "registry", "assets")):
-            if fname.endswith(".json"):
-                cand = os.path.join(repo_root, "registry", "assets", fname)
-                with open(cand, "r", encoding="utf-8") as cf:
-                    data = json.load(cf)
-                    if data.get("id") == asset_id:
-                        asset_file = cand
-                        validate_schema(data, asset_schema, path=fname)
-                        break
-        if not asset_file:
-            raise FileNotFoundError(f"Asset metadata for '{asset_id}' not found")
-
-        # Find and validate provenance against schema
-        prov_file = None
-        for fname in os.listdir(os.path.join(repo_root, "registry", "provenance")):
-            if fname.endswith(".json"):
-                cand = os.path.join(repo_root, "registry", "provenance", fname)
-                with open(cand, "r", encoding="utf-8") as cf:
-                    data = json.load(cf)
-                    if data.get("asset_id") == asset_id:
-                        prov_file = cand
-                        validate_schema(data, prov_schema, path=fname)
-                        break
-        if not prov_file:
-            raise FileNotFoundError(f"Provenance record for '{asset_id}' not found")
-
+        asset_path, asset = find_asset(slot_info["asset_id"])
+        validate_schema(asset, asset_schema, path=os.path.basename(asset_path))
+        prov_path, prov = find_provenance(slot_info["asset_id"])
+        validate_schema(prov, prov_schema, path=os.path.basename(prov_path))
     return True
 
-def validate_provenance(repo_root, asset_id, source_sha256):
-    """Validates that provenance records are complete and attest clean-room integrity."""
-    prov_file = None
-    for fname in os.listdir(os.path.join(repo_root, "registry", "provenance")):
-        if fname.endswith(".json"):
-            cand = os.path.join(repo_root, "registry", "provenance", fname)
-            with open(cand, "r", encoding="utf-8") as f:
-                data = json.load(f)
-                if data.get("asset_id") == asset_id:
-                    prov_file = cand
-                    break
-    if not prov_file:
-        raise FileNotFoundError(f"Provenance record for '{asset_id}' not found in registry/provenance/")
 
-    with open(prov_file, "r", encoding="utf-8") as pf:
-        prov = json.load(pf)
+def expected_pack_files(slots_data: dict) -> dict:
+    """Maps every file a pack must contain to (slot_info, primary_slot or None)."""
+    expected = {}
+    for slot_info in slots_data["slots"].values():
+        primary = slot_info["slot_path"]
+        expected[primary] = (slot_info, None)
+        for alias in slot_info.get("aliases", []):
+            if alias in expected:
+                raise ValueError(f"Pack path '{alias}' is declared by more than one slot")
+            expected[alias] = (slot_info, primary)
+    return expected
 
-    if prov.get("sha256") != source_sha256:
-        raise ValueError(f"Provenance hash mismatch: expected {prov.get('sha256')}, got {source_sha256}")
 
-    attestation = prov.get("clean_room_attestation", {})
-    if attestation.get("proprietary_rtp_derived") is not False:
-        raise ValueError("Provenance violation: proprietary_rtp_derived must be false")
-    if attestation.get("openrtp_derived") is not False:
-        raise ValueError("Provenance violation: openrtp_derived must be false")
+def _files_on_disk(target_dir: str) -> set:
+    found = set()
+    for root, _, files in os.walk(target_dir):
+        for name in files:
+            rel = os.path.relpath(os.path.join(root, name), target_dir).replace(os.sep, "/")
+            if rel != "manifest.json":
+                found.add(rel)
+    return found
 
-    # Source-type-aware validation and evidence checks
-    source_type = prov.get("source_type")
-    valid_source_types = {"project_synthetic", "externally_licensed", "ai_generated"}
-    if source_type not in valid_source_types:
-        raise ValueError(f"Invalid source_type: {source_type}. Must be one of {valid_source_types}")
 
-    license_str = prov.get("license")
-    permitted_licenses = {
-        "CC0-1.0", "CC-BY-4.0", "CC-BY-3.0", "CC-BY-SA-4.0",
-        "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "OFL-1.1", "Public Domain"
-    }
-    if license_str not in permitted_licenses:
-        raise ValueError(f"Provenance license violation: '{license_str}' is not an approved redistribution license: {permitted_licenses}")
+def _expected_rgba(target: str, slot_info: dict, cache: dict) -> bytes:
+    """RGBA of the deterministic transform for a slot, computed once per slot (aliases share it)."""
+    key = slot_info["slot_path"]
+    if key not in cache:
+        asset_meta, source = load_canonical_source(slot_info["asset_id"])
+        cache[key] = read_png(transform_slot(target, slot_info, asset_meta, source)).rgba_bytes()
+    return cache[key]
 
-    if source_type == "project_synthetic":
-        creation_tool = prov.get("creation_tool")
-        if not creation_tool or not isinstance(creation_tool, str):
-            raise ValueError("Provenance violation: source_type 'project_synthetic' requires non-empty 'creation_tool'")
-        if prov.get("test_only") and license_str != "CC0-1.0":
-            raise ValueError(f"Provenance violation: test_only synthetic asset must be CC0-1.0, got {license_str}")
 
-    elif source_type == "externally_licensed":
-        upstream = prov.get("upstream_source")
-        if not upstream or not isinstance(upstream, dict):
-            raise ValueError("Provenance violation: source_type 'externally_licensed' requires 'upstream_source' object")
-        for field in ["author", "url", "license_evidence"]:
-            if not upstream.get(field):
-                raise ValueError(f"Provenance violation: externally_licensed requires non-empty upstream_source.{field}")
+def _validate_entry(target, target_dir, entry, expected, primary_hashes, expected_cache):
+    """Validates one manifest entry; returns a list of failure messages (empty on success)."""
+    slot = entry.get("slot")
+    if slot not in expected:
+        return [f"Slot '{slot}' is not declared in the slot mapping registry"]
+    slot_info, primary = expected[slot]
 
-    elif source_type == "ai_generated":
-        gen_meta = prov.get("generation_metadata")
-        if not gen_meta or not isinstance(gen_meta, dict):
-            raise ValueError("Provenance violation: source_type 'ai_generated' requires 'generation_metadata' object")
-        for field in ["model", "provider", "prompt", "parameters", "date"]:
-            if not gen_meta.get(field):
-                raise ValueError(f"Provenance violation: ai_generated requires non-empty generation_metadata.{field}")
+    category = entry.get("category")
+    if not category:
+        return [f"Missing semantic category in manifest entry for {slot}"]
+    if category != slot_info["category"]:
+        return [f"Category mismatch for slot '{slot}': manifest has '{category}', registry has '{slot_info['category']}'"]
+    if entry.get("asset_id") != slot_info["asset_id"]:
+        return [f"Asset id mismatch for slot '{slot}': manifest has '{entry.get('asset_id')}', registry has '{slot_info['asset_id']}'"]
+    if entry.get("is_primary") != (primary is None) or entry.get("primary_slot") != primary:
+        return [f"Primary/alias designation mismatch for slot '{slot}'"]
+    for field in TRANSFORM_METADATA_FIELDS:
+        if slot_info.get(field) != entry.get(field):
+            return [f"Transformation metadata mismatch for slot '{slot}' field '{field}': manifest has {entry.get(field)!r}, registry has {slot_info.get(field)!r}"]
 
-    return prov
+    filepath = resolve_within(target_dir, slot)
+    if not os.path.exists(filepath):
+        return [f"File missing at {filepath}"]
+    actual = sha256_file(filepath)
+    if actual != entry.get("sha256"):
+        return [f"Hash mismatch in manifest! Expected {entry.get('sha256')}, got {actual}"]
+    if primary is not None and primary_hashes.get(primary) not in (None, actual):
+        return [f"Alias '{slot}' differs from its primary slot '{primary}'"]
+
+    try:
+        specs = PNG_VALIDATORS[(target, category.lower())](filepath)
+        print(f"  PASSED PNG specs: {specs['width']}x{specs['height']}, color type {specs['color_type']}")
+
+        if _expected_rgba(target, slot_info, expected_cache) != read_png(filepath).rgba_bytes():
+            raise ValueError("Pixels differ from the deterministic transform of the canonical source")
+        _, asset_meta = find_asset(slot_info["asset_id"])
+        prov = verify_provenance(slot_info["asset_id"], asset_meta["sha256"])
+        print(f"  PASSED Canonical source & provenance: License={prov['license']}, SourceType={prov['source_type']}")
+    except (ValueError, PngFormatError, OSError) as exc:
+        return [f"{type(exc).__name__}: {exc}"]
+    return []
+
 
 def validate_target(target, target_dir=None):
-    repo_root = REPO_ROOT
-    if target_dir is None:
-        target_dir = os.path.join(repo_root, "generated", target)
-    target_dir = os.path.abspath(target_dir)
-
+    """Validates one generated pack; prints a report and returns 0 on success, 1 on failure."""
+    target_dir = os.path.abspath(target_dir or os.path.join(REPO_ROOT, "generated", target))
     print(f"=== Validating SuperRTP Target '{target}' ===")
 
-    # Step 1: Enforce Schema Validation
-    print("Enforcing JSON Schema validation on registry metadata...")
     try:
-        validate_schemas(repo_root, target)
+        validate_schemas(REPO_ROOT, target)
         print("  PASSED: All registry metadata conforms to JSON schemas.")
-    except Exception as e:
-        print(f"  FAILED Schema validation: {e}")
+        slots_data = load_slot_mapping(target)
+        expected = expected_pack_files(slots_data)
+    except (ValueError, OSError) as exc:
+        print(f"  FAILED Registry validation: {exc}")
         return 1
-
-    # Load slot mapping registry to cross-check categories and declared slots
-    slots_path = os.path.join(repo_root, "registry", "slots", f"{target}.json")
-    if not os.path.exists(slots_path):
-        raise FileNotFoundError(f"Slot mapping not found: {slots_path}")
-    with open(slots_path, "r", encoding="utf-8") as sf:
-        slots_data = json.load(sf)
-
-    slot_lookup = {}
-    for slot_key, s_info in slots_data.get("slots", {}).items():
-        primary_path = s_info.get("slot_path", slot_key)
-        slot_lookup[primary_path] = s_info
-        for alias in s_info.get("aliases", []):
-            slot_lookup[alias] = s_info
 
     manifest_path = os.path.join(target_dir, "manifest.json")
     if not os.path.exists(manifest_path):
-        raise FileNotFoundError(f"Missing build manifest in target directory: {manifest_path}")
-
-    with open(manifest_path, "r", encoding="utf-8") as mf:
-        manifest = json.load(mf)
-
+        print(f"  FAILED: Missing build manifest in target directory: {manifest_path}")
+        return 1
+    manifest = load_json(manifest_path)
+    entries = manifest.get("entries", [])
     print(f"Directory: {target_dir}")
     print(f"Target Name: {manifest.get('target_name')}")
     print(f"Engine: {manifest.get('engine')}")
-    print(f"Reference Source: {manifest.get('reference_source')}")
-    print(f"Entries to validate: {len(manifest.get('entries', []))}")
+    print(f"Entries to validate: {len(entries)} (registry declares {len(expected)})")
 
-    all_passed = True
-    validated_count = 0
+    failures = []
+    for field in ("target", "engine", "target_name"):
+        want = target if field == "target" else slots_data.get(field)
+        if manifest.get(field) != want:
+            failures.append(f"Manifest {field} mismatch: expected '{want}', got '{manifest.get(field)}'")
 
-    # Top-level manifest identity validation against target and slot registry
-    manifest_target = manifest.get("target")
-    expected_target = slots_data.get("target", target)
-    if manifest_target != target or manifest_target != expected_target:
-        print(f"  FAILED: Target mismatch in manifest: expected '{target}', got '{manifest_target}'")
-        all_passed = False
+    manifest_slots = [e.get("slot") for e in entries]
+    duplicates = sorted({s for s in manifest_slots if manifest_slots.count(s) > 1})
+    if duplicates:
+        failures.append(f"Manifest lists slots more than once: {duplicates}")
+    missing = sorted(set(expected) - set(manifest_slots))
+    if missing:
+        failures.append(f"Manifest is missing registry-declared files: {missing}")
+    stray = sorted(_files_on_disk(target_dir) - set(expected))
+    if stray:
+        failures.append(f"Target directory contains files not declared by the registry: {stray}")
 
-    expected_engine = slots_data.get("engine")
-    manifest_engine = manifest.get("engine")
-    if expected_engine and manifest_engine != expected_engine:
-        print(f"  FAILED: Engine mismatch in manifest: expected '{expected_engine}', got '{manifest_engine}'")
-        all_passed = False
+    primary_hashes = {e.get("slot"): e.get("sha256") for e in entries if e.get("is_primary")}
+    validated = 0
+    expected_cache = {}
+    for entry in entries:
+        print(f"\nChecking [{entry.get('slot')}]...")
+        entry_failures = _validate_entry(target, target_dir, entry, expected, primary_hashes, expected_cache)
+        for msg in entry_failures:
+            print(f"  FAILED: {msg}")
+        failures.extend(entry_failures)
+        if not entry_failures:
+            validated += 1
 
-    expected_target_name = slots_data.get("target_name")
-    manifest_target_name = manifest.get("target_name")
-    if expected_target_name and manifest_target_name != expected_target_name:
-        print(f"  FAILED: Target name mismatch in manifest: expected '{expected_target_name}', got '{manifest_target_name}'")
-        all_passed = False
-
-    for entry in manifest.get("entries", []):
-        slot = entry["slot"]
-        asset_id = entry["asset_id"]
-        manifest_category = entry.get("category")
-        filepath = os.path.join(target_dir, slot)
-        print(f"\nChecking [{slot}]...")
-
-        if not manifest_category:
-            print(f"  FAILED: Missing semantic category in manifest entry for {slot}")
-            all_passed = False
-            continue
-
-        if slot not in slot_lookup:
-            print(f"  FAILED: Slot '{slot}' is not declared in slot mapping registry {slots_path}")
-            all_passed = False
-            continue
-
-        registry_category = slot_lookup[slot].get("category")
-        if manifest_category != registry_category:
-            print(f"  FAILED: Category mismatch for slot '{slot}': manifest has '{manifest_category}', registry has '{registry_category}'")
-            all_passed = False
-            continue
-
-        # Transformation metadata validation: cross-check with registry
-        transform_meta_fields = [
-            "character_index",
-            "source_character_indices",
-            "direction_mode",
-            "animation_patterns",
-            "runtime_reference",
-            "transform_policy"
-        ]
-        meta_mismatch = False
-        for field in transform_meta_fields:
-            reg_val = slot_lookup[slot].get(field)
-            man_val = entry.get(field)
-            if reg_val != man_val:
-                print(f"  FAILED: Transformation metadata mismatch for slot '{slot}' field '{field}': manifest has {man_val!r}, registry has {reg_val!r}")
-                all_passed = False
-                meta_mismatch = True
-                break
-        if meta_mismatch:
-            continue
-
-        if not os.path.exists(filepath):
-            print(f"  FAILED: File missing at {filepath}")
-            all_passed = False
-            continue
-
-        # Hash check
-        h = hashlib.sha256()
-        with open(filepath, "rb") as f:
-            h.update(f.read())
-        actual_sha256 = h.hexdigest()
-        if actual_sha256 != entry["sha256"]:
-            print(f"  FAILED: Hash mismatch in manifest! Expected {entry['sha256']}, got {actual_sha256}")
-            all_passed = False
-            continue
-
-        # PNG Specification check dispatched by verified semantic category
-        try:
-            cat_norm = manifest_category.lower()
-            if cat_norm == "chipset":
-                specs = validate_png_chipset(filepath)
-                spec_desc = f"{specs['width']}x{specs['height']}, {specs['num_colors']} colors, indexed-8, index 0 transparent (tRNS={specs['has_trns']})"
-            elif cat_norm == "charset":
-                specs = validate_png_charset(filepath)
-                spec_desc = f"{specs['width']}x{specs['height']}, {specs['num_colors']} colors, indexed-8, index 0 transparent (tRNS={specs['has_trns']})"
-            elif cat_norm == "character":
-                if target == "rmxp":
-                    specs = validate_png_rmxp_character(filepath)
-                    spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 4x4 frames (Down, Left, Right, Up)"
-                elif target in ("rmvx", "rmvxace"):
-                    engine_name = "VX Ace" if target == "rmvxace" else "VX"
-                    specs = validate_png_vx_family_character(filepath, engine_name=engine_name)
-                    spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 8 characters (4x2), 3x4 frames each (Down, Left, Right, Up)"
-                elif target == "wolf":
-                    specs = validate_png_wolf_character(filepath)
-                    spec_desc = f"{specs['width']}x{specs['height']}, truecolor RGBA (Type 6), 3x4 frames (Down, Left, Right, Up), 12 cells verified"
-                else:
-                    raise ValueError(f"Unsupported target '{target}' for character category")
-            else:
-                raise ValueError(f"Unknown or unsupported semantic category '{manifest_category}' for slot '{slot}'")
-            print(f"  PASSED PNG specs: {spec_desc}")
-        except Exception as e:
-            print(f"  FAILED PNG validation: {e}")
-            all_passed = False
-            continue
-
-        # Source Asset & Provenance check
-        try:
-            # Find source asset
-            source_meta = None
-            for fname in os.listdir(os.path.join(repo_root, "registry", "assets")):
-                if fname.endswith(".json"):
-                    cand = os.path.join(repo_root, "registry", "assets", fname)
-                    with open(cand, "r", encoding="utf-8") as cf:
-                        d = json.load(cf)
-                        if d.get("id") == asset_id:
-                            source_meta = d
-                            break
-            source_file = os.path.join(repo_root, source_meta["file"])
-            with open(source_file, "rb") as sf:
-                source_sha256 = hashlib.sha256(sf.read()).hexdigest()
-
-            prov = validate_provenance(repo_root, asset_id, source_sha256)
-            print(f"  PASSED Provenance: License={prov['license']}, CleanRoom=VERIFIED, SourceType={prov['source_type']}")
-        except Exception as e:
-            print(f"  FAILED Provenance validation: {e}")
-            all_passed = False
-            continue
-
-        validated_count += 1
-
-    print("\n" + "="*45)
-    if all_passed and validated_count > 0:
-        print(f"ALL CHECKS PASSED: {validated_count} target files verified successfully.")
-        return 0
-    else:
-        print(f"VALIDATION FAILED: {validated_count} passed out of {len(manifest.get('entries', []))}.")
+    print("\n" + "=" * 45)
+    if failures or validated == 0:
+        for msg in failures:
+            print(f"  FAILED: {msg}")
+        print(f"VALIDATION FAILED: {validated} passed out of {len(entries)}.")
         return 1
+    print(f"ALL CHECKS PASSED: {validated} target files verified successfully.")
+    return 0
+
 
 def main():
     parser = argparse.ArgumentParser(description="SuperRTP Target Validator")
-    parser.add_argument("--target", required=True, help="Target name (e.g. rm2000)")
+    parser.add_argument("--target", required=True, choices=list_targets(), help="Target name")
     parser.add_argument("--target-dir", default=None, help="Custom target directory")
     args = parser.parse_args()
-
     sys.exit(validate_target(args.target, args.target_dir))
+
 
 if __name__ == "__main__":
     main()

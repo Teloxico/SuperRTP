@@ -19,14 +19,14 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO_ROOT)
 sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
 
-from build_target import (
+from transforms import (
     extract_walking_frames,
     pack_vx_family_standard_character_sheet,
     pack_rmvx_character_sheet,
     pack_rmvxace_character_sheet,
     transform_canonical_to_rmvxace_character,
-    build_target
 )
+from build_target import build_target
 from validate_target import validate_target, validate_png_vx_family_character, validate_png_rmvxace_character
 from png_utils import decode_png_rgb, decode_png_rgba, create_rgba_png
 from verify_rmvx_runtime import verify_vx_family_screenshot, PINNED_MKXP_COMMIT, SLOT_THEMES

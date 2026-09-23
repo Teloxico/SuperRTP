@@ -36,8 +36,11 @@ sys.path.insert(0, os.path.join(REPO_ROOT, "tools"))
 
 from generate_calibration_charset import generate_calibration_charset
 from generate_calibration_chipset import generate_chipset as generate_calibration_chipset, WIDTH as CHIPSET_WIDTH, HEIGHT as CHIPSET_HEIGHT
-from build_target import build_target, compute_sha256, create_indexed_png as create_png
-from validate_target import validate_png_charset, validate_png_chipset, validate_provenance, validate_target
+from build_target import build_target
+from repo import sha256_file as compute_sha256
+from png_utils import create_indexed_png as create_png
+from validate_target import validate_png_charset, validate_png_chipset, validate_target
+from registry import verify_provenance
 from schema_validator import validate_schema, SchemaValidationError
 from generate_fixture_graphics import generate_minimal_chipset, generate_minimal_system, generate_minimal_charset
 from verify_runtime import verify_evidence_chain, run_replay_and_record, verify_directional_screenshot
@@ -135,7 +138,7 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
         """Verify clean-room attestations and source-type-aware validation."""
         rgba_path = os.path.join(REPO_ROOT, "registry", "assets", "test_calibration_walking_character.rgba")
         sha256 = compute_sha256(rgba_path)
-        prov = validate_provenance(REPO_ROOT, "test.calibration.walking-character", sha256)
+        prov = verify_provenance("test.calibration.walking-character", sha256)
 
         self.assertEqual(prov["source_type"], "project_synthetic")
         self.assertTrue(prov.get("creation_tool"))
@@ -700,7 +703,7 @@ class TestSuperRTPVerticalSlice(unittest.TestCase):
             asset_schema = json.load(asf)
         validate_schema(meta, asset_schema)
 
-        prov = validate_provenance(REPO_ROOT, "test.calibration.map-chipset", compute_sha256(rgba_path))
+        prov = verify_provenance("test.calibration.map-chipset", compute_sha256(rgba_path))
         self.assertEqual(prov["source_type"], "project_synthetic")
         self.assertEqual(prov["license"], "CC0-1.0")
 
