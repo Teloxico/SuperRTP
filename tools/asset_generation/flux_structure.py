@@ -39,9 +39,10 @@ from asset_generation import flux_jobs  # noqa: E402
 from asset_generation import generate_full_inventory as inventory  # noqa: E402
 from asset_generation.flux_worker import FLUX_DIR, _atomic_write, concept_paths, is_done  # noqa: E402
 
-ALGORITHM_VERSION = 1
+ALGORITHM_VERSION = 2
 STRUCTURED_DIR = os.path.join(FLUX_DIR, "structured")
 KEY_MARGIN = 50              # how far the key channels must exceed the others for a pixel to count as backdrop
+BACKDROP_DISTANCE = 45       # RGB distance to the measured backdrop colour for enclosed backdrop pixels
 RM2K_LAYOUT = transforms.SheetLayout("rm2k_8", transforms.CANONICAL_ROWS, transforms.CANONICAL_COLUMNS, 4, 2)
 VX_SINGLE_LAYOUT = transforms.SheetLayout("vx_single", ("DOWN", "LEFT", "RIGHT", "UP"), ("STEP_LEFT", "IDLE", "STEP_RIGHT"))
 
@@ -60,7 +61,8 @@ def _key_dominant(rgb: np.ndarray, key_rgb) -> np.ndarray:
     r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
     if tuple(key_rgb) == (0, 255, 0):
         return (g > r + KEY_MARGIN) & (g > b + KEY_MARGIN)
-    return (r > g + KEY_MARGIN) & (b > g + KEY_MARGIN) & (np.abs(r - b) < 90)
+    # FLUX often paints the requested #FF00FF as a hot pink such as (250, 15, 150).
+    return (r > g + KEY_MARGIN) & (b > g + KEY_MARGIN) & (np.abs(r - b) < 120)
 
 
 def key_out(img: np.ndarray, key_rgb) -> np.ndarray:
@@ -71,8 +73,13 @@ def key_out(img: np.ndarray, key_rgb) -> np.ndarray:
     border = np.unique(np.concatenate([labels[0], labels[-1], labels[:, 0], labels[:, -1]]))
     background = np.isin(labels, border[border > 0])
     # Backdrop seen through enclosed gaps (between fingers, inside a coiled tail) is not
-    # connected to the border; nearly pure key colour is removed wherever it appears.
+    # connected to the border. It is removed where it is nearly the requested key colour or
+    # nearly the backdrop colour FLUX actually painted (measured on the border region, since
+    # it drifts from the requested key, e.g. (58, 246, 20) for #00FF00).
     background |= np.sqrt(((rgb - np.array(key_rgb)) ** 2).sum(axis=2)) < 60
+    if background.any():
+        painted = np.median(rgb[background], axis=0)
+        background |= near & (np.sqrt(((rgb - painted) ** 2).sum(axis=2)) < BACKDROP_DISTANCE)
     out = img.copy()
     out[background] = 0
     edge = ndimage.binary_dilation(background, iterations=3) & ~background
