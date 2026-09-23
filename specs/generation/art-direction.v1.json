@@ -5,6 +5,7 @@
     "Original art direction for every FLUX.2-generated SuperRTP visual, written for this project.",
     "Prompts follow Black Forest Labs' FLUX.2 guidance (docs.bfl.ai/guides/prompting_guide_flux2): subject first, then pose, style, setting and light; 30-80 words; positive descriptions only, because FLUX.2 has no negative prompts; hex colours tied to specific things.",
     "Descriptions depict generic, folkloric or invented archetypes in our own words. They never describe, name or imitate an existing product, franchise, artist or asset; filename words are only a starting point.",
+    "Characters and objects are drawn one view per image. The side and back views take the front view generated for the same character as their only image input (a project-generated image, never outside art), which keeps the three views one design.",
     "Edit freely: the worker re-plans and regenerates any job whose prompt text changes."
   ],
   "style": {
@@ -34,8 +35,6 @@
   "families": {
     "creature": "{description}. One original fantasy monster shown full body in a three-quarter view facing left, poised to fight, the whole body visible with space around it. {sprite}. {background}.",
     "hero": "{description}. One original adventurer shown full body in side view facing left, weight forward in a ready battle stance, gear clearly readable. Heroic proportions about five heads tall. {sprite}. {background}.",
-    "turnaround": "Character model sheet of {description}: the same character drawn three times in one row with wide empty gaps between them, facing the viewer on the left, in profile facing left in the middle, and seen from behind on the right. Cute chibi proportions about two and a half heads tall, standing upright, arms relaxed. {sprite}. {background}.",
-    "object-turnaround": "Model sheet of {description}: the same object drawn three times in one row with wide empty gaps between them, seen from the front on the left, from the left side in the middle and from behind on the right, in a gentle three-quarter overhead view. {sprite}. {background}.",
     "face": "Head-and-shoulders portrait of {description}, facing the viewer with {expression}, the head filling most of the frame. {portrait}. {background}.",
     "scene": "{description}. A wide establishing view composed as a game backdrop, the land empty of people, with a clear horizon and an open middle ground. {scene}.",
     "overlay": "{description}, arranged as an ornamental border that hugs the four edges of the picture while the whole centre stays solid black #000000. {scene}.",
@@ -44,7 +43,13 @@
     "effect": "{description}. One burst of the effect centred in the frame, radiant and saturated with bright highlights, {black}. Bold stylised 16-bit pixel art spell effect.",
     "icon": "{description}. One single item drawn large and centred as an inventory icon, bold silhouette, bright clean colours. {sprite}. {background}.",
     "tileset": "{material} of {description}: a seamless tileable texture seen from directly above, filling the whole frame evenly. {texture}.",
-    "terrain": "{description}: a seamless tileable ground texture seen from directly above, filling the whole frame evenly. {texture}."
+    "terrain": "{description}: a seamless tileable ground texture seen from directly above, filling the whole frame evenly. {texture}.",
+    "view-front": "Full-body game sprite of {description}, standing upright and facing straight toward the viewer in a symmetrical front view, head, body and feet pointing directly at the camera, both eyes, both arms and both feet visible, arms relaxed at the sides. Cute chibi proportions about two and a half heads tall, the whole figure centred with space around it. {sprite}. {background}.",
+    "view-side": "The same character as in the reference image, redrawn in exact side profile facing left: nose, chest and toes point to the left edge of the image, only one eye visible, standing upright, arms relaxed. Identical outfit, colours, hair and proportions. {sprite}. {background}.",
+    "view-back": "The same character as in the reference image, redrawn seen from directly behind: the back of the head and the back of the outfit face the viewer, the face is not visible, standing upright, arms relaxed. Identical outfit, colours, hair and proportions. {sprite}. {background}.",
+    "object-front": "Game sprite of {description}, seen straight from the front in a symmetrical view with a gentle overhead angle, the whole object centred with space around it. {sprite}. {background}.",
+    "object-side": "The same object as in the reference image, redrawn seen from its left side with the same gentle overhead angle. Identical shape, materials and colours. {sprite}. {background}.",
+    "object-back": "The same object as in the reference image, redrawn seen from behind with the same gentle overhead angle. Identical shape, materials and colours. {sprite}. {background}."
   },
   "face_expressions": [
     "a calm, friendly expression",

@@ -15,9 +15,10 @@ writes .cache/flux/structured/<creative_id>/<family>-<w>x<h>.rgba (raw RGBA) plu
 full-inventory generator then encodes these instead of procedural art and records the
 source of every entry in its manifest.
 
-Known limits, recorded in docs/asset-generation.md: walking steps are synthesised from
-one standing view per direction (a small leg offset), the right-facing view mirrors the
-left one, battle poses are transforms of one sprite, and tile sheets fill each cell with
+Characters come as three concepts (front, side facing left, back; see flux_jobs.VIEWS),
+checked by view_check when generated. Known limits, recorded in docs/asset-generation.md:
+walking steps are synthesised from one standing view per direction (a small leg offset),
+the right-facing view mirrors the left one, battle poses are transforms of one sprite, and tile sheets fill each cell with
 generated material textures rather than hand-designed tile semantics.
 """
 
@@ -39,7 +40,7 @@ from asset_generation import flux_jobs  # noqa: E402
 from asset_generation import generate_full_inventory as inventory  # noqa: E402
 from asset_generation.flux_worker import FLUX_DIR, _atomic_write, concept_paths, is_done  # noqa: E402
 
-ALGORITHM_VERSION = 2
+ALGORITHM_VERSION = 3
 STRUCTURED_DIR = os.path.join(FLUX_DIR, "structured")
 KEY_MARGIN = 50              # how far the key channels must exceed the others for a pixel to count as backdrop
 BACKDROP_DISTANCE = 45       # RGB distance to the measured backdrop colour for enclosed backdrop pixels
@@ -144,21 +145,40 @@ def cover(img: np.ndarray, w: int, h: int) -> np.ndarray:
     return np.array(Image.fromarray(img).resize((w, h), Image.Resampling.LANCZOS))
 
 
-def split_views(img: np.ndarray, count: int = 3) -> tuple:
-    """Splits a keyed turnaround into `count` views by empty columns; falls back to equal thirds."""
-    occupied = (img[..., 3] > 0).any(axis=0)
-    runs, start = [], None
-    for x, on in enumerate(list(occupied) + [False]):
-        if on and start is None:
-            start = x
-        elif not on and start is not None:
-            runs.append((start, x))
-            start = None
-    runs = sorted(sorted(runs, key=lambda r: r[1] - r[0], reverse=True)[:count])
-    if len(runs) == count and min(r[1] - r[0] for r in runs) > img.shape[1] // 20:
-        return [crop_to_content(img[:, a:b]) for a, b in runs], "column-gaps"
-    width = img.shape[1] // count
-    return [crop_to_content(img[:, i * width:(i + 1) * width]) for i in range(count)], "equal-thirds"
+# view_check thresholds, calibrated on generated views: true front and back views score
+# silhouette >= 0.94 and colour >= 0.8, three-quarter "fronts" mostly well below.
+FRONT_MIN_SILHOUETTE = 0.9
+FRONT_MIN_COLOUR = 0.8
+SIDE_MARGIN = 0.05           # a side view must be this much less symmetric than its front
+
+
+def symmetry(view: np.ndarray) -> dict:
+    """Mirror symmetry of a keyed, cropped view at 48 px wide: silhouette IoU with its mirror image,
+    and 1 - mean colour difference to the mirror where both overlap."""
+    small = resize(view, 48, max(1, round(48 * view.shape[0] / view.shape[1])))
+    mask = small[..., 3] > 0
+    mirror = mask[:, ::-1]
+    both = mask & mirror
+    rgb = small[..., :3].astype(np.int32)
+    colour = 1 - np.abs(rgb - rgb[:, ::-1])[both].mean() / 255 if both.any() else 0.0
+    return {"silhouette": round(float(both.sum() / max(1, (mask | mirror).sum())), 4), "colour": round(float(colour), 4)}
+
+
+def view_check(image, key_rgb, view: str, kind: str, front_scores: dict = None) -> dict:
+    """Whether a generated turnaround view shows what it should. Front and back views of characters
+    must be mirror-symmetric (facing the camera or facing away); a side view must be clearly less
+    symmetric than its front. Objects only need a subject that survives keying."""
+    keyed = crop_to_content(key_out(np.array(image.convert("RGBA")), key_rgb))
+    scores = symmetry(keyed)
+    if kind == "object":
+        return {"passed": True, "scores": scores, "quality": 1.0, "rule": "object: subject present"}
+    if view in ("front", "back"):
+        passed = scores["silhouette"] >= FRONT_MIN_SILHOUETTE and scores["colour"] >= FRONT_MIN_COLOUR
+        return {"passed": passed, "scores": scores, "quality": scores["silhouette"] * scores["colour"],
+                "rule": f"silhouette >= {FRONT_MIN_SILHOUETTE} and colour >= {FRONT_MIN_COLOUR}"}
+    limit = min(FRONT_MIN_SILHOUETTE, (front_scores or {}).get("silhouette", 1.0) - SIDE_MARGIN)
+    return {"passed": scores["silhouette"] <= limit, "scores": scores, "quality": 1 - scores["silhouette"],
+            "rule": f"silhouette <= {round(limit, 4)} (front minus {SIDE_MARGIN})"}
 
 
 def step_frame(frame: np.ndarray, side: str, profile: bool) -> np.ndarray:
@@ -183,9 +203,9 @@ def step_frame(frame: np.ndarray, side: str, profile: bool) -> np.ndarray:
     return out
 
 
-def walking_frames(concept: np.ndarray, frame_w: int, frame_h: int) -> tuple:
-    """frames[direction][phase] for one character from a keyed front/left/back turnaround."""
-    (front, left, back), method = split_views(concept)
+def walking_frames(front: np.ndarray, left: np.ndarray, back: np.ndarray, frame_w: int, frame_h: int) -> dict:
+    """frames[direction][phase] for one character from its keyed front, left-facing and back views."""
+    front, left, back = (crop_to_content(v) for v in (front, left, back))
     views = {"DOWN": front, "LEFT": left, "RIGHT": left[:, ::-1], "UP": back}
     frames = {}
     for direction, view in views.items():
@@ -193,7 +213,7 @@ def walking_frames(concept: np.ndarray, frame_w: int, frame_h: int) -> tuple:
         profile = direction in ("LEFT", "RIGHT")
         frames[direction] = {"IDLE": idle, "STEP_LEFT": step_frame(idle, "STEP_LEFT", profile),
                              "STEP_RIGHT": step_frame(idle, "STEP_RIGHT", profile)}
-    return frames, method
+    return frames
 
 
 def to_bytes_frames(frames: dict) -> dict:
@@ -241,12 +261,11 @@ def build(family: str, width: int, height: int, jobs: list) -> tuple:
                   "charset-xp": transforms.RMXP_LAYOUT, "charset-vx-single": VX_SINGLE_LAYOUT}[family]
         frame_w = width // (layout.characters_across * len(layout.columns))
         frame_h = height // (layout.characters_down * len(layout.rows))
-        characters, methods = [], []
-        for concept in concepts:
-            frames, method = walking_frames(concept, frame_w, frame_h)
-            characters.append(to_bytes_frames(frames))
-            methods.append(method)
-        notes["view_split"] = methods
+        characters = []
+        for i in range(0, len(concepts), len(flux_jobs.VIEWS)):   # jobs come as front, side, back per character
+            front, side, back = concepts[i:i + len(flux_jobs.VIEWS)]
+            characters.append(to_bytes_frames(walking_frames(front, side, back, frame_w, frame_h)))
+        notes["views"] = list(flux_jobs.VIEWS)
         out = np.frombuffer(transforms.pack_sheet_rgba(characters, layout, frame_w, frame_h), np.uint8).reshape(height, width, 4)
     elif family == "battle-character":
         size = width // 3
