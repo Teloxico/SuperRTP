@@ -46,8 +46,8 @@ proprietary RTP content**, and nothing in it is derived from one.
 - **Slots:** only the calibration filename slots are mapped to assets. The exhaustive
   upstream filename inventories now exist, but they are planning inputs rather than
   fake mappings to replacements that have not been created.
-- **Audio:** music and sound are procedural placeholders. Candidate open audio models
-  are listed in [docs/asset-generation.md](docs/asset-generation.md).
+- **Audio:** not generated. The 2,738 inventoried music and sound paths are listed as a
+  backlog in the pack manifest.
 - **Known issue:** see [docs/known-issues.md](docs/known-issues.md).
 
 ## How it works

@@ -1,7 +1,8 @@
 # Asset generation
 
 How SuperRTP produces replacement art for the whole filename inventory
-(`registry/upstream-assets/`, 5,672 compatibility paths across the six engines).
+(`registry/upstream-assets/`: 2,934 image paths across the six engines; the 2,738 audio
+paths are inventoried but not generated).
 The tooling lives in `tools/asset_generation/` (see its README for commands).
 
 ## Model: FLUX.2 [klein] 4B
@@ -82,29 +83,5 @@ image is `flux2-klein-4b` or `procedural`.
 - **Tile sheets:** cells are filled with generated material textures. They are not
   hand-designed tile layouts with engine semantics (edges, autotile transitions,
   passability art). Autotiles only get a darker rim.
-- **Audio:** all audio is still procedural.
-
-## Audio: candidate models (researched 2026-09-23, not yet installed)
-
-The inventory needs MIDI music (`.mid` for RM2000/2003 and some XP/VX BGM), rendered
-music loops (`.ogg`/`.wav` BGM, BGS, ME) and several hundred short sound effects. The
-weights must allow redistributing their outputs, and training-data provenance matters
-under legal/CLEAN_ROOM_POLICY.md.
-
-| Use | Candidate | License | Fit for this PC | Notes |
-|---|---|---|---|---|
-| Music (BGM, BGS, ME) | **ACE-Step 1.5** (`ACE-Step/Ace-Step1.5`, turbo DiT + 0.6B/1.7B planner LM) | MIT | Card states under 4 GB VRAM | Card states commercial use of output is allowed and training data is licensed, royalty-free or synthetic. Strongest provenance of the music models checked |
-| Sound effects | **Ming-omni-tts-0.5B** (`inclusionAI/Ming-omni-tts-0.5B`) | Apache-2.0 | 0.5B, fits easily | Unified speech, sound and music model; SFX quality not yet evaluated |
-| Sound effects (higher quality) | MOSS-SoundEffect (`OpenMOSS-Team/MOSS-SoundEffect`) | Apache-2.0 | 8.4B parameters, needs 4-bit to fit 8 GB (unverified) | Dedicated SFX model with duration control |
-| Sound effects, alternative | MiDashengLM-Gen (`mispeech/midashenglm-gen`) | Apache-2.0 | ~6 GB checkpoint; upstream quotes ~12 GB fp32 | 16 kHz output |
-| MIDI | text2midi (`amaai-lab/text2midi`) | Apache-2.0 | small | Text-conditioned. **Trained on MidiCaps (Lakh MIDI), which contains copyrighted songs.** Treat as a legal question before use |
-| MIDI, alternative | skytnt/midi-model | Apache-2.0 | 233M | Not text-conditioned; trained on the Los Angeles MIDI Dataset (same provenance question) |
-
-Excluded:
-- **Non-commercial weights:** MusicGen and AudioGen (CC-BY-NC), Omni2Sound (CC-BY-NC).
-- **Stability AI Community License:** Stable Audio Open (gated) and TangoFlux, which is
-  built on it.
-
-**Open question:** whether EasyRPG resolves a music slot by name across extensions,
-which would let rendered `.ogg` stand in for `.mid`. This is unverified and must be
-checked in `src/filefinder.cpp` before relying on it.
+- **Audio:** out of scope. The 2,738 inventoried audio paths are listed in the manifest's
+  `audio_not_generated` backlog and no audio file is written.

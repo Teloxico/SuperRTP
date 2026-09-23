@@ -1,8 +1,8 @@
 # Asset-generation pipeline
 
 Every inventoried visual is drawn by **FLUX.2 [klein] 4B** (Apache-2.0) from original
-art direction, then forced into the exact engine format by deterministic code. Audio
-and a few purely structural visuals stay procedural. Every manifest entry records
+art direction, then forced into the exact engine format by deterministic code. A few purely
+structural visuals stay procedural; audio is not generated. Every manifest entry records
 which source produced it. See [docs/asset-generation.md](../../docs/asset-generation.md)
 for the design, the model choice and known limits.
 

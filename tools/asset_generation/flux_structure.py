@@ -297,7 +297,7 @@ def build(family: str, width: int, height: int, jobs: list) -> tuple:
         cells = []
         for i in range(frames_across * (height // size)):
             t = (i + 1) / (frames_across * (height // size))
-            scale = 0.35 + 0.75 * min(1.0, t * 1.6)
+            scale = 0.35 + 0.65 * min(1.0, t * 1.6)   # grows to exactly the cell size, never beyond
             inner = max(4, round(size * scale))
             frame = np.zeros((size, size, 4), np.uint8)
             piece = fit(base, inner, inner, margin=0, anchor="center")

@@ -553,8 +553,9 @@ def _ico_from_png(png: bytes, width: int, height: int) -> bytes:
 def encode_visual(engine: str, path: str, policy: VisualPolicy, rgba_bytes: bytes, prequantized: bool = False) -> bytes:
     """`prequantized`: the RGBA already has binary alpha and at most 255 colours (structured FLUX assets)."""
     extension = os.path.splitext(path)[1].lower()
-    if policy.indexed and not prequantized:
-        rgba_bytes = _quantize(rgba_bytes, palette_for(semantic_stem(path)))
+    if policy.indexed:
+        if not prequantized:
+            rgba_bytes = _quantize(rgba_bytes, palette_for(semantic_stem(path)))
         png = transforms.transform_rgba_to_indexed_png(rgba_bytes, policy.width, policy.height)
     else:
         from png_utils import create_rgba_png

@@ -15,7 +15,6 @@ TOOLS_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if TOOLS_DIR not in sys.path:
     sys.path.insert(0, TOOLS_DIR)
 
-from asset_generation.procedural_audio import audio_policy, render_audio
 from asset_generation.procedural_common import semantic_stem
 from asset_generation.procedural_visuals import encode_visual, render_visual, visual_policy
 from png_utils import read_png
@@ -49,6 +48,25 @@ def load_spec(path=SPEC_PATH):
     return spec
 
 
+def _audio_family(path: str) -> str:
+    """BGM, BGS, ME or SE for an inventoried audio path. Audio is inventoried but not generated
+    (see AUDIO_NOT_GENERATED); the family is kept so the backlog stays classified."""
+    lower = path.lower()
+    if "/bgs/" in lower:
+        return "bgs"
+    if "/me/" in lower:
+        return "me"
+    if "/bgm/" in lower or lower.startswith("music/"):
+        return "bgm"
+    if "/se/" in lower or lower.startswith("sound/") or "systemfile/se_" in lower:
+        return "se"
+    raise ValueError(f"No audio family for {path}")
+
+
+AUDIO_NOT_GENERATED = ("Audio is out of scope for this generator: the inventoried BGM, BGS, ME and SE paths are "
+                       "listed as a backlog and no audio file is written.")
+
+
 def _category(engine: str, path: str) -> str:
     parts = path.split("/")
     if len(parts) == 1:
@@ -77,9 +95,8 @@ def _entry(engine: str, pack: str, locale: str, path: str, semantic_id: str | No
         details = {"width": policy.width, "height": policy.height, "indexed": policy.indexed}
         media = "visual"
     elif extension in AUDIO_EXTENSIONS:
-        policy = audio_policy(path)
-        family = policy.family
-        details = {"duration_seconds": policy.duration_seconds}
+        family = _audio_family(path)
+        details = {}
         media = "audio"
     else:
         raise ValueError(f"Unexpected creative extension in inventory: {path}")
@@ -175,7 +192,7 @@ def _render(entry, spec=None):
                 hashlib.sha256(json.dumps(sidecar, sort_keys=True).encode()).hexdigest()
         return encode_visual(entry["engine"], entry["path"], policy, render_visual(entry["engine"], entry["path"], policy)), \
             "procedural", None
-    return render_audio(entry["path"], entry["creative_id"], audio_policy(entry["path"])), "procedural", None
+    raise ValueError(f"Audio is not generated: {entry['pack']}:{entry['path']}")
 
 
 def _write_bytes(path: str, data: bytes):
@@ -199,6 +216,8 @@ def generate(spec, entries):
     manifest_entries = []
     rendered = {}
     sources = {}
+    audio_backlog = [entry for entry in entries if entry["media"] == "audio"]
+    entries = [entry for entry in entries if entry["media"] != "audio"]
     for index, entry in enumerate(entries, 1):
         relative = f"packs/{entry['pack']}/{entry['path']}"
         destination = resolve_within(root, relative)
@@ -253,6 +272,8 @@ def generate(spec, entries):
         "visual_source_counts": _source_counts(manifest_entries),
         "ffmpeg_version": _ffmpeg_version(),
         "path_count": len(manifest_entries),
+        "audio_not_generated": {"reason": AUDIO_NOT_GENERATED, "path_count": len(audio_backlog),
+                                "paths": sorted(f"{entry['pack']}:{entry['path']}" for entry in audio_backlog)},
         "pack_counts": dict(sorted(counts.items())),
         "unique_creative_ids": len({entry["creative_id"] for entry in manifest_entries}),
         "unique_content_hashes": len({entry["sha256"] for entry in manifest_entries}),
@@ -273,7 +294,6 @@ def generate(spec, entries):
         "visual_source_counts": _source_counts(manifest_entries),
         "generator": "tools/asset_generation/generate_full_inventory.py",
         "visual_generator": "tools/asset_generation/procedural_visuals.py",
-        "audio_generator": "tools/asset_generation/procedural_audio.py",
         "ffmpeg_version": manifest["ffmpeg_version"],
         "manifest_sha256": sha256_file(os.path.join(root, "manifest.json")),
         "path_count": len(manifest_entries),
@@ -341,6 +361,7 @@ def _check_media(entry, path):
 
 
 def verify(spec, plan):
+    plan = [entry for entry in plan if entry["media"] != "audio"]
     root = resolve_within(REPO_ROOT, spec["output_root"])
     manifest_path = os.path.join(root, "manifest.json")
     provenance_path = os.path.join(root, "provenance.json")

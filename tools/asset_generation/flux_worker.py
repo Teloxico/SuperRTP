@@ -80,18 +80,34 @@ def _atomic_write(path: str, data: bytes) -> None:
     os.replace(tmp, path)
 
 
-def load_pipeline():
+def is_compacted() -> bool:
+    """True once flux_compact_model.py has replaced the bf16 weights with verified NF4 weights."""
+    return all(os.path.isdir(os.path.join(MODEL_DIR, f"{name}-nf4")) for name in ("transformer", "text_encoder"))
+
+
+def load_pipeline(prequantized_dirs: dict = None):
+    """Loads the pipeline with the transformer and text encoder in 4-bit NF4: quantized on load from
+    the bf16 download, or read from saved NF4 weights (`prequantized_dirs`, or the compacted model)."""
     import torch
-    from diffusers import Flux2KleinPipeline, PipelineQuantizationConfig
+    from diffusers import Flux2KleinPipeline, Flux2Transformer2DModel, PipelineQuantizationConfig
+    from transformers import Qwen3ForCausalLM
 
     if not os.path.exists(os.path.join(MODEL_DIR, "model_index.json")):
         raise FileNotFoundError(f"Model not found at {MODEL_DIR}; run tools/asset_generation/setup_flux.sh")
-    quant = PipelineQuantizationConfig(
-        quant_backend="bitsandbytes_4bit",
-        quant_kwargs={"load_in_4bit": True, "bnb_4bit_quant_type": "nf4", "bnb_4bit_compute_dtype": torch.bfloat16},
-        components_to_quantize=["transformer", "text_encoder"],
-    )
-    pipe = Flux2KleinPipeline.from_pretrained(MODEL_DIR, torch_dtype=torch.bfloat16, quantization_config=quant)
+    if prequantized_dirs is None and is_compacted():
+        prequantized_dirs = {name: os.path.join(MODEL_DIR, f"{name}-nf4") for name in ("transformer", "text_encoder")}
+    if prequantized_dirs:
+        transformer = Flux2Transformer2DModel.from_pretrained(prequantized_dirs["transformer"], torch_dtype=torch.bfloat16)
+        text_encoder = Qwen3ForCausalLM.from_pretrained(prequantized_dirs["text_encoder"], dtype=torch.bfloat16)
+        pipe = Flux2KleinPipeline.from_pretrained(MODEL_DIR, transformer=transformer, text_encoder=text_encoder,
+                                                  torch_dtype=torch.bfloat16)
+    else:
+        quant = PipelineQuantizationConfig(
+            quant_backend="bitsandbytes_4bit",
+            quant_kwargs={"load_in_4bit": True, "bnb_4bit_quant_type": "nf4", "bnb_4bit_compute_dtype": torch.bfloat16},
+            components_to_quantize=["transformer", "text_encoder"],
+        )
+        pipe = Flux2KleinPipeline.from_pretrained(MODEL_DIR, torch_dtype=torch.bfloat16, quantization_config=quant)
     pipe.enable_model_cpu_offload()
     pipe.set_progress_bar_config(disable=True)
     return pipe
