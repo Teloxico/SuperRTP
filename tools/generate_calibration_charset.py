@@ -249,7 +249,7 @@ def main():
 
     meta = {
         "id": "test.calibration.walking-character",
-        "name": "2k-Family Calibration Walking Character Sprite Sheet (RM2000 / RM2003)",
+        "name": "Calibration Walking Character Sprite Sheet (canonical source for all six targets)",
         "description": "Synthetic clean-room geometric calibration sprite sheet for RPG Maker 2000 and 2003 CharSet verification",
         "type": "charset",
         "format": "image/x-rgba-raw; 32-bit",
