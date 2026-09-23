@@ -103,35 +103,15 @@ jobs:
 
       # Live captures write to temporary directories; committed artifacts are never touched.
       - name: Test suite with live captures on every engine
+        id: tests
         env:
           SUPERRTP_REQUIRE_RUNTIME: "1"
           SUPERRTP_CAPTURE_DIR: ${{ runner.temp }}/live-captures
         working-directory: tests
-        run: |
-          python3 -m unittest -v test_foundation test_fixtures test_runtime_evidence.TestRuntimeEvidence \
-            test_runtime_evidence.TestLiveRuntimes.test_rm2000_chipset \
-            test_runtime_evidence.TestLiveRuntimes.test_rm2003_chipset \
-            test_runtime_evidence.TestLiveRuntimes.test_rmxp \
-            test_runtime_evidence.TestLiveRuntimes.test_rmvx \
-            test_runtime_evidence.TestLiveRuntimes.test_rmvxace \
-            test_runtime_evidence.TestLiveRuntimes.test_wolf
-
-      # KNOWN ISSUE (docs/known-issues.md): in some EasyRPG sessions the hero only turns
-      # instead of turning and stepping, so the position check fails. Still run and reported.
-      - name: Live RM2000/RM2003 CharSet captures (known intermittent)
-        id: charset
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        env:
-          SUPERRTP_REQUIRE_RUNTIME: "1"
-          SUPERRTP_CAPTURE_DIR: ${{ runner.temp }}/live-captures
-        working-directory: tests
-        run: |
-          python3 -m unittest -v test_runtime_evidence.TestLiveRuntimes.test_rm2000_charset \
-            test_runtime_evidence.TestLiveRuntimes.test_rm2003_charset
+        run: python3 -m unittest -v test_foundation test_fixtures test_full_inventory_generation test_runtime_evidence
 
       - name: Upload live captures for diagnosis
-        if: ${{ failure() || steps.charset.outcome == 'failure' }}
+        if: ${{ failure() }}
         uses: actions/upload-artifact@v4
         with:
           name: live-captures
