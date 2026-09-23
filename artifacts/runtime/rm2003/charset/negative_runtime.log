@@ -1,26 +1,26 @@
-Debug: EasyRPG Player 0.8.1.1 (2025-06-02) started
-Debug: ===========================================
-Debug: CLI: --project-path tests/fixtures/rm2003_min --no-rtp --engine rpg2k3 --new-game --disable-audio --no-pause-focus-lost --fullscreen --no-log-color --seed 42 
-Debug: Clock: StdSteady steady=true period=ns (1 / 1000000000)
-Debug: Seeded the RNG with 42.
-Debug: SDL2: RendererInfo hw=true sw=false vsync=true
-Debug: SDL2: Detected format (0) SDL_PIXELFORMAT_ARGB8888 : rank=(2)
-Debug: SDL2: Detected format (1) SDL_PIXELFORMAT_ABGR8888 : rank=(2)
-Debug: SDL2: Selected Pixel Format SDL_PIXELFORMAT_ARGB8888
-Debug: Detected encoding: ibm-5348_P100-1997
-Debug: Game and Save Directory:
-Debug: 1: [Native]  -> tests/fixtures/rm2003_min
-Debug: Loading game SuperRTP_Fixture_2k3
-Debug: Game does not need RTP (FullPackageFlag=1)
-Debug: Cannot find RPG_RT
-Debug: Engine configured as: 2k=false 2k3=true MajorUpdated=false Eng=false
-Debug: RTP support is disabled.
-Debug: Patch configuration: None
-Debug: Cannot find: Font/Font
-Debug: Cannot find: Font/Font2
-Debug: Cannot find: Logo/LOGO1
-Debug: Resolution changed to 320x240
-Debug: Loaded Map Map0001.lmu
-Debug: Tree: Map0001
-Debug: Cannot find: CharSet/Hero1
-Warning: Image not found: CharSet/Hero1
+[2026-09-23 11:42:58] Debug: EasyRPG Player 0.8.1.1 (2025-06-02) started
+[2026-09-23 11:42:58] Debug: ===========================================
+[2026-09-23 11:42:58] Debug: CLI: --project-path <repo>/tests/fixtures/rm2003_min --no-rtp --engine rpg2k3 --new-game --disable-audio --no-pause-focus-lost --fullscreen --no-log-color --seed 42 --log-file <repo>/artifacts/runtime/rm2003/charset/negative_runtime.log 
+[2026-09-23 11:42:58] Debug: Clock: StdSteady steady=true period=ns (1 / 1000000000)
+[2026-09-23 11:42:58] Debug: Seeded the RNG with 42.
+[2026-09-23 11:42:58] Debug: SDL2: RendererInfo hw=true sw=false vsync=true
+[2026-09-23 11:42:58] Debug: SDL2: Detected format (0) SDL_PIXELFORMAT_ARGB8888 : rank=(2)
+[2026-09-23 11:42:58] Debug: SDL2: Detected format (1) SDL_PIXELFORMAT_ABGR8888 : rank=(2)
+[2026-09-23 11:42:58] Debug: SDL2: Selected Pixel Format SDL_PIXELFORMAT_ARGB8888
+[2026-09-23 11:42:58] Debug: Detected encoding: ibm-5348_P100-1997
+[2026-09-23 11:42:58] Debug: Game and Save Directory:
+[2026-09-23 11:42:58] Debug: 1: [Native]  -> <repo>/tests/fixtures/rm2003_min
+[2026-09-23 11:42:58] Debug: Loading game SuperRTP_Fixture_2k3
+[2026-09-23 11:42:58] Debug: Game does not need RTP (FullPackageFlag=1)
+[2026-09-23 11:42:58] Debug: Cannot find RPG_RT
+[2026-09-23 11:42:58] Debug: Engine configured as: 2k=false 2k3=true MajorUpdated=false Eng=false
+[2026-09-23 11:42:58] Debug: RTP support is disabled.
+[2026-09-23 11:42:58] Debug: Patch configuration: None
+[2026-09-23 11:42:58] Debug: Cannot find: Font/Font
+[2026-09-23 11:42:58] Debug: Cannot find: Font/Font2
+[2026-09-23 11:42:58] Debug: Cannot find: Logo/LOGO1
+[2026-09-23 11:42:59] Debug: Resolution changed to 320x240
+[2026-09-23 11:42:59] Debug: Loaded Map Map0001.lmu
+[2026-09-23 11:42:59] Debug: Tree: Map0001
+[2026-09-23 11:43:00] Debug: Cannot find: CharSet/Hero1
+[2026-09-23 11:43:00] Warning: Image not found: CharSet/Hero1

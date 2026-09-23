@@ -85,12 +85,6 @@ def asset_source_path(asset_meta: dict) -> str:
     return resolve_within(REPO_ROOT, asset_meta["file"])
 
 
-def read_asset_source(asset_id: str) -> bytes:
-    _, meta = find_asset(asset_id)
-    with open(asset_source_path(meta), "rb") as f:
-        return f.read()
-
-
 def load_schema(name: str) -> dict:
     """Loads schemas/<name>.schema.json (name: 'asset', 'provenance' or 'slot_mapping')."""
     return load_json(os.path.join(SCHEMAS_DIR, f"{name}.schema.json"))
@@ -112,14 +106,19 @@ _REQUIRED_BY_SOURCE_TYPE = {
 
 
 def verify_provenance(asset_id: str, source_sha256: str) -> dict:
+    """Loads the provenance record of `asset_id`, enforces the clean-room rules on it and returns it."""
+    _, prov = find_provenance(asset_id)
+    return check_provenance_record(prov, source_sha256)
+
+
+def check_provenance_record(prov: dict, source_sha256: str) -> dict:
     """
-    Enforces the clean-room provenance rules for one asset and returns its record.
+    Enforces the clean-room provenance rules on one record.
 
     The record must hash-match the canonical source, attest no proprietary-RTP or
     OpenRTP derivation, use a permitted license, and carry the evidence its source
     type requires. Test-only synthetic assets must be CC0-1.0.
     """
-    _, prov = find_provenance(asset_id)
     if prov.get("sha256") != source_sha256:
         raise ValueError(f"Provenance hash mismatch: expected {prov.get('sha256')}, got {source_sha256}")
 

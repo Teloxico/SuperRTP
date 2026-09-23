@@ -47,9 +47,10 @@ class SheetLayout:
                 self.characters_down * len(self.rows) * frame_h)
 
 
-# RPG Maker XP / RGSS1: 4x4 cells. Column 3 repeats IDLE to fill XP's 4-pattern cycle.
-# (docs/engine-facts.md records an open question about which column RGSS1 shows at rest.)
-RMXP_LAYOUT = SheetLayout("rmxp_4x4", ("DOWN", "LEFT", "RIGHT", "UP"), ("STEP_LEFT", "IDLE", "STEP_RIGHT", "IDLE"))
+# RPG Maker XP / RGSS1: 4x4 cells. RGSS1 shows pattern 0 at rest and walks 0,1,2,3, while
+# the 2k family rests on its middle frame and walks middle, right, middle, left. Putting IDLE
+# in columns 0 and 2 makes XP rest on IDLE and replay the same walk cycle (docs/engine-facts.md).
+RMXP_LAYOUT = SheetLayout("rmxp_4x4", ("DOWN", "LEFT", "RIGHT", "UP"), ("IDLE", "STEP_RIGHT", "IDLE", "STEP_LEFT"))
 
 # RPG Maker VX / VX Ace: standard 8-character sheet, 3 patterns x 4 directions each.
 VX_FAMILY_LAYOUT = SheetLayout("vx_standard_8", ("DOWN", "LEFT", "RIGHT", "UP"), ("STEP_LEFT", "IDLE", "STEP_RIGHT"), 4, 2)

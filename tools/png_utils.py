@@ -24,6 +24,7 @@ imports `deterministic_zlib_compress` and `make_png_chunk` from this module;
 those names and their behavior are part of this module's stable contract.
 """
 
+import os
 import struct
 import zlib
 from dataclasses import dataclass, field
@@ -222,8 +223,13 @@ def _unfilter(raw: bytes, width: int, height: int, bpp: int) -> bytes:
                 a = line[x - bpp]
                 b = prior[x]
                 c = prior[x - bpp]
-                p = a + b - c
-                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                # pa = |p - a| = |b - c|, pb = |p - b| = |a - c|, pc = |p - c| = |a + b - 2c|,
+                # written with comparisons because builtin abs() dominates decode time.
+                pa = b - c if b > c else c - b
+                pb = a - c if a > c else c - a
+                pc = a + b - c - c
+                if pc < 0:
+                    pc = -pc
                 pred = a if (pa <= pb and pa <= pc) else (b if pb <= pc else c)
                 line[x] = (line[x] + pred) & 0xFF
         else:
@@ -234,17 +240,34 @@ def _unfilter(raw: bytes, width: int, height: int, bpp: int) -> bytes:
     return bytes(out)
 
 
+# Decoded files keyed by (path, size, mtime_ns, inode). Verifiers re-inspect the same
+# screenshots many times (for example across tamper checks); decoding dominates their cost.
+_FILE_CACHE = {}
+_FILE_CACHE_LIMIT = 64
+
+
 def read_png(source) -> PngImage:
     """
     Decodes a PNG from a file path or raw bytes into a `PngImage`.
 
-    Raises `PngFormatError` for corrupt data or unsupported features.
+    Raises `PngFormatError` for corrupt data or unsupported features. Results for file
+    paths are cached until the file changes; treat the returned image as read-only.
     """
     if isinstance(source, (bytes, bytearray)):
-        data = bytes(source)
-    else:
+        return _decode(bytes(source))
+    st = os.stat(source)
+    key = (os.path.abspath(source), st.st_size, st.st_mtime_ns, st.st_ino)
+    image = _FILE_CACHE.get(key)
+    if image is None:
         with open(source, "rb") as f:
-            data = f.read()
+            image = _decode(f.read())
+        if len(_FILE_CACHE) >= _FILE_CACHE_LIMIT:
+            _FILE_CACHE.pop(next(iter(_FILE_CACHE)))
+        _FILE_CACHE[key] = image
+    return image
+
+
+def _decode(data: bytes) -> PngImage:
 
     chunks = parse_png_chunks(data)
     if not chunks or chunks[0][0] != "IHDR" or len(chunks[0][1]) != 13:

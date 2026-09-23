@@ -17,7 +17,7 @@ drawn); no script text is copied into this repository.
 |---|---|---|
 | RTP alias rows: 2k CharSet `主人公1 / actor1 / chara1`; 2k3 adds `hero1 / protagonist1 / 주인공1 / 主角1` | `registry/slots/rm2000.json`, `rm2003.json` | EasyRPG `src/rtp_table.cpp` lines 117 and 1247 at tag `0.8.1.1` |
 | RTP alias rows: 2k ChipSet `基本 / world / basis`; 2k3 `基本 / world / main / world / basic / 기본 / 基本` | same | `src/rtp_table.cpp` lines 323 and 1255 |
-| Paletted PNGs: only palette index 0 is transparent; every other index is drawn opaque (tRNS and alpha are ignored) | `transforms.rgba_to_indexed_png` rejects partially transparent source pixels | `src/image_png.cpp` `ReadPalettedData`, lines 137-168 |
+| Paletted PNGs: only palette index 0 is transparent; every other index is drawn opaque (tRNS and alpha are ignored) | `transforms.transform_rgba_to_indexed_png` rejects partially transparent source pixels | `src/image_png.cpp` `ReadPalettedData`, lines 137-168 |
 | Facing enum `Up=0, Right=1, Down=2, Left=3`; sprite row = facing | Canonical sheet row order `UP, RIGHT, DOWN, LEFT` | `src/game_character.h` line 905; `src/sprite_character.cpp` lines 40-43 |
 | Source column = animation frame; a stopped character resets to `Frame_middle` (column 1) | Canonical column 1 is `IDLE` | `src/sprite_character.cpp` line 43; `src/game_character.h` line 1227 (`SetAnimFrame(Frame_middle)`) |
 | `--log-file` opens the log in append mode (`std::ios_base::app`) | Runtime capture deletes the previous log before each run | `src/game_config.cpp` line 353 |
@@ -29,19 +29,20 @@ drawn); no script text is copied into this repository.
 | Config keys `rgssVersion`, `gameFolder`, `customScript`, `pathCache`, `RTP` (list of asset search paths) | Runtime harness `mkxp.json` generation | mkxp-z `mkxp.json` sample at the pinned commit |
 | With `workdir_current`, `gameFolder` resolves against the working directory | Harness launches mkxp-z from a temporary working directory | same file, header comment |
 | XP character sheet: 4x4 cells, rows down, left, right, up | RMXP transform row order | RPG Maker XP help, "Material Specifications" (mirror: rpg-maker.fr/dl/monos/aide/xp/source/rpgxp/material.html) |
-| XP draws column `pattern`; a stopped character uses pattern 0, walking cycles 0,1,2,3 | **Open issue**, see below | RGSS1 default `Sprite_Character` (`sx = pattern * width/4`) and `Game_Character 1` (`@original_pattern = 0`), as found in public project copies |
+| XP draws column `pattern`; a stopped character uses pattern 0, walking cycles 0,1,2,3 | RMXP column order `IDLE, STEP_RIGHT, IDLE, STEP_LEFT`, see below | RGSS1 default `Sprite_Character` (`sx = pattern * width/4`) and `Game_Character 1` (`@original_pattern = 0`), as found in public project copies |
 | VX / VX Ace sheet: 8 characters (4 across, 2 down), each 3 patterns x 4 directions (down, left, right, up) | VX-family transform | VX Ace help "Resource Specifications", as quoted on rpgmaker.net topic 11130 |
 | VX / VX Ace stopped pattern is 1 (middle column) | VX-family column order `STEP_LEFT, IDLE, STEP_RIGHT` | RGSS2/RGSS3 default `Game_CharacterBase` (`@original_pattern = 1`) |
 | `$` prefix = one character per file; `!` prefix = no 4-pixel offset, no bush translucency | Not implemented (out of scope) | VX Ace help "Resource Specifications" |
 
-### Open issue: RMXP stopped pose
+### RMXP column order (resolved 2026-09-23)
 
-The RMXP transform (`rm2k_to_rgss1_character_4x4`) writes columns
-`STEP_LEFT, IDLE, STEP_RIGHT, IDLE`. Because RGSS1 shows pattern 0 for a stopped
-character, a standing XP character shows the `STEP_LEFT` frame. A layout of
-`IDLE, STEP_LEFT, IDLE, STEP_RIGHT` (or an equivalent that puts `IDLE` in column 0)
-would match the engine. Changing it alters the RMXP target bytes and its runtime evidence,
-so it is tracked as a separate decision rather than folded into refactoring.
+RGSS1 shows pattern 0 for a stopped character and walks patterns 0, 1, 2, 3. The 2k family
+(EasyRPG `game_character.h` line 1220, liblcf `EventPage::Frame_*`) rests on `Frame_middle`
+and advances `left=0, middle=1, right=2, middle2=3` modulo 4, so from rest it plays
+IDLE, STEP_RIGHT, IDLE, STEP_LEFT. The RMXP transform therefore writes columns
+`IDLE, STEP_RIGHT, IDLE, STEP_LEFT` (policy `rm2k_to_rgss1_character_4x4_idle_first_v2`).
+The earlier layout `STEP_LEFT, IDLE, STEP_RIGHT, IDLE` made standing XP characters show a
+mid-stride frame.
 
 ## WOLF RPG Editor 3.717
 

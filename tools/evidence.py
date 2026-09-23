@@ -105,7 +105,8 @@ def check_log(artifacts_dir: str, evidence: dict, kind: str, required_text=()) -
     Verifies the `<kind>_runtime_log` hash (kind: 'positive' or 'negative') and that the
     log contains every string in `required_text`. Returns the log text.
     """
-    name = evidence.get(f"{kind}_runtime_log", f"{kind}_runtime.log")
+    name = f"{kind}_runtime.log"
+    require(evidence.get(f"{kind}_runtime_log") == name, f"{kind}_runtime_log must name '{name}', got {evidence.get(f'{kind}_runtime_log')!r}")
     path = os.path.join(artifacts_dir, name)
     check_file_hash(path, evidence.get(f"{kind}_runtime_log_sha256"), f"{kind.capitalize()} runtime log hash")
     text = read_text(path)

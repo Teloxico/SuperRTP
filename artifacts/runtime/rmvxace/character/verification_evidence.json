@@ -56,16 +56,13 @@
     "status": "VERIFIED",
     "mode": "positive",
     "screenshot_dimensions": "544x416",
-    "pad_corners": "VERIFIED",
     "composite_equality": "100% pixel match across 288x256 region",
-    "transparency_mechanics": "VERIFIED (alpha 0 exposes pad color 210,215,220)",
-    "all_8_character_blocks": "VERIFIED (4x2 grid, DOWN/LEFT/RIGHT/UP directions verified in all 8 blocks)"
+    "all_8_character_blocks": "VERIFIED (idle arrows DOWN/LEFT/RIGHT/UP in every block)"
   },
   "negative_visual_verification": {
     "status": "VERIFIED",
     "mode": "negative_control",
     "screenshot_dimensions": "544x416",
-    "pad_corners": "VERIFIED",
     "pad_blank": "VERIFIED"
   },
   "build_metadata": {
@@ -77,5 +74,5 @@
     "shared_fluid": false,
     "build_config_revision": "buildcfg2"
   },
-  "timestamp": "2026-09-15T06:28:37.739017+00:00"
+  "timestamp": "2026-09-23T05:22:32.950604+00:00"
 }

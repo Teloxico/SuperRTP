@@ -53,11 +53,11 @@
   "positive_exit_code": 0,
   "negative_exit_code": 1,
   "positive_runtime_log": "positive_runtime.log",
-  "positive_runtime_log_sha256": "9e7b127093610b2ba1ab92d41bd584c3f292299264afd7e259e9718ec86f69a4",
+  "positive_runtime_log_sha256": "4de0b93ce6bc69f7368235d3a65adbb264ee9429caa63ae88d0d6c6a943573fa",
   "negative_runtime_log": "negative_runtime.log",
-  "negative_runtime_log_sha256": "bf41cdf901eafd8295a7ed595208635d97cf121f90c54f1fd2206bcfbd1777a2",
+  "negative_runtime_log_sha256": "8519463ce76e8680e044adb6a909016631e59648f5163259e712c983a5da3df6",
   "mkxp_z_version": "2.4.2/826929e",
-  "recorded_at": "2026-09-15T05:39:38.368909+00:00",
+  "recorded_at": "2026-09-23T05:22:27.004950+00:00",
   "negative_control": {
     "status": "VERIFIED",
     "expected_missing_asset": "Graphics/Characters/Actor1",
@@ -74,16 +74,13 @@
       "status": "VERIFIED",
       "mode": "positive",
       "screenshot_dimensions": "544x416",
-      "pad_corners": "VERIFIED",
       "composite_equality": "100% pixel match across 288x256 region",
-      "transparency_mechanics": "VERIFIED (alpha 0 exposes pad color 210,215,220)",
-      "all_8_character_blocks": "VERIFIED (4x2 grid, DOWN/LEFT/RIGHT/UP directions verified in all 8 blocks)"
+      "all_8_character_blocks": "VERIFIED (idle arrows DOWN/LEFT/RIGHT/UP in every block)"
     },
     "negative_control": {
       "status": "VERIFIED",
       "mode": "negative_control",
       "screenshot_dimensions": "544x416",
-      "pad_corners": "VERIFIED",
       "pad_blank": "VERIFIED"
     }
   }

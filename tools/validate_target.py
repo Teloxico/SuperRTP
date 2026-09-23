@@ -33,6 +33,7 @@ from png_utils import COLOR_TYPE_INDEXED, COLOR_TYPE_RGBA, PngFormatError, parse
 from registry import find_asset, find_provenance, list_targets, load_schema, load_slot_mapping, verify_provenance
 from repo import REPO_ROOT, load_json, resolve_within, sha256_file
 from schema_validator import validate_schema
+from transforms import RMXP_LAYOUT
 
 # ---------------------------------------------------------------------------
 # PNG format specifications
@@ -113,9 +114,9 @@ _ARROW_PROBES = {
 _TARGET_ROWS = ("DOWN", "LEFT", "RIGHT", "UP")  # XP, VX, VX Ace and WOLF row order
 
 
-def _check_idle_arrows(rgba: bytes, width: int, origin_x: int, origin_y: int, prefix: str = "") -> None:
-    """Checks that each row's idle cell (column 1) at the given origin shows its direction's arrow."""
-    idle_x = origin_x + 24
+def _check_idle_arrows(rgba: bytes, width: int, origin_x: int, origin_y: int, prefix: str = "", idle_column: int = 1) -> None:
+    """Checks that each row's idle cell (`idle_column`) at the given origin shows its direction's arrow."""
+    idle_x = origin_x + idle_column * 24
     for row, direction in enumerate(_TARGET_ROWS):
         (tx, ty), (nx, ny), tip_side, notch_side = _ARROW_PROBES[direction]
         cell_y = origin_y + row * 32
@@ -144,15 +145,18 @@ def validate_png_chipset(filepath):
 
 
 def validate_png_rmxp_character(filepath):
-    """RPG Maker XP character: 96x128 RGBA, 4x4 cells; column 3 repeats the idle column 1."""
+    """RPG Maker XP character: 96x128 RGBA, 4x4 cells laid out as transforms.RMXP_LAYOUT (IDLE in two columns)."""
     image = _read_checked(filepath, RMXP_SPEC)
     rgba = image.pixels
     _check_alpha_range(rgba, RMXP_SPEC)
+    idle = [i for i, phase in enumerate(RMXP_LAYOUT.columns) if phase == "IDLE"]
     for y in range(image.height):
         row = y * image.width * 4
-        if rgba[row + 24 * 4:row + 48 * 4] != rgba[row + 72 * 4:row + 96 * 4]:
-            raise ValueError(f"Column 3 (idle step) does not match Column 1 at row {y // 32}, local y {y % 32}")
-    _check_idle_arrows(rgba, image.width, 0, 0)
+        first = rgba[row + idle[0] * 96:row + (idle[0] + 1) * 96]
+        for column in idle[1:]:
+            if rgba[row + column * 96:row + (column + 1) * 96] != first:
+                raise ValueError(f"Idle column {column} does not match idle column {idle[0]} at row {y // 32}, local y {y % 32}")
+    _check_idle_arrows(rgba, image.width, 0, 0, idle_column=idle[0])
     return {"width": image.width, "height": image.height, "bit_depth": image.bit_depth, "color_type": image.color_type,
             "num_colors": "truecolor-rgba", "has_trns": False, "frame_cell": "24x32", "grid": "4x4",
             "directions": list(_TARGET_ROWS)}

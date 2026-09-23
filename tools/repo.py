@@ -103,3 +103,16 @@ def resolve_within(base: str, relative: str) -> str:
     if os.path.commonpath([base_abs, candidate]) != base_abs:
         raise ValueError(f"Path '{relative}' escapes its base directory '{base_abs}'")
     return candidate
+
+
+def portable_paths(text: str) -> str:
+    """
+    Rewrites machine-specific absolute paths in runtime logs before they are committed:
+    the repository root becomes '<repo>' and the home directory '~'. Evidence then
+    stays reproducible across machines and does not leak local account names.
+    """
+    text = text.replace(REPO_ROOT, "<repo>")
+    home = os.path.expanduser("~")
+    if home and home != "/":
+        text = text.replace(home, "~")
+    return text

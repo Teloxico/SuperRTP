@@ -8,21 +8,21 @@
   "target_world_sha256": "8a1c5552c544fb5195a92ab8f2f0e84b11d95fa3929250aa74b69630067fe137",
   "fixture_manifest_sha256": "1eedb13cd301b745ddd57ff5de010404c47b78ccb1f46a53d69e0c53643a3e98",
   "positive_runtime_log": "positive_runtime.log",
-  "positive_runtime_log_sha256": "62e403196d6797a97ea2631a849ff37f8fbf77b1318f6ccc3ce298c1e341a8e2",
+  "positive_runtime_log_sha256": "20170f19a54467cb000f8085327953a6002ba04830fab94544515a25ac9d3e44",
   "negative_runtime_log": "negative_runtime.log",
-  "negative_runtime_log_sha256": "914400b63b2d871618bbfb07937972bbc3eb8352d50a3e28b5652717abf327db",
+  "negative_runtime_log_sha256": "f043536f52d6c0eb64a710e05ff29ba9e3b67a38490ee76c879f43e16fc891fd",
   "easyrpg_version": "EasyRPG Player 0.8.1.1 (2025-06-02)",
-  "recorded_at": "2026-09-14T23:48:22.110713+00:00",
+  "recorded_at": "2026-09-23T06:13:09.960608+00:00",
   "negative_control": {
     "status": "VERIFIED",
     "expected_missing_asset": "ChipSet/Basis",
     "diagnostic": "Image not found: ChipSet/Basis",
     "screenshot": "rm2000_chipset_negative_control.png",
-    "screenshot_sha256": "72a73bba77986d6f94550e895ed6cfd9ea1f1c5675bd2ed3294551dd44007db9"
+    "screenshot_sha256": "602b298c84969843d6cd7459fd73f595bd61a1e7bc1c44250bc816646be8ca4f"
   },
   "screenshots": {
     "rm2000_chipset_positive.png": "df5d9bb9b141a2a5162ec657fd5d0cdb0e9b05ae1818b8addf90146e6bf99b54",
-    "rm2000_chipset_negative_control.png": "72a73bba77986d6f94550e895ed6cfd9ea1f1c5675bd2ed3294551dd44007db9"
+    "rm2000_chipset_negative_control.png": "602b298c84969843d6cd7459fd73f595bd61a1e7bc1c44250bc816646be8ca4f"
   },
   "tile_evidence": {
     "status": "VERIFIED",
