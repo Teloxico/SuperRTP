@@ -19,36 +19,56 @@ proprietary RTP content**, and nothing in it is derived from one.
 
 ## Project status
 
-> **Early stage.** The pipeline and its verification exist, but the actual replacement
-> art does not yet. Packs built today are not usable for playing real games.
+> **Images: generated and engine-checked. Audio: not included.** Version 0.1.0.
 
 **Working:**
-- **Builds for all six engines:** one set of canonical assets is transformed into all
-  six engine formats, and the builds are deterministic (byte-for-byte reproducible).
-- **Every output is checked in the real engine:** it is launched headlessly, and the
-  on-screen result is checked pixel by pixel.
-- **Negative controls:** each is a run with the asset removed, and it must show the
-  engine's own missing-file error.
-- **Evidence files:** they bind every hash, log and screenshot. Changing any recorded
-  field makes verification fail.
-
-**In progress:**
-- **Replacement art for the whole inventory:** a local FLUX.2 [klein] 4B pipeline
-  (Apache-2.0) is drawing original art for all 5,672 inventoried paths from our own art
-  direction. Deterministic code turns it into the exact frame grids and formats. The
-  resulting packs are candidates: they are not yet emitted by the target builder. See
+- **Replacement art for every image slot:** 2,934 image paths across all six engines,
+  drawn by a local FLUX.2 [klein] 4B model (Apache-2.0) from this project's own art
+  direction. Deterministic code turns the drawings into the exact frame grids, sizes and
+  formats each engine expects. Characters are drawn as separate front, side and back
+  views, so every facing direction reads correctly. See
   [docs/asset-generation.md](docs/asset-generation.md).
+- **Separate, installable packs per engine:** each pack is its own archive with an
+  `install.py` that puts it where that engine's runtime looks for its RTP, on Windows,
+  Linux and macOS. It never overwrites files or registry values, and it can uninstall
+  cleanly. See [docs/installing.md](docs/installing.md).
+- **Checked in the real engines:**
+  - EasyRPG Player finds an installed pack on its own and draws the generated art.
+  - mkxp-z loads every image of the XP, VX and VX Ace packs at the right size.
+  - WOLF's `Game.exe` draws a generated character cell by cell.
+- **Calibration slices:** the original verification slices, synthetic images with
+  pixel-exact checks and negative controls in every engine, still guard the transforms
+  and the engine drivers. See [docs/verified-slices.md](docs/verified-slices.md).
 
 **Not there yet:**
-- **Active assets:** the target builder still ships only two synthetic calibration
-  images. One is a walking character sheet made of arrows and markers; the other is a
-  map tileset.
-- **Slots:** only the calibration filename slots are mapped to assets. The exhaustive
-  upstream filename inventories now exist, but they are planning inputs rather than
-  fake mappings to replacements that have not been created.
-- **Audio:** not generated. The 2,738 inventoried music and sound paths are listed as a
-  backlog in the pack manifest.
-- **Known issue:** see [docs/known-issues.md](docs/known-issues.md).
+- **Audio:** music and sound effects are not generated. The 2,738 inventoried audio
+  paths are listed as a backlog in the pack manifest.
+- **Animation:** walking steps are a small synthesised leg offset, not drawn strides.
+  Battle poses are transforms of one sprite.
+- **Tilesets:** these are filled with generated material textures, not hand-designed
+  tile layouts, so maps built for the original tiles will look patchy.
+- **Unverified runtimes:** the original Windows runtimes (RPG_RT.exe, the RGSS
+  `Game.exe`) and EasyRPG on Windows and macOS were not run. The installer writes the
+  registry values and folders their documentation and source name, and CI tests those
+  writes on Windows and macOS.
+- **Known issues:** see [docs/known-issues.md](docs/known-issues.md).
+
+## Install a pack
+
+Download the archive for your engine, unzip it, and run its installer (Python 3.8+):
+
+```bash
+python3 install.py
+```
+
+This one command covers EasyRPG Player on Linux and macOS, and RPG Maker 2000/2003 games
+on Windows. For RPG Maker XP, VX and VX Ace, and for WOLF, the pack's `README.txt` gives
+the one extra option to use:
+- `--mkxp-json` for mkxp-z;
+- `--register machine` for a game's own Windows `Game.exe`;
+- `--game` to fill in a single game folder.
+
+[docs/installing.md](docs/installing.md) lists where every runtime looks, with sources.
 
 ## How it works
 
@@ -93,6 +113,8 @@ cd tests && python3 -m unittest discover -v
 | `test_foundation.py` | PNG codec; schemas; registry and provenance; frame transforms for every engine layout, checked against an independent oracle; reproducible builds; validator rejections |
 | `test_fixtures.py` | Fixture manifests; byte-identical regeneration of fixture and calibration graphics |
 | `test_runtime_evidence.py` | Committed evidence verifies. Every evidence field is tamper-checked. Altered screenshot pixels are rejected. A fresh live capture through each real engine must verify. |
+| `test_full_inventory_generation.py` | Inventory plan counts, clean-room and license gates, authored prompts, view references, deterministic encoding |
+| `test_installer.py` | The pack installer on the OS it runs on (CI: Windows, macOS, Linux, Python 3.8 and 3.12), including Windows registry writes |
 
 Live tests skip when an engine is not installed. With `SUPERRTP_REQUIRE_RUNTIME=1`, as
 in CI, a missing engine is a failure instead. The live runs need:
@@ -127,14 +149,18 @@ Replace `--verify` with `--run-capture` to re-capture through the live engine. A
 
 ```
 registry/     assets/ (canonical sources), provenance/, slots/ (mapped outputs),
-              upstream-assets/ (filename-only replacement backlog)
+              upstream-assets/ (the filename inventory every pack covers)
+specs/        generation specs and the art direction (all prompt text)
 schemas/      JSON schemas for assets, provenance and slot maps
 tools/        builder, validator, transforms, runtime drivers and verifiers
+  asset_generation/   FLUX planning, generation, structuring, pack encoding
+  release/            install.py (shipped in every pack) and the release packager
 tests/        test suites and clean-room engine fixtures (tests/fixtures/)
-artifacts/    committed runtime evidence (screenshots, logs, evidence JSON)
-generated/    build output (git-ignored)
-docs/         architecture, engine facts, per-slice specs, known issues
-legal/        clean-room policy
+artifacts/    committed runtime evidence; generation manifests and runtime-gate reports
+generated/    calibration build output (git-ignored)
+dist/         release archives (git-ignored)
+docs/         architecture, engine facts, generation, installing, known issues
+legal/        clean-room policy, CC0 legal code
 ```
 
 Most `tools/` modules are shared:
@@ -156,7 +182,9 @@ The `verify_*.py` scripts are thin per-slice verifiers on top of them.
   creative-media path in the six pinned upstream distributions, with official
   RM2000/RM2003 locale aliases and source hashes.
 - [docs/asset-generation.md](docs/asset-generation.md): the FLUX.2 generation pipeline,
-  model choice, art direction, provenance and known limits.
+  model choice, art direction, provenance, runtime gate and known limits.
+- [docs/installing.md](docs/installing.md): the packs, where each runtime looks for an
+  RTP (with sources and verification status), and what the installer changes.
 - [docs/verified-slices.md](docs/verified-slices.md): detailed specification and
   evidence for each slice.
 - [docs/known-issues.md](docs/known-issues.md): open problems and what is known about
@@ -178,7 +206,8 @@ Read [legal/CLEAN_ROOM_POLICY.md](legal/CLEAN_ROOM_POLICY.md) and
 ## License
 
 - **Code, tooling and schemas:** [MIT](LICENSE).
-- **Calibration assets:** CC0-1.0.
+- **Generated pack images and calibration assets:** CC0-1.0
+  ([legal/CC0-1.0.txt](legal/CC0-1.0.txt)).
 - **Engines used only for verification, not distributed here:**
   - EasyRPG Player (GPLv3);
   - mkxp-z (GPLv2);
