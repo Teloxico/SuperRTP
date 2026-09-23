@@ -203,8 +203,9 @@ def structure() -> dict:
     return counts
 
 
-def build_packs() -> None:
-    """Rebuilds and verifies the v2 full-inventory packs with the system Python (standard library + ffmpeg)."""
+def build_packs() -> bool:
+    """Rebuilds and verifies the v2 full-inventory packs with the system Python (standard library + ffmpeg).
+    Returns True when both steps succeed."""
     import subprocess
     script = os.path.join(TOOLS_DIR, "asset_generation", "generate_full_inventory.py")
     for action in ("--write", "--check"):
@@ -215,7 +216,25 @@ def build_packs() -> None:
             with open(FAILURES_PATH, "a", encoding="utf-8") as f:
                 f.write(json.dumps({"job_id": f"packs{action}", "error": result.stderr[-4000:],
                                     "at": datetime.datetime.now(datetime.timezone.utc).isoformat()}) + "\n")
-            return
+            return False
+    return True
+
+
+COMPLETE_PATH = os.path.join(FLUX_DIR, "COMPLETE.json")
+MAX_PASSES = 3                # passes that retry failed jobs before giving up
+
+
+def finish(total: int) -> None:
+    """Everything is generated, structured and packed: record completion and free the model and its
+    environment (~12 GB), which setup_flux.sh can recreate. Concepts and structured images are kept."""
+    record = {"completed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "jobs": total,
+              "model": MODEL_ID, "model_revision": MODEL_REVISION,
+              "freed": [os.path.relpath(p, REPO_ROOT) for p in (MODEL_DIR, os.path.join(FLUX_DIR, "venv"))]}
+    _atomic_write(COMPLETE_PATH, (json.dumps(record, indent=2) + "\n").encode())
+    import shutil
+    shutil.rmtree(MODEL_DIR)
+    shutil.rmtree(os.path.join(FLUX_DIR, "venv"))   # this interpreter keeps running from memory
+    print(f"Complete: {total} concepts generated and packed; freed {record['freed']}", flush=True)
 
 
 def main():
@@ -224,6 +243,9 @@ def main():
     parser.add_argument("--family", action="append", help="only these families (repeatable)")
     parser.add_argument("--limit", type=int, help="generate at most N pending jobs per pass")
     parser.add_argument("--plan", action="store_true", help="print job counts and exit (no model load)")
+    parser.add_argument("--until-complete", action="store_true",
+                        help="run passes until every job is done, structure, build and verify the packs, then "
+                             "record completion and free the model (used by the systemd service)")
     args = parser.parse_args()
 
     if args.plan:
@@ -233,6 +255,22 @@ def main():
         return
     pipe = load_pipeline()
     env = environment()
+    if args.until_complete:
+        for attempt in range(1, MAX_PASSES + 1):
+            total, remaining, failures = run_pass(pipe, env)
+            print(f"Pass {attempt}: {total - remaining}/{total} done, {remaining} pending, {failures} failed", flush=True)
+            if remaining == 0:
+                break
+        if remaining:
+            sys.exit(f"{remaining} jobs still failing after {MAX_PASSES} passes; see {FAILURES_PATH}")
+        counts = structure()
+        if counts["failed"] or counts["waiting_for_concepts"]:
+            sys.exit(f"Structuring incomplete: {counts}")
+        if not build_packs():
+            sys.exit(f"Pack build or verification failed; see {FAILURES_PATH}")
+        del pipe
+        finish(total)
+        return
     while True:
         total, remaining, failures = run_pass(pipe, env, args.family, args.limit)
         print(f"Pass complete: {total - remaining}/{total} done, {remaining} pending, {failures} failed this pass", flush=True)
