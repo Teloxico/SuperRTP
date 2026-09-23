@@ -1,0 +1,12 @@
+{
+  "fixture_name": "rgss_pack_scan",
+  "engine": "RPG Maker XP / VX / VX Ace (RGSS1/2/3)",
+  "description": "Clean-room RGSS script for mkxp-z that loads every image of a generated pack through the RTP search path and draws a contact sheet",
+  "clean_room_attestation": "The fixture script is written from scratch; it contains no proprietary creative assets.",
+  "files": {
+    "fixture.rb": {
+      "sha256": "2179d3832608ae114cc42b17775fd74d2b9a8aaa9f66b8edbf0a5f139a12a887",
+      "purpose": "Loads each path listed in scan_list.txt (written by tools/verify_generated_packs.py) and reports its size"
+    }
+  }
+}

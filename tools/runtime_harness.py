@@ -121,10 +121,12 @@ def _read_display_number(read_fd: int, proc: subprocess.Popen, timeout: float) -
 
 
 def x11_env(display: str, **extra: str) -> dict:
-    """Current environment pointed at `display`, plus any extra variables."""
+    """Current environment plus any extra variables, pointed at `display`. DISPLAY is set last so
+    no extra variable can send a session to the user's real screen."""
     env = os.environ.copy()
-    env["DISPLAY"] = display
     env.update(extra)
+    env["DISPLAY"] = display
+    env.pop("WAYLAND_DISPLAY", None)
     return env
 
 
