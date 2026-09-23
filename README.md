@@ -32,12 +32,22 @@ proprietary RTP content**, and nothing in it is derived from one.
 - **Evidence files:** they bind every hash, log and screenshot. Changing any recorded
   field makes verification fail.
 
+**In progress:**
+- **Replacement art for the whole inventory:** a local FLUX.2 [klein] 4B pipeline
+  (Apache-2.0) is drawing original art for all 5,672 inventoried paths from our own art
+  direction. Deterministic code turns it into the exact frame grids and formats. The
+  resulting packs are candidates: they are not yet emitted by the target builder. See
+  [docs/asset-generation.md](docs/asset-generation.md).
+
 **Not there yet:**
-- **Assets:** the only assets are two synthetic calibration images. One is a walking
-  character sheet made of arrows and markers; the other is a map tileset.
-- **Slots:** only about 10 filename slots are mapped. A full RM2000 RTP has roughly a
-  thousand.
-- **Resource types:** there are no face sets, battlers, autotiles, music or sound yet.
+- **Active assets:** the target builder still ships only two synthetic calibration
+  images. One is a walking character sheet made of arrows and markers; the other is a
+  map tileset.
+- **Slots:** only the calibration filename slots are mapped to assets. The exhaustive
+  upstream filename inventories now exist, but they are planning inputs rather than
+  fake mappings to replacements that have not been created.
+- **Audio:** music and sound are procedural placeholders. Candidate open audio models
+  are listed in [docs/asset-generation.md](docs/asset-generation.md).
 - **Known issue:** see [docs/known-issues.md](docs/known-issues.md).
 
 ## How it works
@@ -116,7 +126,8 @@ Replace `--verify` with `--run-capture` to re-capture through the live engine. A
 ## Repository layout
 
 ```
-registry/     assets/ (canonical sources), provenance/, slots/ (per-engine filename maps)
+registry/     assets/ (canonical sources), provenance/, slots/ (mapped outputs),
+              upstream-assets/ (filename-only replacement backlog)
 schemas/      JSON schemas for assets, provenance and slot maps
 tools/        builder, validator, transforms, runtime drivers and verifiers
 tests/        test suites and clean-room engine fixtures (tests/fixtures/)
@@ -141,6 +152,11 @@ The `verify_*.py` scripts are thin per-slice verifiers on top of them.
 - [docs/architecture.md](docs/architecture.md): design, pipeline and per-engine layout.
 - [docs/engine-facts.md](docs/engine-facts.md): researched engine behavior, with
   sources (lookup tables, sheet layouts, transparency, animation order).
+- [docs/upstream-asset-inventory.md](docs/upstream-asset-inventory.md): every bundled
+  creative-media path in the six pinned upstream distributions, with official
+  RM2000/RM2003 locale aliases and source hashes.
+- [docs/asset-generation.md](docs/asset-generation.md): the FLUX.2 generation pipeline,
+  model choice, art direction, provenance and known limits.
 - [docs/verified-slices.md](docs/verified-slices.md): detailed specification and
   evidence for each slice.
 - [docs/known-issues.md](docs/known-issues.md): open problems and what is known about

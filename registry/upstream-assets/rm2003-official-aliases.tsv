@@ -1,0 +1,677 @@
+semantic_id	category	english_path	japanese_path	traditional_chinese_path
+rm2003-0001	Backdrop	Backdrop/Graveyard.png	Backdrop/お墓.png	Backdrop/墳場.png
+rm2003-0002	Backdrop	Backdrop/Temple1.png	Backdrop/お寺.png	Backdrop/寺廟.png
+rm2003-0003	Backdrop	Backdrop/Dungeon1.png	Backdrop/ダンジョン１.png	Backdrop/迷宮1.png
+rm2003-0004	Backdrop	Backdrop/Dungeon2.png	Backdrop/ダンジョン２.png	Backdrop/迷宮2.png
+rm2003-0005	Backdrop	Backdrop/Dungeon3.png	Backdrop/ダンジョン３.png	Backdrop/迷宮3.png
+rm2003-0006	Backdrop	Backdrop/Dungeon4.png	Backdrop/ダンジョン４.png	Backdrop/迷宮4.png
+rm2003-0007	Backdrop	Backdrop/Dungeon5.png	Backdrop/ダンジョン５.png	Backdrop/迷宮5.png
+rm2003-0008	Backdrop	Backdrop/Dungeon6.png	Backdrop/ダンジョン６.png	Backdrop/迷宮6.png
+rm2003-0009	Backdrop	Backdrop/Universe.png	Backdrop/宇宙.png	Backdrop/宇宙.png
+rm2003-0010	Backdrop	Backdrop/Mountain Road.png	Backdrop/山道.png	Backdrop/山路.png
+rm2003-0011	Backdrop	Backdrop/Rocky Road.png	Backdrop/岩場.png	Backdrop/岩壁.png
+rm2003-0012	Backdrop	Backdrop/Ruins1.png	Backdrop/廃墟.png	Backdrop/廢墟.png
+rm2003-0013	Backdrop	Backdrop/Old Town.png	Backdrop/旧市街.png	Backdrop/老街.png
+rm2003-0014	Backdrop	Backdrop/Forest1.png	Backdrop/森１.png	Backdrop/森林1.png
+rm2003-0015	Backdrop	Backdrop/Forest2.png	Backdrop/森２.png	Backdrop/森林2.png
+rm2003-0016	Backdrop	Backdrop/Bridge.png	Backdrop/橋.png	Backdrop/橋.png
+rm2003-0017	Backdrop	Backdrop/Swamp.png	Backdrop/毒沼.png	Backdrop/毒沼.png
+rm2003-0018	Backdrop	Backdrop/Mansion.png	Backdrop/洋館.png	Backdrop/洋館.png
+rm2003-0019	Backdrop	Backdrop/Sea.png	Backdrop/海.png	Backdrop/海.png
+rm2003-0020	Backdrop	Backdrop/Castle.png	Backdrop/玉座.png	Backdrop/王位.png
+rm2003-0021	Backdrop	Backdrop/Space.png	Backdrop/異空間.png	Backdrop/異次元空間.png
+rm2003-0022	Backdrop	Backdrop/Beach.png	Backdrop/砂浜.png	Backdrop/淺灘.png
+rm2003-0023	Backdrop	Backdrop/Desert.png	Backdrop/砂漠.png	Backdrop/沙漠.png
+rm2003-0024	Backdrop	Backdrop/Temple2.png	Backdrop/神殿.png	Backdrop/神殿.png
+rm2003-0025	Backdrop	Backdrop/Sky.png	Backdrop/空.png	Backdrop/天空.png
+rm2003-0026	Backdrop	Backdrop/Ship.png	Backdrop/船上.png	Backdrop/船上.png
+rm2003-0027	Backdrop	Backdrop/Grassland.png	Backdrop/草原.png	Backdrop/草原.png
+rm2003-0028	Backdrop	Backdrop/Wasteland.png	Backdrop/荒地.png	Backdrop/荒地.png
+rm2003-0029	Backdrop	Backdrop/Town.png	Backdrop/街中.png	Backdrop/街道.png
+rm2003-0030	Backdrop	Backdrop/Road.png	Backdrop/路上.png	Backdrop/道路.png
+rm2003-0031	Backdrop	Backdrop/Ruins2.png	Backdrop/遺跡.png	Backdrop/遺跡.png
+rm2003-0032	Backdrop	Backdrop/Bathhouse.png	Backdrop/銭湯.png	Backdrop/澡堂.png
+rm2003-0033	Backdrop	Backdrop/Arena.png	Backdrop/闘技場.png	Backdrop/競技場.png
+rm2003-0034	Backdrop	Backdrop/Snow Field.png	Backdrop/雪原.png	Backdrop/雪原.png
+rm2003-0035	Battle	Battle/2003 Other1.png	Battle/2003その他1.png	Battle/2003其他1.png
+rm2003-0036	Battle	Battle/2003 Other2.png	Battle/2003その他2.png	Battle/2003其他2.png
+rm2003-0037	Battle	Battle/2003 Barrier.png	Battle/2003バリア.png	Battle/2003護罩.png
+rm2003-0038	Battle	Battle/2003 Breath.png	Battle/2003ブレス.png	Battle/2003氣息.png
+rm2003-0039	Battle	Battle/2003 Light Pillar.png	Battle/2003光柱.png	Battle/2003光柱.png
+rm2003-0040	Battle	Battle/2003 Cold.png	Battle/2003冷気.png	Battle/2003冰.png
+rm2003-0041	Battle	Battle/2003 Sword.png	Battle/2003剣.png	Battle/2003劍.png
+rm2003-0042	Battle	Battle/2003 Absorb.png	Battle/2003吸収.png	Battle/2003吸收.png
+rm2003-0043	Battle	Battle/2003 Recovery.png	Battle/2003回復.png	Battle/2003回復.png
+rm2003-0044	Battle	Battle/2003 Earth.png	Battle/2003大地.png	Battle/2003大地.png
+rm2003-0045	Battle	Battle/2003 Bow.png	Battle/2003弓.png	Battle/2003弓.png
+rm2003-0046	Battle	Battle/2003 Blow.png	Battle/2003打撃.png	Battle/2003打擊.png
+rm2003-0047	Battle	Battle/2003 Axe.png	Battle/2003斧.png	Battle/2003斧.png
+rm2003-0048	Battle	Battle/2003 Dark.png	Battle/2003暗黒.png	Battle/2003暗黑.png
+rm2003-0049	Battle	Battle/2003 Spear.png	Battle/2003槍.png	Battle/2003槍.png
+rm2003-0050	Battle	Battle/2003 Water.png	Battle/2003水.png	Battle/2003水.png
+rm2003-0051	Battle	Battle/2003 Cure.png	Battle/2003治療.png	Battle/2003治療.png
+rm2003-0052	Battle	Battle/2003 Fire.png	Battle/2003炎.png	Battle/2003炎.png
+rm2003-0053	Battle	Battle/2003 Explosion.png	Battle/2003爆発.png	Battle/2003爆發.png
+rm2003-0054	Battle	Battle/2003 Claw.png	Battle/2003爪.png	Battle/2003爪.png
+rm2003-0055	Battle	Battle/2003 Holy.png	Battle/2003神聖.png	Battle/2003神聖.png
+rm2003-0056	Battle	Battle/2003 Revive.png	Battle/2003蘇生.png	Battle/2003復活.png
+rm2003-0057	Battle	Battle/2003 Thunder.png	Battle/2003雷.png	Battle/2003雷.png
+rm2003-0058	Battle	Battle/2003 Whip.png	Battle/2003鞭.png	Battle/2003鞭.png
+rm2003-0059	Battle	Battle/2003 Wind.png	Battle/2003風.png	Battle/2003風.png
+rm2003-0060	Battle	Battle/2003 Paralysis.png	Battle/2003麻痺.png	Battle/2003麻痺.png
+rm2003-0061	Battle	Battle/Other.png	Battle/その他.png	Battle/其他.png
+rm2003-0062	Battle	Battle/Barrier.png	Battle/バリア.png	Battle/護罩.png
+rm2003-0063	Battle	Battle/Breath.png	Battle/ブレス.png	Battle/氣息.png
+rm2003-0064	Battle	Battle/Buff.png	Battle/上昇.png	Battle/上昇.png
+rm2003-0065	Battle	Battle/Debuff.png	Battle/下降.png	Battle/下降.png
+rm2003-0066	Battle	Battle/Ice.png	Battle/冷気.png	Battle/冰.png
+rm2003-0067	Battle	Battle/Sword1.png	Battle/剣1.png	Battle/劍1.png
+rm2003-0068	Battle	Battle/Sword2.png	Battle/剣2.png	Battle/劍2.png
+rm2003-0069	Battle	Battle/Bite.png	Battle/吸収.png	Battle/吸收.png
+rm2003-0070	Battle	Battle/Recovery.png	Battle/回復.png	Battle/回復.png
+rm2003-0071	Battle	Battle/Earth.png	Battle/大地.png	Battle/大地.png
+rm2003-0072	Battle	Battle/Blow.png	Battle/打撃.png	Battle/打擊.png
+rm2003-0073	Battle	Battle/Axe.png	Battle/斧.png	Battle/斧.png
+rm2003-0074	Battle	Battle/Dark.png	Battle/暗黒.png	Battle/暗黑.png
+rm2003-0075	Battle	Battle/Spear.png	Battle/槍.png	Battle/槍.png
+rm2003-0076	Battle	Battle/Water.png	Battle/水.png	Battle/水.png
+rm2003-0077	Battle	Battle/Treatment.png	Battle/治療.png	Battle/治療.png
+rm2003-0078	Battle	Battle/Fire1.png	Battle/炎1.png	Battle/炎1.png
+rm2003-0079	Battle	Battle/Fire2.png	Battle/炎2.png	Battle/炎2.png
+rm2003-0080	Battle	Battle/Explosion.png	Battle/爆発.png	Battle/爆發.png
+rm2003-0081	Battle	Battle/Claw.png	Battle/爪.png	Battle/爪.png
+rm2003-0082	Battle	Battle/Arrow.png	Battle/矢.png	Battle/箭.png
+rm2003-0083	Battle	Battle/Holy.png	Battle/神聖.png	Battle/神聖.png
+rm2003-0084	Battle	Battle/Ressurection.png	Battle/蘇生.png	Battle/復活.png
+rm2003-0085	Battle	Battle/Thunder.png	Battle/雷.png	Battle/雷.png
+rm2003-0086	Battle	Battle/Whip.png	Battle/鞭.png	Battle/鞭.png
+rm2003-0087	Battle	Battle/Wind.png	Battle/風.png	Battle/風.png
+rm2003-0088	Battle	Battle/Paralysis.png	Battle/麻痺.png	Battle/麻痺.png
+rm2003-0089	BattleCharSet	BattleCharSet/Female Elf A.png	BattleCharSet/エルフ女a.png	BattleCharSet/妖精女a.png
+rm2003-0090	BattleCharSet	BattleCharSet/Female Elf B.png	BattleCharSet/エルフ女b.png	BattleCharSet/妖精女b.png
+rm2003-0091	BattleCharSet	BattleCharSet/Male Elf A.png	BattleCharSet/エルフ男a.png	BattleCharSet/妖精男a.png
+rm2003-0092	BattleCharSet	BattleCharSet/Male Elf B.png	BattleCharSet/エルフ男b.png	BattleCharSet/妖精男b.png
+rm2003-0093	BattleCharSet	BattleCharSet/Chinese Woman A.png	BattleCharSet/中華女a.png	BattleCharSet/中華女a.png
+rm2003-0094	BattleCharSet	BattleCharSet/Chinese Woman B.png	BattleCharSet/中華女b.png	BattleCharSet/中華女b.png
+rm2003-0095	BattleCharSet	BattleCharSet/Chinese Man A.png	BattleCharSet/中華男a.png	BattleCharSet/中華男a.png
+rm2003-0096	BattleCharSet	BattleCharSet/Chinese Man B.png	BattleCharSet/中華男b.png	BattleCharSet/中華男b.png
+rm2003-0097	BattleCharSet	BattleCharSet/Samurai A.png	BattleCharSet/侍a.png	BattleCharSet/武士a.png
+rm2003-0098	BattleCharSet	BattleCharSet/Samurai B.png	BattleCharSet/侍b.png	BattleCharSet/武士b.png
+rm2003-0099	BattleCharSet	BattleCharSet/Female Monk A.png	BattleCharSet/僧侶女a.png	BattleCharSet/僧侶女a.png
+rm2003-0100	BattleCharSet	BattleCharSet/Female Monk B.png	BattleCharSet/僧侶女b.png	BattleCharSet/僧侶女b.png
+rm2003-0101	BattleCharSet	BattleCharSet/Male Monk A.png	BattleCharSet/僧侶男a.png	BattleCharSet/僧侶男a.png
+rm2003-0102	BattleCharSet	BattleCharSet/Male Monk B.png	BattleCharSet/僧侶男b.png	BattleCharSet/僧侶男b.png
+rm2003-0103	BattleCharSet	BattleCharSet/Female Hero A.png	BattleCharSet/勇者女a.png	BattleCharSet/勇者女a.png
+rm2003-0104	BattleCharSet	BattleCharSet/Female Hero B.png	BattleCharSet/勇者女b.png	BattleCharSet/勇者女b.png
+rm2003-0105	BattleCharSet	BattleCharSet/Male Hero A.png	BattleCharSet/勇者男a.png	BattleCharSet/勇者男a.png
+rm2003-0106	BattleCharSet	BattleCharSet/Male Hero B.png	BattleCharSet/勇者男b.png	BattleCharSet/勇者男b.png
+rm2003-0107	BattleCharSet	BattleCharSet/Woman1 A.png	BattleCharSet/女性１a.png	BattleCharSet/女性1a.png
+rm2003-0108	BattleCharSet	BattleCharSet/Woman1 B.png	BattleCharSet/女性１b.png	BattleCharSet/女性1b.png
+rm2003-0109	BattleCharSet	BattleCharSet/Woman2 A.png	BattleCharSet/女性２a.png	BattleCharSet/女性2a.png
+rm2003-0110	BattleCharSet	BattleCharSet/Woman2 B.png	BattleCharSet/女性２b.png	BattleCharSet/女性2b.png
+rm2003-0111	BattleCharSet	BattleCharSet/Woman3 A.png	BattleCharSet/女性３a.png	BattleCharSet/女性3a.png
+rm2003-0112	BattleCharSet	BattleCharSet/Woman3 B.png	BattleCharSet/女性３b.png	BattleCharSet/女性3b.png
+rm2003-0113	BattleCharSet	BattleCharSet/Woman4 A.png	BattleCharSet/女性４a.png	BattleCharSet/女性4a.png
+rm2003-0114	BattleCharSet	BattleCharSet/Woman4 B.png	BattleCharSet/女性４b.png	BattleCharSet/女性4b.png
+rm2003-0115	BattleCharSet	BattleCharSet/Woman5 A.png	BattleCharSet/女性５a.png	BattleCharSet/女性5a.png
+rm2003-0116	BattleCharSet	BattleCharSet/Woman5 B.png	BattleCharSet/女性５b.png	BattleCharSet/女性5b.png
+rm2003-0117	BattleCharSet	BattleCharSet/Female Ninja A.png	BattleCharSet/忍者女a.png	BattleCharSet/忍者女a.png
+rm2003-0118	BattleCharSet	BattleCharSet/Female Ninja B.png	BattleCharSet/忍者女b.png	BattleCharSet/忍者女b.png
+rm2003-0119	BattleCharSet	BattleCharSet/Male Ninja A.png	BattleCharSet/忍者男a.png	BattleCharSet/忍者男a.png
+rm2003-0120	BattleCharSet	BattleCharSet/Male Ninja B.png	BattleCharSet/忍者男b.png	BattleCharSet/忍者男b.png
+rm2003-0121	BattleCharSet	BattleCharSet/Female Warrior A.png	BattleCharSet/戦士女a.png	BattleCharSet/戰士女a.png
+rm2003-0122	BattleCharSet	BattleCharSet/Female Warrior B.png	BattleCharSet/戦士女b.png	BattleCharSet/戰士女b.png
+rm2003-0123	BattleCharSet	BattleCharSet/Male Warrior A.png	BattleCharSet/戦士男a.png	BattleCharSet/戰士男a.png
+rm2003-0124	BattleCharSet	BattleCharSet/Male Warrior B.png	BattleCharSet/戦士男b.png	BattleCharSet/戰士男b.png
+rm2003-0125	BattleCharSet	BattleCharSet/Female Fighter A.png	BattleCharSet/格闘家女a.png	BattleCharSet/格鬥家女a.png
+rm2003-0126	BattleCharSet	BattleCharSet/Female Fighter B.png	BattleCharSet/格闘家女b.png	BattleCharSet/格鬥家女b.png
+rm2003-0127	BattleCharSet	BattleCharSet/Male Fighter A.png	BattleCharSet/格闘家男a.png	BattleCharSet/格鬥家男a.png
+rm2003-0128	BattleCharSet	BattleCharSet/Male Fighter B.png	BattleCharSet/格闘家男b.png	BattleCharSet/格鬥家男b.png
+rm2003-0129	BattleCharSet	BattleCharSet/Female Pirate A.png	BattleCharSet/海賊女a.png	BattleCharSet/海賊女a.png
+rm2003-0130	BattleCharSet	BattleCharSet/Female Pirate B.png	BattleCharSet/海賊女b.png	BattleCharSet/海賊女b.png
+rm2003-0131	BattleCharSet	BattleCharSet/Male Pirate A.png	BattleCharSet/海賊男a.png	BattleCharSet/海賊男a.png
+rm2003-0132	BattleCharSet	BattleCharSet/Male Pirate B.png	BattleCharSet/海賊男b.png	BattleCharSet/海賊男b.png
+rm2003-0133	BattleCharSet	BattleCharSet/Man1 A.png	BattleCharSet/男性１a.png	BattleCharSet/男性1a.png
+rm2003-0134	BattleCharSet	BattleCharSet/Man1 B.png	BattleCharSet/男性１b.png	BattleCharSet/男性1b.png
+rm2003-0135	BattleCharSet	BattleCharSet/Man2 A.png	BattleCharSet/男性２a.png	BattleCharSet/男性2a.png
+rm2003-0136	BattleCharSet	BattleCharSet/Man2 B.png	BattleCharSet/男性２b.png	BattleCharSet/男性2b.png
+rm2003-0137	BattleCharSet	BattleCharSet/Man3 A.png	BattleCharSet/男性３a.png	BattleCharSet/男性3a.png
+rm2003-0138	BattleCharSet	BattleCharSet/Man3 B.png	BattleCharSet/男性３b.png	BattleCharSet/男性3b.png
+rm2003-0139	BattleCharSet	BattleCharSet/Man4 A.png	BattleCharSet/男性４a.png	BattleCharSet/男性4a.png
+rm2003-0140	BattleCharSet	BattleCharSet/Man4 B.png	BattleCharSet/男性４b.png	BattleCharSet/男性4b.png
+rm2003-0141	BattleCharSet	BattleCharSet/Man5 A.png	BattleCharSet/男性５a.png	BattleCharSet/男性5a.png
+rm2003-0142	BattleCharSet	BattleCharSet/Man5 B.png	BattleCharSet/男性５b.png	BattleCharSet/男性5b.png
+rm2003-0143	BattleCharSet	BattleCharSet/Female Bandit A.png	BattleCharSet/盗賊女a.png	BattleCharSet/盜賊女a.png
+rm2003-0144	BattleCharSet	BattleCharSet/Female Bandit B.png	BattleCharSet/盗賊女b.png	BattleCharSet/盜賊女b.png
+rm2003-0145	BattleCharSet	BattleCharSet/Male Bandit A.png	BattleCharSet/盗賊男a.png	BattleCharSet/盜賊男a.png
+rm2003-0146	BattleCharSet	BattleCharSet/Male Bandit B.png	BattleCharSet/盗賊男b.png	BattleCharSet/盜賊男b.png
+rm2003-0147	BattleCharSet	BattleCharSet/Armored Warror A.png	BattleCharSet/鎧武者a.png	BattleCharSet/鎧甲武者a.png
+rm2003-0148	BattleCharSet	BattleCharSet/Armored Warror B.png	BattleCharSet/鎧武者b.png	BattleCharSet/鎧甲武者b.png
+rm2003-0149	BattleCharSet	BattleCharSet/Female Mage A.png	BattleCharSet/魔術師女a.png	BattleCharSet/魔術師女a.png
+rm2003-0150	BattleCharSet	BattleCharSet/Female Mage B.png	BattleCharSet/魔術師女b.png	BattleCharSet/魔術師女b.png
+rm2003-0151	BattleCharSet	BattleCharSet/Male Mage A.png	BattleCharSet/魔術師男a.png	BattleCharSet/魔術師男a.png
+rm2003-0152	BattleCharSet	BattleCharSet/Male Mage B.png	BattleCharSet/魔術師男b.png	BattleCharSet/魔術師男b.png
+rm2003-0153	BattleWeapon	BattleWeapon/Weapon.png	BattleWeapon/武器.png	BattleWeapon/武器.png
+rm2003-0154	CharSet	CharSet/Object1.png	CharSet/オブジェクト1.png	CharSet/物件1.png
+rm2003-0155	CharSet	CharSet/Object2.png	CharSet/オブジェクト2.png	CharSet/物件2.png
+rm2003-0156	CharSet	CharSet/Monster1.png	CharSet/モンスター1.png	CharSet/怪物1.png
+rm2003-0157	CharSet	CharSet/Monster2.png	CharSet/モンスター2.png	CharSet/怪物2.png
+rm2003-0158	CharSet	CharSet/People1.png	CharSet/一般1.png	CharSet/一般1.png
+rm2003-0159	CharSet	CharSet/People2.png	CharSet/一般2.png	CharSet/一般2.png
+rm2003-0160	CharSet	CharSet/People3.png	CharSet/一般3.png	CharSet/一般3.png
+rm2003-0161	CharSet	CharSet/People4.png	CharSet/一般4.png	CharSet/一般4.png
+rm2003-0162	CharSet	CharSet/People5.png	CharSet/一般5.png	CharSet/一般5.png
+rm2003-0163	CharSet	CharSet/Actor1.png	CharSet/主人公1.png	CharSet/主角1.png
+rm2003-0164	CharSet	CharSet/Actor2.png	CharSet/主人公2.png	CharSet/主角2.png
+rm2003-0165	CharSet	CharSet/Actor3.png	CharSet/主人公3.png	CharSet/主角3.png
+rm2003-0166	CharSet	CharSet/Actor4.png	CharSet/主人公4.png	CharSet/主角4.png
+rm2003-0167	CharSet	CharSet/Vehicles.png	CharSet/乗り物.png	CharSet/交通工具.png
+rm2003-0168	CharSet	CharSet/Animal.png	CharSet/動物.png	CharSet/動物.png
+rm2003-0169	ChipSet	ChipSet/Dungeon.png	ChipSet/ダンジョン.png	ChipSet/迷宮.png
+rm2003-0170	ChipSet	ChipSet/Interior.png	ChipSet/内装.png	ChipSet/內部.png
+rm2003-0171	ChipSet	ChipSet/World.png	ChipSet/基本.png	ChipSet/基本.png
+rm2003-0172	ChipSet	ChipSet/Exterior.png	ChipSet/外観.png	ChipSet/外部.png
+rm2003-0173	ChipSet	ChipSet/Ship.png	ChipSet/船.png	ChipSet/船.png
+rm2003-0174	FaceSet	FaceSet/Monster.png	FaceSet/モンスター.png	FaceSet/怪物.png
+rm2003-0175	FaceSet	FaceSet/People1.png	FaceSet/一般1.png	FaceSet/一般1.png
+rm2003-0176	FaceSet	FaceSet/People2.png	FaceSet/一般2.png	FaceSet/一般2.png
+rm2003-0177	FaceSet	FaceSet/Actor1.png	FaceSet/主人公1.png	FaceSet/主角1.png
+rm2003-0178	FaceSet	FaceSet/Actor2.png	FaceSet/主人公2.png	FaceSet/主角2.png
+rm2003-0179	GameOver	GameOver/Game Over.png	GameOver/ゲームオーバー.png	GameOver/遊戲結束.png
+rm2003-0180	GameOver			GameOver/遊戲結束2.png
+rm2003-0181	Monster	Monster/Ahriman.png	Monster/アーリマン.png	Monster/阿利曼.png
+rm2003-0182	Monster	Monster/Asura.png	Monster/アスラ.png	Monster/阿蘇拉.png
+rm2003-0183	Monster	Monster/Anaconda.png	Monster/アナコンダ.png	Monster/巨蟒.png
+rm2003-0184	Monster	Monster/Alligator.png	Monster/アリゲーター.png	Monster/短吻鱷.png
+rm2003-0185	Monster	Monster/Undead Knight.png	Monster/アンデッドナイト.png	Monster/不死騎士.png
+rm2003-0186	Monster	Monster/Ifreet.png	Monster/イフリート.png	Monster/伊弗利特.png
+rm2003-0187	Monster	Monster/Imp.png	Monster/インプ.png	Monster/小魔鬼.png
+rm2003-0188	Monster	Monster/Vampire.png	Monster/ヴァンパイア.png	Monster/吸血鬼.png
+rm2003-0189	Monster	Monster/Ouroboros.png	Monster/ウロボロス.png	Monster/吞尾蛇.png
+rm2003-0190	Monster	Monster/Elf.png	Monster/エルフ.png	Monster/妖精.png
+rm2003-0191	Monster	Monster/Ogre.png	Monster/オーガ.png	Monster/食人魔.png
+rm2003-0192	Monster	Monster/Orc.png	Monster/オーク.png	Monster/獸人戰士.png
+rm2003-0193	Monster	Monster/Odin.png	Monster/オーディン.png	Monster/奧丁.png
+rm2003-0194	Monster	Monster/Octopus.png	Monster/オクトパス.png	Monster/八爪章魚.png
+rm2003-0195	Monster	Monster/Gargoyle.png	Monster/ガーゴイル.png	Monster/石像獸.png
+rm2003-0196	Monster	Monster/Carbuncle.png	Monster/カーバンクル.png	Monster/紅寶石.png
+rm2003-0197	Monster	Monster/Carmilla.png	Monster/カーミラ.png	Monster/卡美拉.png
+rm2003-0198	Monster	Monster/Kappa.png	Monster/カッパ.png	Monster/河童.png
+rm2003-0199	Monster	Monster/Catoblepas.png	Monster/カトブレパス.png	Monster/卡托布里帕斯.png
+rm2003-0200	Monster	Monster/Garuda.png	Monster/ガルーダ.png	Monster/揭路荼.png
+rm2003-0201	Monster	Monster/Chimera.png	Monster/キメラ.png	Monster/吐火獸.png
+rm2003-0202	Monster	Monster/Ghoul.png	Monster/グール.png	Monster/食屍鬼.png
+rm2003-0203	Monster	Monster/Kraken.png	Monster/クラーケン.png	Monster/克拉坎.png
+rm2003-0204	Monster	Monster/Crab.png	Monster/クラブ.png	Monster/巨蟹.png
+rm2003-0205	Monster	Monster/Griffon.png	Monster/グリフォン.png	Monster/葛里芬.png
+rm2003-0206	Monster	Monster/Grell.png	Monster/グレル.png	Monster/毛面蟲.png
+rm2003-0207	Monster	Monster/Crawler.png	Monster/クロウラー.png	Monster/爬蟲.png
+rm2003-0208	Monster	Monster/Gazer.png	Monster/ゲイザー.png	Monster/看守者.png
+rm2003-0209	Monster	Monster/Quetzalcoatl.png	Monster/ケツアルクアトル.png	Monster/羽蛇神.png
+rm2003-0210	Monster	Monster/Cait Sith.png	Monster/ケットシー.png	Monster/貓靈.png
+rm2003-0211	Monster	Monster/Cerberus.png	Monster/ケルベロス.png	Monster/地獄犬.png
+rm2003-0212	Monster	Monster/Centaur.png	Monster/ケンタウロス.png	Monster/半人馬.png
+rm2003-0213	Monster	Monster/Gorgon.png	Monster/ゴーゴン.png	Monster/戈耳戈.png
+rm2003-0214	Monster	Monster/Ghost.png	Monster/ゴースト.png	Monster/鬼魂.png
+rm2003-0215	Monster	Monster/Golem.png	Monster/ゴーレム.png	Monster/高崙.png
+rm2003-0216	Monster	Monster/Cockatorice.png	Monster/コカトリス.png	Monster/雞蛇獸.png
+rm2003-0217	Monster	Monster/Goblin.png	Monster/ゴブリン.png	Monster/小妖精.png
+rm2003-0218	Monster	Monster/Kobold.png	Monster/コボルト.png	Monster/地精.png
+rm2003-0219	Monster	Monster/Cyclops.png	Monster/サイクロプス.png	Monster/獨眼巨人.png
+rm2003-0220	Monster	Monster/Satan.png	Monster/サタナエル.png	Monster/撒旦尼爾.png
+rm2003-0221	Monster	Monster/Sahagin.png	Monster/サハギン.png	Monster/半魚人撒哈奇.png
+rm2003-0222	Monster	Monster/Salamander.png	Monster/サラマンダー.png	Monster/火蜥蜴.png
+rm2003-0223	Monster	Monster/Shark.png	Monster/シャーク.png	Monster/鯊魚.png
+rm2003-0224	Monster	Monster/Giant.png	Monster/ジャイアント.png	Monster/巨人.png
+rm2003-0225	Monster	Monster/Jack-O-Lantern.png	Monster/ジャック・オー・ランタン.png	Monster/燈籠怪.png
+rm2003-0226	Monster	Monster/Shadow.png	Monster/シャドウ.png	Monster/幻影.png
+rm2003-0227	Monster	Monster/Sylph.png	Monster/シルフ.png	Monster/風之精靈－絲芙.png
+rm2003-0228	Monster	Monster/Scylla.png	Monster/スキュラ.png	Monster/斯庫拉.png
+rm2003-0229	Monster	Monster/Skeleton.png	Monster/スケルトン.png	Monster/骷髏.png
+rm2003-0230	Monster	Monster/Scorpion.png	Monster/スコーピオン.png	Monster/天蠍.png
+rm2003-0231	Monster	Monster/Snake.png	Monster/スネーク.png	Monster/蛇.png
+rm2003-0232	Monster	Monster/Spirit.png	Monster/スピリッツ.png	Monster/靈魂.png
+rm2003-0233	Monster	Monster/Sphinx.png	Monster/スフィンクス.png	Monster/斯芬克司.png
+rm2003-0234	Monster	Monster/Spectre.png	Monster/スペクター.png	Monster/幽靈.png
+rm2003-0235	Monster	Monster/Slime.png	Monster/スライム.png	Monster/史萊姆.png
+rm2003-0236	Monster	Monster/Siren.png	Monster/セイレーン.png	Monster/賽倫女妖.png
+rm2003-0237	Monster	Monster/Seraphim.png	Monster/セラフィム.png	Monster/撒拉弗.png
+rm2003-0238	Monster	Monster/Centipede.png	Monster/センチピード.png	Monster/百腳蜈蚣.png
+rm2003-0239	Monster	Monster/Sorcerer.png	Monster/ソーサラー.png	Monster/巫師.png
+rm2003-0240	Monster	Monster/Zombie.png	Monster/ゾンビ.png	Monster/殭屍.png
+rm2003-0241	Monster	Monster/Dark Elf.png	Monster/ダークエルフ.png	Monster/黑暗妖精.png
+rm2003-0242	Monster	Monster/Dark Knight.png	Monster/ダークナイト.png	Monster/暗黑騎士.png
+rm2003-0243	Monster	Monster/Titan.png	Monster/タイタン.png	Monster/泰坦巨人.png
+rm2003-0244	Monster	Monster/Tarantula.png	Monster/タランチュラ.png	Monster/狼蛛.png
+rm2003-0245	Monster	Monster/Tiamat.png	Monster/ティアマット.png	Monster/塔亞瑪特邪龍.png
+rm2003-0246	Monster	Monster/Demon.png	Monster/デーモン.png	Monster/惡魔.png
+rm2003-0247	Monster	Monster/Toad.png	Monster/トード.png	Monster/蟾蜍.png
+rm2003-0248	Monster	Monster/Dragon.png	Monster/ドラゴン.png	Monster/龍.png
+rm2003-0249	Monster	Monster/Dragon Knight.png	Monster/ドラゴンナイト.png	Monster/龍騎士.png
+rm2003-0250	Monster	Monster/Treant.png	Monster/トレント.png	Monster/樹精.png
+rm2003-0251	Monster	Monster/Troll.png	Monster/トロール.png	Monster/山怪.png
+rm2003-0252	Monster	Monster/Necromancer.png	Monster/ネクロマンサー.png	Monster/死靈法師.png
+rm2003-0253	Monster	Monster/Nepenthes.png	Monster/ネペンテス.png	Monster/豬籠草怪.png
+rm2003-0254	Monster	Monster/Berserker.png	Monster/バーサーカー.png	Monster/狂暴戰士.png
+rm2003-0255	Monster	Monster/Harpy.png	Monster/ハーピー.png	Monster/鳥人哈比.png
+rm2003-0256	Monster	Monster/Basilisk.png	Monster/バジリスク.png	Monster/蛇怪.png
+rm2003-0257	Monster	Monster/Bat.png	Monster/バット.png	Monster/蝙蝠.png
+rm2003-0258	Monster	Monster/Bahamut.png	Monster/バハムート.png	Monster/巴哈姆特.png
+rm2003-0259	Monster	Monster/Parasite.png	Monster/パラサイト.png	Monster/寄生蟲.png
+rm2003-0260	Monster	Monster/Big Foot.png	Monster/ビッグフット.png	Monster/大腳怪.png
+rm2003-0261	Monster	Monster/Hydra.png	Monster/ヒュドラ.png	Monster/九頭蛇.png
+rm2003-0262	Monster	Monster/Phoenix.png	Monster/フェニックス.png	Monster/鳳凰鳥.png
+rm2003-0263	Monster	Monster/Fenrir.png	Monster/フェンリル.png	Monster/大天狼.png
+rm2003-0264	Monster	Monster/Behemoth.png	Monster/ベヒーモス.png	Monster/巨獸.png
+rm2003-0265	Monster	Monster/Hornet.png	Monster/ホーネット.png	Monster/大黃蜂.png
+rm2003-0266	Monster	Monster/Manticore.png	Monster/マンティコア.png	Monster/蒙特寇爾.png
+rm2003-0267	Monster	Monster/Mantis.png	Monster/マンティス.png	Monster/螳螂怪.png
+rm2003-0268	Monster	Monster/Mammoth.png	Monster/マンモス.png	Monster/長毛象.png
+rm2003-0269	Monster	Monster/Mummy.png	Monster/ミイラ男.png	Monster/木乃伊.png
+rm2003-0270	Monster	Monster/Midgardsormr.png	Monster/ミドガルズオルム.png	Monster/米嘉巨蟒.png
+rm2003-0271	Monster	Monster/Minotaur.png	Monster/ミノタウロス.png	Monster/邁諾陶.png
+rm2003-0272	Monster	Monster/Mimic.png	Monster/ミミック.png	Monster/變形怪.png
+rm2003-0273	Monster	Monster/Medusa.png	Monster/メデューサ.png	Monster/梅杜莎.png
+rm2003-0274	Monster	Monster/Unicorn.png	Monster/ユニコーン.png	Monster/獨角獸.png
+rm2003-0275	Monster	Monster/Lakshmi.png	Monster/ラクシュミ.png	Monster/吉祥天.png
+rm2003-0276	Monster	Monster/Lamia.png	Monster/ラミア.png	Monster/拉米亞.png
+rm2003-0277	Monster	Monster/Leviathan.png	Monster/リヴァイアサン.png	Monster/大海獸.png
+rm2003-0278	Monster	Monster/Lizard.png	Monster/リザード.png	Monster/蜥蜴.png
+rm2003-0279	Monster	Monster/Lizardman.png	Monster/リザードマン.png	Monster/蜥蜴人.png
+rm2003-0280	Monster	Monster/Lich.png	Monster/リッチ.png	Monster/妖巫.png
+rm2003-0281	Monster	Monster/Lilith.png	Monster/リリス.png	Monster/莉莉斯.png
+rm2003-0282	Monster	Monster/Wraith.png	Monster/レイス.png	Monster/死靈.png
+rm2003-0283	Monster	Monster/Remora.png	Monster/レモラ.png	Monster/怪魚雷莫拉.png
+rm2003-0284	Monster	Monster/Werewolf.png	Monster/ワーウルフ.png	Monster/狼人.png
+rm2003-0285	Monster	Monster/Worm.png	Monster/ワーム.png	Monster/蟲.png
+rm2003-0286	Monster	Monster/Wight.png	Monster/ワイト.png	Monster/屍妖.png
+rm2003-0287	Monster	Monster/Wyvern.png	Monster/ワイバーン.png	Monster/飛龍.png
+rm2003-0288	Monster	Monster/Kyuubi.png	Monster/九尾の狐.png	Monster/九尾狐狸.png
+rm2003-0289	Monster	Monster/Suzaku.png	Monster/朱雀.png	Monster/朱雀.png
+rm2003-0290	Monster	Monster/Genbu.png	Monster/玄武.png	Monster/玄武.png
+rm2003-0291	Monster	Monster/Byakko.png	Monster/白虎.png	Monster/白虎.png
+rm2003-0292	Monster	Monster/Horse.png	Monster/馬.png	Monster/馬.png
+rm2003-0293	Monster	Monster/Oni.png	Monster/鬼.png	Monster/惡鬼.png
+rm2003-0294	Monster	Monster/Kirin.png	Monster/麒麟.png	Monster/麒麟.png
+rm2003-0295	Monster	Monster/Ryuu.png	Monster/龍.png	Monster/青龍.png
+rm2003-0296	Music	Music/2003Healing Spring.mid	Music/2003いやしの泉.mid	Music/2003治癒之泉.mid
+rm2003-0297	Music	Music/2003Casino Indulgence.mid	Music/2003カジノ三昧.mid	Music/2003賭場.mid
+rm2003-0298	Music	Music/2003Colosseum.mid	Music/2003コロシアム.mid	Music/2003競技場.mid
+rm2003-0299	Music	Music/2003Cyber City.mid	Music/2003サイバーシティ.mid	Music/2003異次元城市.mid
+rm2003-0300	Music	Music/2003Snow Town.mid	Music/2003スノータウン.mid	Music/2003下雪的城鎮.mid
+rm2003-0301	Music	Music/2003Panic.mid	Music/2003パニック.mid	Music/2003恐慌.mid
+rm2003-0302	Music	Music/2003Maximum Battle.mid	Music/2003マキシマム・バトル.mid	Music/2003極限戰鬥.mid
+rm2003-0303	Music	Music/2003Dream of Striking It Rich.mid	Music/2003一獲千金の夢.mid	Music/2003一獲千金之夢.mid
+rm2003-0304	Music	Music/2003Adventurers.mid	Music/2003冒険者たち.mid	Music/2003冒險者們.mid
+rm2003-0305	Music	Music/2003Hero's Return.mid	Music/2003勇者の凱旋.mid	Music/2003勇者的凱旋.mid
+rm2003-0306	Music	Music/2003Ancient City.mid	Music/2003古城.mid	Music/2003古城.mid
+rm2003-0307	Music	Music/2003Subterranean Maze.mid	Music/2003地下迷宮.mid	Music/2003地下迷宮.mid
+rm2003-0308	Music	Music/2003Dream Forest.mid	Music/2003夢幻の森.mid	Music/2003夢幻之森.mid
+rm2003-0309	Music	Music/2003Dreaminess.mid	Music/2003夢見心地.mid	Music/2003夢幻心境.mid
+rm2003-0310	Music	Music/2003Free For All.mid	Music/2003大混戦.mid	Music/2003大混戰.mid
+rm2003-0311	Music	Music/2003Wings to the Sky.mid	Music/2003大空への翼.mid	Music/2003空中的羽翼.mid
+rm2003-0312	Music	Music/2003Cathedral.mid	Music/2003大聖堂.mid	Music/2003大聖堂.mid
+rm2003-0313	Music	Music/2003Fairy Forest.mid	Music/2003妖精の森.mid	Music/2003妖精之森.mid
+rm2003-0314	Music	Music/2003Lonesome Journey.mid	Music/2003孤独な旅立ち.mid	Music/2003孤獨的旅行.mid
+rm2003-0315	Music	Music/2003Little Army's March.mid	Music/2003小さな兵隊のマーチ.mid	Music/2003小軍隊進行曲.mid
+rm2003-0316	Music	Music/2003Village in the Valley.mid	Music/2003山あいの村.mid	Music/2003山中部落.mid
+rm2003-0317	Music	Music/2003Empire.mid	Music/2003帝国～エンパイア.mid	Music/2003帝國.mid
+rm2003-0318	Music	Music/2003Young Memories.mid	Music/2003幼少の記憶.mid	Music/2003年少記憶.mid
+rm2003-0319	Music	Music/2003Creeping Darkness.mid	Music/2003忍び寄る闇.mid	Music/2003悄然黑夜.mid
+rm2003-0320	Music	Music/2003In the Eternal Flow of Time.mid	Music/2003悠久の時の流れに.mid	Music/2003悠久時光的流轉.mid
+rm2003-0321	Music	Music/2003Sorrow.mid	Music/2003悲しみ.mid	Music/2003悲傷.mid
+rm2003-0322	Music	Music/2003Beginning of a War.mid	Music/2003戦いの幕開け.mid	Music/2003戰爭的序幕.mid
+rm2003-0323	Music	Music/2003Church.mid	Music/2003教会.mid	Music/2003教會.mid
+rm2003-0324	Music	Music/2003SunnyVillage.mid	Music/2003日だまりの村.mid	Music/2003日光村落.mid
+rm2003-0325	Music	Music/2003DarkAltar.mid	Music/2003暗黒の祭壇.mid	Music/2003暗黑祭壇.mid
+rm2003-0326	Music	Music/2003Village of Savages.mid	Music/2003未開の集落.mid	Music/2003未開化部落.mid
+rm2003-0327	Music	Music/2003Far Eastern Land.mid	Music/2003極東の地.mid	Music/2003極東之地.mid
+rm2003-0328	Music	Music/2003Machine Fortress.mid	Music/2003機械要塞.mid	Music/2003機械要塞.mid
+rm2003-0329	Music	Music/2003Ice Labyrinth.mid	Music/2003氷のラビリンス.mid	Music/2003冰之迷宮.mid
+rm2003-0330	Music	Music/2003Final Battleground.mid	Music/2003決戦の地.mid	Music/2003決戰之地.mid
+rm2003-0331	Music	Music/2003Deserted Mansion.mid	Music/2003無人の館.mid	Music/2003無人別館.mid
+rm2003-0332	Music	Music/2003Palace Party.mid	Music/2003王宮のパーティー.mid	Music/2003皇宮盛會.mid
+rm2003-0333	Music	Music/2003Otherworldly Corridor.mid	Music/2003異次元回廊.mid	Music/2003異次元迴廊.mid
+rm2003-0334	Music	Music/2003Waltz of Blessings.mid	Music/2003祝福ワルツ.mid	Music/2003祝福的華爾滋.mid
+rm2003-0335	Music	Music/2003Steady Breeze.mid	Music/2003穏やかな風.mid	Music/2003徐徐微風.mid
+rm2003-0336	Music	Music/2003Tension.mid	Music/2003緊迫.mid	Music/2003緊迫.mid
+rm2003-0337	Music	Music/2003Repeated Wars.mid	Music/2003繰り返される戦い.mid	Music/2003反覆的戰鬥.mid
+rm2003-0338	Music	Music/2003City Bustle.mid	Music/2003街の賑わい.mid	Music/2003熱鬧街道.mid
+rm2003-0339	Music	Music/2003Tavern.mid	Music/2003街の酒場.mid	Music/2003街上的酒館.mid
+rm2003-0340	Music	Music/2003Deep Memory.mid	Music/2003記憶の彼方に.mid	Music/2003記憶中的彼方.mid
+rm2003-0341	Music	Music/2003Exploring Ruins.mid	Music/2003遺跡探索.mid	Music/2003遺跡探索.mid
+rm2003-0342	Music	Music/2003Battle with an Evil God.mid	Music/2003邪神との戦い.mid	Music/2003與邪神一戰.mid
+rm2003-0343	Music	Music/2003Silence.mid	Music/2003静寂.mid	Music/2003靜寂.mid
+rm2003-0344	Music	Music/J2003Horn.mid	Music/j2003ホルン.mid	Music/j2003號角.mid
+rm2003-0345	Music	Music/JItem.mid	Music/jアイテム.mid	Music/j物品.mid
+rm2003-0346	Music	Music/JJoke 1.mid	Music/jギャグ1.mid	Music/j鬧劇1.mid
+rm2003-0347	Music	Music/JJoke 2.mid	Music/jギャグ2.mid	Music/j鬧劇2.mid
+rm2003-0348	Music	Music/JFanfare 1.mid	Music/jファンファーレ1.mid	Music/j吹奏樂1.mid
+rm2003-0349	Music	Music/JFanfare 2.mid	Music/jファンファーレ2.mid	Music/j吹奏樂2.mid
+rm2003-0350	Music	Music/JFanfare 3.mid	Music/jファンファーレ3.mid	Music/j吹奏樂3.mid
+rm2003-0351	Music	Music/JFanfare 4.mid	Music/jファンファーレ4.mid	Music/j吹奏樂4.mid
+rm2003-0352	Music	Music/JFanfare 5.mid	Music/jファンファーレ5.mid	Music/j吹奏樂5.mid
+rm2003-0353	Music	Music/JFanfare 6.mid	Music/jファンファーレ6.mid	Music/j吹奏樂6.mid
+rm2003-0354	Music	Music/JInn 1.mid	Music/j宿1.mid	Music/j住宿1.mid
+rm2003-0355	Music	Music/JInn 2.mid	Music/j宿2.mid	Music/j住宿2.mid
+rm2003-0356	Music	Music/JEnd of Battle 1.mid	Music/j戦闘終了1.mid	Music/j戰鬥結束1.mid
+rm2003-0357	Music	Music/JEnd of Battle 2.mid	Music/j戦闘終了2.mid	Music/j戰鬥結束2.mid
+rm2003-0358	Music	Music/JEnd of Battle 3.mid	Music/j戦闘終了3.mid	Music/j戰鬥結束3.mid
+rm2003-0359	Music	Music/JEnd of Battle 4.mid	Music/j戦闘終了4.mid	Music/j戰鬥結束4.mid
+rm2003-0360	Music	Music/JDoubt.mid	Music/j疑惑.mid	Music/j疑惑.mid
+rm2003-0361	Music	Music/JMystery.mid	Music/j謎.mid	Music/j謎.mid
+rm2003-0362	Music	Music/SE2003Alarm.wav	Music/se2003アラーム.wav	Music/se2003警報.wav
+rm2003-0363	Music	Music/SE2003Jungle.wav	Music/se2003ジャングル.wav	Music/se2003叢林.wav
+rm2003-0364	Music	Music/SE2003Bustle.wav	Music/se2003雑踏.wav	Music/se2003雜沓.wav
+rm2003-0365	Music	Music/SE2003Wind.wav	Music/se2003風.wav	Music/se2003風.wav
+rm2003-0366	Music	Music/SE2003Bird.wav	Music/se2003鳥.wav	Music/se2003鳥.wav
+rm2003-0367	Music	Music/SEEarthquake.wav	Music/se地震.wav	Music/se地震.wav
+rm2003-0368	Music	Music/SEDownpour.wav	Music/se大雨.wav	Music/se大雨.wav
+rm2003-0369	Music	Music/SEClock.wav	Music/se時計.wav	Music/se鐘.wav
+rm2003-0370	Music	Music/SESea.wav	Music/se海.wav	Music/se海.wav
+rm2003-0371	Music	Music/SERain.wav	Music/se雨.wav	Music/se雨.wav
+rm2003-0372	Music	Music/Ending 1.mid	Music/エンディング1.mid	Music/結束1.mid
+rm2003-0373	Music	Music/Ending 2.mid	Music/エンディング2.mid	Music/結束2.mid
+rm2003-0374	Music	Music/Ending 3.mid	Music/エンディング3.mid	Music/結束3.mid
+rm2003-0375	Music	Music/Opening 1.mid	Music/オープニング1.mid	Music/開始1.mid
+rm2003-0376	Music	Music/Opening 2.mid	Music/オープニング2.mid	Music/開始2.mid
+rm2003-0377	Music	Music/Opening 3.mid	Music/オープニング3.mid	Music/開始3.mid
+rm2003-0378	Music	Music/Game Over 1.mid	Music/ゲームオーバー1.mid	Music/遊戲結束1.mid
+rm2003-0379	Music	Music/Game Over 2.mid	Music/ゲームオーバー2.mid	Music/遊戲結束2.mid
+rm2003-0380	Music	Music/Game Over 3.mid	Music/ゲームオーバー3.mid	Music/遊戲結束3.mid
+rm2003-0381	Music	Music/Ghost Town 1.mid	Music/ゴーストタウン1.mid	Music/鬼城1.mid
+rm2003-0382	Music	Music/Ghost Town 2.mid	Music/ゴーストタウン2.mid	Music/鬼城2.mid
+rm2003-0383	Music	Music/Dungeon 1.mid	Music/ダンジョン1.mid	Music/迷宮1.mid
+rm2003-0384	Music	Music/Dungeon 2.mid	Music/ダンジョン2.mid	Music/迷宮2.mid
+rm2003-0385	Music	Music/Dungeon 3.mid	Music/ダンジョン3.mid	Music/迷宮3.mid
+rm2003-0386	Music	Music/Dungeon 4.mid	Music/ダンジョン4.mid	Music/迷宮4.mid
+rm2003-0387	Music	Music/Dungeon 5.mid	Music/ダンジョン5.mid	Music/迷宮5.mid
+rm2003-0388	Music	Music/In a Pinch.mid	Music/ピンチ.mid	Music/危機.mid
+rm2003-0389	Music	Music/Field 1.mid	Music/フィールド1.mid	Music/原野1.mid
+rm2003-0390	Music	Music/Field 2.mid	Music/フィールド2.mid	Music/原野2.mid
+rm2003-0391	Music	Music/Field 3.mid	Music/フィールド3.mid	Music/原野3.mid
+rm2003-0392	Music	Music/Field 4.mid	Music/フィールド4.mid	Music/原野4.mid
+rm2003-0393	Music	Music/Boss 1.mid	Music/ボス1.mid	Music/boss1.mid
+rm2003-0394	Music	Music/Boss 2.mid	Music/ボス2.mid	Music/boss2.mid
+rm2003-0395	Music	Music/Boss 3.mid	Music/ボス3.mid	Music/boss3.mid
+rm2003-0396	Music	Music/Boss 4.mid	Music/ボス4.mid	Music/boss4.mid
+rm2003-0397	Music	Music/Vehicle 1.mid	Music/乗り物1.mid	Music/交通工具1.mid
+rm2003-0398	Music	Music/Vehicle 2.mid	Music/乗り物2.mid	Music/交通工具2.mid
+rm2003-0399	Music	Music/Vehicle 3.mid	Music/乗り物3.mid	Music/交通工具3.mid
+rm2003-0400	Music	Music/Parting 1.mid	Music/別れ1.mid	Music/別離1.mid
+rm2003-0401	Music	Music/Parting 2.mid	Music/別れ2.mid	Music/別離2.mid
+rm2003-0402	Music	Music/Hero 1.mid	Music/勇者1.mid	Music/勇者1.mid
+rm2003-0403	Music	Music/Hero 2.mid	Music/勇者2.mid	Music/勇者2.mid
+rm2003-0404	Music	Music/Animal.mid	Music/動物.mid	Music/動物.mid
+rm2003-0405	Music	Music/Victory.mid	Music/勝利.mid	Music/勝利.mid
+rm2003-0406	Music	Music/Castle 1.mid	Music/城1.mid	Music/城1.mid
+rm2003-0407	Music	Music/Castle 2.mid	Music/城2.mid	Music/城2.mid
+rm2003-0408	Music	Music/Castle 3.mid	Music/城3.mid	Music/城3.mid
+rm2003-0409	Music	Music/Tower 1.mid	Music/塔1.mid	Music/塔1.mid
+rm2003-0410	Music	Music/Tower 2.mid	Music/塔2.mid	Music/塔2.mid
+rm2003-0411	Music	Music/Tower 3.mid	Music/塔3.mid	Music/塔3.mid
+rm2003-0412	Music	Music/Fairy 1.mid	Music/妖精1.mid	Music/妖精1.mid
+rm2003-0413	Music	Music/Fairy 2.mid	Music/妖精2.mid	Music/妖精2.mid
+rm2003-0414	Music	Music/Repose 1.mid	Music/安らぎ1.mid	Music/安樂1.mid
+rm2003-0415	Music	Music/Repose 2.mid	Music/安らぎ2.mid	Music/安樂2.mid
+rm2003-0416	Music	Music/Repose 3.mid	Music/安らぎ3.mid	Music/安樂3.mid
+rm2003-0417	Music	Music/Shop 1.mid	Music/店1.mid	Music/店1.mid
+rm2003-0418	Music	Music/Shop 2.mid	Music/店2.mid	Music/店2.mid
+rm2003-0419	Music	Music/Shop 3.mid	Music/店3.mid	Music/店3.mid
+rm2003-0420	Music	Music/Wrath.mid	Music/怒り.mid	Music/怒.mid
+rm2003-0421	Music	Music/Sorrow.mid	Music/悲しみ.mid	Music/悲傷.mid
+rm2003-0422	Music	Music/Battle 1.mid	Music/戦闘1.mid	Music/戰鬥1.mid
+rm2003-0423	Music	Music/Battle 2.mid	Music/戦闘2.mid	Music/戰鬥2.mid
+rm2003-0424	Music	Music/Battle 3.mid	Music/戦闘3.mid	Music/戰鬥3.mid
+rm2003-0425	Music	Music/Exploration.mid	Music/探索.mid	Music/探索.mid
+rm2003-0426	Music	Music/Defeat.mid	Music/敗北.mid	Music/敗北.mid
+rm2003-0427	Music	Music/Church.mid	Music/教会.mid	Music/教會.mid
+rm2003-0428	Music	Music/Lively Market.mid	Music/明るい市場.mid	Music/明亮的市集.mid
+rm2003-0429	Music	Music/Village 1.mid	Music/村1.mid	Music/村1.mid
+rm2003-0430	Music	Music/Village 2.mid	Music/村2.mid	Music/村2.mid
+rm2003-0431	Music	Music/Village 3.mid	Music/村3.mid	Music/村3.mid
+rm2003-0432	Music	Music/Thief.mid	Music/泥棒.mid	Music/泥棒.mid
+rm2003-0433	Music	Music/Liveliness.mid	Music/活気.mid	Music/朝氣.mid
+rm2003-0434	Music	Music/Town 1.mid	Music/町1.mid	Music/街1.mid
+rm2003-0435	Music	Music/Town 2.mid	Music/町2.mid	Music/街2.mid
+rm2003-0436	Music	Music/Town 3.mid	Music/町3.mid	Music/街3.mid
+rm2003-0437	Music	Music/Mystery 1.mid	Music/神秘1.mid	Music/神秘1.mid
+rm2003-0438	Music	Music/Mystery 2.mid	Music/神秘2.mid	Music/神秘2.mid
+rm2003-0439	Music	Music/Mystery 3.mid	Music/神秘3.mid	Music/神秘3.mid
+rm2003-0440	Music	Music/Secret Treasure.mid	Music/秘宝.mid	Music/神秘寶藏.mid
+rm2003-0441	Music	Music/Ship 1.mid	Music/船1.mid	Music/船1.mid
+rm2003-0442	Music	Music/Ship 2.mid	Music/船2.mid	Music/船2.mid
+rm2003-0443	Music	Music/Ship 3.mid	Music/船3.mid	Music/船3.mid
+rm2003-0444	Music	Music/Trial.mid	Music/試練.mid	Music/試煉.mid
+rm2003-0445	Music	Music/Black Market.mid	Music/闇市.mid	Music/黑市.mid
+rm2003-0446	Music	Music/Demon Lord.mid	Music/魔王.mid	Music/魔王.mid
+rm2003-0447	Panorama	Panorama/Sunset1.png	Panorama/夕焼け1.png	Panorama/夕陽1.png
+rm2003-0448	Panorama	Panorama/Sunset2.png	Panorama/夕焼け2.png	Panorama/夕陽2.png
+rm2003-0449	Panorama	Panorama/Dawn1.png	Panorama/夜明け1.png	Panorama/黎明1.png
+rm2003-0450	Panorama	Panorama/Dawn2.png	Panorama/夜明け2.png	Panorama/黎明2.png
+rm2003-0451	Panorama	Panorama/Night Sky1.png	Panorama/夜空1.png	Panorama/夜空1.png
+rm2003-0452	Panorama	Panorama/Night Sky2.png	Panorama/夜空2.png	Panorama/夜空2.png
+rm2003-0453	Panorama	Panorama/Cosmos1.png	Panorama/宇宙.png	Panorama/宇宙.png
+rm2003-0454	Panorama	Panorama/Planet1.png	Panorama/惑星1.png	Panorama/惑星1.png
+rm2003-0455	Panorama	Panorama/Planet2.png	Panorama/惑星2.png	Panorama/惑星2.png
+rm2003-0456	Panorama	Panorama/Planet3.png	Panorama/惑星3.png	Panorama/惑星3.png
+rm2003-0457	Panorama	Panorama/Dimension Rift.png	Panorama/異空間.png	Panorama/異次元空間.png
+rm2003-0458	Panorama	Panorama/Sky1.png	Panorama/空1.png	Panorama/天空1.png
+rm2003-0459	Panorama	Panorama/Sky2.png	Panorama/空2.png	Panorama/天空2.png
+rm2003-0460	Sound	Sound/Item1.wav	Sound/アイテム1.wav	Sound/物品1.wav
+rm2003-0461	Sound	Sound/Item2.wav	Sound/アイテム2.wav	Sound/物品2.wav
+rm2003-0462	Sound	Sound/Chime1.wav	Sound/あたり1.wav	Sound/碰撞1.wav
+rm2003-0463	Sound	Sound/Chime2.wav	Sound/あたり2.wav	Sound/碰撞2.wav
+rm2003-0464	Sound	Sound/Buff.wav	Sound/アップ.wav	Sound/上昇.wav
+rm2003-0465	Sound	Sound/Dog.wav	Sound/イヌ.wav	Sound/狗.wav
+rm2003-0466	Sound	Sound/Cow.wav	Sound/ウシ.wav	Sound/牛.wav
+rm2003-0467	Sound	Sound/Horse.wav	Sound/ウマ.wav	Sound/馬.wav
+rm2003-0468	Sound	Sound/Roar.wav	Sound/おたけび.wav	Sound/吶喊.wav
+rm2003-0469	Sound	Sound/Cursor1.wav	Sound/カーソル1.wav	Sound/游標1.wav
+rm2003-0470	Sound	Sound/Cursor2.wav	Sound/カーソル2.wav	Sound/游標2.wav
+rm2003-0471	Sound	Sound/GlassShatter.wav	Sound/ガシャン.wav	Sound/裂開.wav
+rm2003-0472	Sound	Sound/Cancel1.wav	Sound/キャンセル1.wav	Sound/取消1.wav
+rm2003-0473	Sound	Sound/Cancel2.wav	Sound/キャンセル2.wav	Sound/取消2.wav
+rm2003-0474	Sound	Sound/Paralyze1.wav	Sound/しびれ1.wav	Sound/麻痺1.wav
+rm2003-0475	Sound	Sound/Paralyze2.wav	Sound/しびれ2.wav	Sound/麻痺2.wav
+rm2003-0476	Sound	Sound/Paralyze3.wav	Sound/しびれ3.wav	Sound/麻痺3.wav
+rm2003-0477	Sound	Sound/Jump1.wav	Sound/ジャンプ1.wav	Sound/跳躍1.wav
+rm2003-0478	Sound	Sound/Jump2.wav	Sound/ジャンプ2.wav	Sound/跳躍2.wav
+rm2003-0479	Sound	Sound/Shot1.wav	Sound/ショット1.wav	Sound/發射1.wav
+rm2003-0480	Sound	Sound/Shot2.wav	Sound/ショット2.wav	Sound/發射2.wav
+rm2003-0481	Sound	Sound/Shot3.wav	Sound/ショット3.wav	Sound/發射3.wav
+rm2003-0482	Sound	Sound/Switch1.wav	Sound/スイッチ1.wav	Sound/開關1.wav
+rm2003-0483	Sound	Sound/Switch2.wav	Sound/スイッチ2.wav	Sound/開關2.wav
+rm2003-0484	Sound	Sound/Debuff.wav	Sound/ダウン.wav	Sound/下降.wav
+rm2003-0485	Sound	Sound/Damage1.wav	Sound/ダメージ1.wav	Sound/傷害1.wav
+rm2003-0486	Sound	Sound/Damage2.wav	Sound/ダメージ2.wav	Sound/傷害2.wav
+rm2003-0487	Sound	Sound/Teleport1.wav	Sound/テレポート1.wav	Sound/傳送1.wav
+rm2003-0488	Sound	Sound/Teleport2.wav	Sound/テレポート2.wav	Sound/傳送2.wav
+rm2003-0489	Sound	Sound/Tiger.wav	Sound/トラ.wav	Sound/虎.wav
+rm2003-0490	Sound	Sound/Glare.wav	Sound/にらみ.wav	Sound/凝視.wav
+rm2003-0491	Sound	Sound/Chicken.wav	Sound/にわとり.wav	Sound/雞.wav
+rm2003-0492	Sound	Sound/Cat.wav	Sound/ネコ.wav	Sound/貓.wav
+rm2003-0493	Sound	Sound/Knock.wav	Sound/ノック.wav	Sound/敲.wav
+rm2003-0494	Sound	Sound/Buzzer1.wav	Sound/はずれ1.wav	Sound/磨擦1.wav
+rm2003-0495	Sound	Sound/Buzzer2.wav	Sound/はずれ2.wav	Sound/磨擦2.wav
+rm2003-0496	Sound	Sound/Barrier.wav	Sound/バリア.wav	Sound/護罩.wav
+rm2003-0497	Sound	Sound/Sheep.wav	Sound/ひつじ.wav	Sound/羊.wav
+rm2003-0498	Sound	Sound/Buzzer3.wav	Sound/ブザー1.wav	Sound/汽笛1.wav
+rm2003-0499	Sound	Sound/Buzzer4.wav	Sound/ブザー2.wav	Sound/汽笛2.wav
+rm2003-0500	Sound	Sound/Flash1.wav	Sound/フラッシュ1.wav	Sound/閃爍1.wav
+rm2003-0501	Sound	Sound/Flash2.wav	Sound/フラッシュ2.wav	Sound/閃爍2.wav
+rm2003-0502	Sound	Sound/Flash3.wav	Sound/フラッシュ3.wav	Sound/閃爍3.wav
+rm2003-0503	Sound	Sound/Breath.wav	Sound/ブレス.wav	Sound/氣息.wav
+rm2003-0504	Sound	Sound/Monster1.wav	Sound/モンスター1.wav	Sound/怪物1.wav
+rm2003-0505	Sound	Sound/Monster2.wav	Sound/モンスター2.wav	Sound/怪物2.wav
+rm2003-0506	Sound	Sound/Lion.wav	Sound/ライオン.wav	Sound/獅.wav
+rm2003-0507	Sound	Sound/Ice1.wav	Sound/冷気1.wav	Sound/冰1.wav
+rm2003-0508	Sound	Sound/Ice2.wav	Sound/冷気2.wav	Sound/冰2.wav
+rm2003-0509	Sound	Sound/Ice3.wav	Sound/冷気3.wav	Sound/冰3.wav
+rm2003-0510	Sound	Sound/Ice4.wav	Sound/冷気4.wav	Sound/冰4.wav
+rm2003-0511	Sound	Sound/Ice5.wav	Sound/冷気5.wav	Sound/冰5.wav
+rm2003-0512	Sound	Sound/Ice6.wav	Sound/冷気6.wav	Sound/冰6.wav
+rm2003-0513	Sound	Sound/Ice7.wav	Sound/冷気7.wav	Sound/冰7.wav
+rm2003-0514	Sound	Sound/Ice8.wav	Sound/冷気8.wav	Sound/冰8.wav
+rm2003-0515	Sound	Sound/Ice9.wav	Sound/冷気9.wav	Sound/冰9.wav
+rm2003-0516	Sound	Sound/Ice10.wav	Sound/冷気10.wav	Sound/冰10.wav
+rm2003-0517	Sound	Sound/Ice11.wav	Sound/冷気11.wav	Sound/冰11.wav
+rm2003-0518	Sound	Sound/Sword1.wav	Sound/剣1.wav	Sound/劍1.wav
+rm2003-0519	Sound	Sound/Sword2.wav	Sound/剣2.wav	Sound/劍2.wav
+rm2003-0520	Sound	Sound/Sword3.wav	Sound/剣3.wav	Sound/劍3.wav
+rm2003-0521	Sound	Sound/Absorb1.wav	Sound/吸収1.wav	Sound/吸收1.wav
+rm2003-0522	Sound	Sound/Absorb2.wav	Sound/吸収2.wav	Sound/吸收2.wav
+rm2003-0523	Sound	Sound/Bite.wav	Sound/噛む.wav	Sound/咬.wav
+rm2003-0524	Sound	Sound/Recovery1.wav	Sound/回復1.wav	Sound/回復1.wav
+rm2003-0525	Sound	Sound/Recovery2.wav	Sound/回復2.wav	Sound/回復2.wav
+rm2003-0526	Sound	Sound/Recovery3.wav	Sound/回復3.wav	Sound/回復3.wav
+rm2003-0527	Sound	Sound/Recovery4.wav	Sound/回復4.wav	Sound/回復4.wav
+rm2003-0528	Sound	Sound/Recovery5.wav	Sound/回復5.wav	Sound/回復5.wav
+rm2003-0529	Sound	Sound/Recovery6.wav	Sound/回復6.wav	Sound/回復6.wav
+rm2003-0530	Sound	Sound/Recovery7.wav	Sound/回復7.wav	Sound/回復7.wav
+rm2003-0531	Sound	Sound/Recovery8.wav	Sound/回復8.wav	Sound/回復8.wav
+rm2003-0532	Sound	Sound/Evade1.wav	Sound/回避1.wav	Sound/迴避1.wav
+rm2003-0533	Sound	Sound/Evade2.wav	Sound/回避2.wav	Sound/迴避2.wav
+rm2003-0534	Sound	Sound/Earthquake1.wav	Sound/地震1.wav	Sound/地震1.wav
+rm2003-0535	Sound	Sound/Earthquake2.wav	Sound/地震2.wav	Sound/地震2.wav
+rm2003-0536	Sound	Sound/Barrier1.wav	Sound/壁1.wav	Sound/壁1.wav
+rm2003-0537	Sound	Sound/Barrier2.wav	Sound/壁2.wav	Sound/壁2.wav
+rm2003-0538	Sound	Sound/Earth1.wav	Sound/大地1.wav	Sound/大地1.wav
+rm2003-0539	Sound	Sound/Earth2.wav	Sound/大地2.wav	Sound/大地2.wav
+rm2003-0540	Sound	Sound/Earth3.wav	Sound/大地3.wav	Sound/大地3.wav
+rm2003-0541	Sound	Sound/Earth4.wav	Sound/大地4.wav	Sound/大地4.wav
+rm2003-0542	Sound	Sound/Earth5.wav	Sound/大地5.wav	Sound/大地5.wav
+rm2003-0543	Sound	Sound/Earth6.wav	Sound/大地6.wav	Sound/大地6.wav
+rm2003-0544	Sound	Sound/Earth7.wav	Sound/大地7.wav	Sound/大地7.wav
+rm2003-0545	Sound	Sound/Earth8.wav	Sound/大地8.wav	Sound/大地8.wav
+rm2003-0546	Sound	Sound/Earth9.wav	Sound/大地9.wav	Sound/大地9.wav
+rm2003-0547	Sound	Sound/Earth10.wav	Sound/大地10.wav	Sound/大地10.wav
+rm2003-0548	Sound	Sound/Ensnare.wav	Sound/巻き付き.wav	Sound/捲襲.wav
+rm2003-0549	Sound	Sound/Bow1.wav	Sound/弓1.wav	Sound/弓1.wav
+rm2003-0550	Sound	Sound/Bow2.wav	Sound/弓2.wav	Sound/弓2.wav
+rm2003-0551	Sound	Sound/Combat1.wav	Sound/戦闘1.wav	Sound/戰鬥1.wav
+rm2003-0552	Sound	Sound/Combat2.wav	Sound/戦闘2.wav	Sound/戰鬥2.wav
+rm2003-0553	Sound	Sound/Blow1.wav	Sound/打撃1.wav	Sound/打擊1.wav
+rm2003-0554	Sound	Sound/Blow2.wav	Sound/打撃2.wav	Sound/打擊2.wav
+rm2003-0555	Sound	Sound/Blow3.wav	Sound/打撃3.wav	Sound/打擊3.wav
+rm2003-0556	Sound	Sound/Blow4.wav	Sound/打撃4.wav	Sound/打擊4.wav
+rm2003-0557	Sound	Sound/Blow5.wav	Sound/打撃5.wav	Sound/打擊5.wav
+rm2003-0558	Sound	Sound/Blow6.wav	Sound/打撃6.wav	Sound/打擊6.wav
+rm2003-0559	Sound	Sound/Blow7.wav	Sound/打撃7.wav	Sound/打擊7.wav
+rm2003-0560	Sound	Sound/Attack1.wav	Sound/攻撃1.wav	Sound/攻擊1.wav
+rm2003-0561	Sound	Sound/Attack2.wav	Sound/攻撃2.wav	Sound/攻擊2.wav
+rm2003-0562	Sound	Sound/Slash1.wav	Sound/斬る1.wav	Sound/斬1.wav
+rm2003-0563	Sound	Sound/Slash10.wav	Sound/斬る10.wav	Sound/斬10.wav
+rm2003-0564	Sound	Sound/Slash11.wav	Sound/斬る11.wav	Sound/斬11.wav
+rm2003-0565	Sound	Sound/Slash2.wav	Sound/斬る2.wav	Sound/斬2.wav
+rm2003-0566	Sound	Sound/Slash3.wav	Sound/斬る3.wav	Sound/斬3.wav
+rm2003-0567	Sound	Sound/Slash4.wav	Sound/斬る4.wav	Sound/斬4.wav
+rm2003-0568	Sound	Sound/Slash5.wav	Sound/斬る5.wav	Sound/斬5.wav
+rm2003-0569	Sound	Sound/Slash6.wav	Sound/斬る6.wav	Sound/斬6.wav
+rm2003-0570	Sound	Sound/Slash7.wav	Sound/斬る7.wav	Sound/斬7.wav
+rm2003-0571	Sound	Sound/Slash8.wav	Sound/斬る8.wav	Sound/斬8.wav
+rm2003-0572	Sound	Sound/Slash9.wav	Sound/斬る9.wav	Sound/斬9.wav
+rm2003-0573	Sound	Sound/Clock.wav	Sound/時計.wav	Sound/時鐘.wav
+rm2003-0574	Sound	Sound/Blind.wav	Sound/暗闇.wav	Sound/黑暗.wav
+rm2003-0575	Sound	Sound/Darkness1.wav	Sound/暗黒1.wav	Sound/暗黑1.wav
+rm2003-0576	Sound	Sound/Darkness2.wav	Sound/暗黒2.wav	Sound/暗黑2.wav
+rm2003-0577	Sound	Sound/Darkness3.wav	Sound/暗黒3.wav	Sound/暗黑3.wav
+rm2003-0578	Sound	Sound/Darkness4.wav	Sound/暗黒4.wav	Sound/暗黑4.wav
+rm2003-0579	Sound	Sound/Darkness5.wav	Sound/暗黒5.wav	Sound/暗黑5.wav
+rm2003-0580	Sound	Sound/Darkness6.wav	Sound/暗黒6.wav	Sound/暗黑6.wav
+rm2003-0581	Sound	Sound/Song.wav	Sound/歌.wav	Sound/歌.wav
+rm2003-0582	Sound	Sound/Poison.wav	Sound/毒.wav	Sound/毒.wav
+rm2003-0583	Sound	Sound/Water1.wav	Sound/水1.wav	Sound/水1.wav
+rm2003-0584	Sound	Sound/Water2.wav	Sound/水2.wav	Sound/水2.wav
+rm2003-0585	Sound	Sound/Water3.wav	Sound/水3.wav	Sound/水3.wav
+rm2003-0586	Sound	Sound/Water4.wav	Sound/水4.wav	Sound/水4.wav
+rm2003-0587	Sound	Sound/Water5.wav	Sound/水5.wav	Sound/水5.wav
+rm2003-0588	Sound	Sound/Water6.wav	Sound/水6.wav	Sound/水6.wav
+rm2003-0589	Sound	Sound/Decision1.wav	Sound/決定1.wav	Sound/決定1.wav
+rm2003-0590	Sound	Sound/Decision2.wav	Sound/決定2.wav	Sound/決定2.wav
+rm2003-0591	Sound	Sound/Silence.wav	Sound/沈黙.wav	Sound/沉默.wav
+rm2003-0592	Sound	Sound/Sea1.wav	Sound/海1.wav	Sound/海1.wav
+rm2003-0593	Sound	Sound/Sea2.wav	Sound/海2.wav	Sound/海2.wav
+rm2003-0594	Sound	Sound/Collapse1.wav	Sound/消滅1.wav	Sound/消滅1.wav
+rm2003-0595	Sound	Sound/Collapse2.wav	Sound/消滅2.wav	Sound/消滅2.wav
+rm2003-0596	Sound	Sound/Confusion.wav	Sound/混乱.wav	Sound/混亂.wav
+rm2003-0597	Sound	Sound/Fire1.wav	Sound/炎1.wav	Sound/炎1.wav
+rm2003-0598	Sound	Sound/Fire2.wav	Sound/炎2.wav	Sound/炎2.wav
+rm2003-0599	Sound	Sound/Fire3.wav	Sound/炎3.wav	Sound/炎3.wav
+rm2003-0600	Sound	Sound/Fire4.wav	Sound/炎4.wav	Sound/炎4.wav
+rm2003-0601	Sound	Sound/Fire5.wav	Sound/炎5.wav	Sound/炎5.wav
+rm2003-0602	Sound	Sound/Fire6.wav	Sound/炎6.wav	Sound/炎6.wav
+rm2003-0603	Sound	Sound/Fire7.wav	Sound/炎7.wav	Sound/炎7.wav
+rm2003-0604	Sound	Sound/Fire8.wav	Sound/炎8.wav	Sound/炎8.wav
+rm2003-0605	Sound	Sound/Explosion1.wav	Sound/爆発1.wav	Sound/爆發1.wav
+rm2003-0606	Sound	Sound/Explosion2.wav	Sound/爆発2.wav	Sound/爆發2.wav
+rm2003-0607	Sound	Sound/Explosion3.wav	Sound/爆発3.wav	Sound/爆發3.wav
+rm2003-0608	Sound	Sound/Explosion4.wav	Sound/爆発4.wav	Sound/爆發4.wav
+rm2003-0609	Sound	Sound/Explosion5.wav	Sound/爆発5.wav	Sound/爆發5.wav
+rm2003-0610	Sound	Sound/Explosion6.wav	Sound/爆発6.wav	Sound/爆發6.wav
+rm2003-0611	Sound	Sound/Explosion7.wav	Sound/爆発7.wav	Sound/爆發7.wav
+rm2003-0612	Sound	Sound/Sleep.wav	Sound/睡眠.wav	Sound/睡眠.wav
+rm2003-0613	Sound	Sound/Sandstorm.wav	Sound/砂けむり.wav	Sound/沙塵暴.wav
+rm2003-0614	Sound	Sound/Holy1.wav	Sound/神聖1.wav	Sound/神聖1.wav
+rm2003-0615	Sound	Sound/Holy2.wav	Sound/神聖2.wav	Sound/神聖2.wav
+rm2003-0616	Sound	Sound/Holy3.wav	Sound/神聖3.wav	Sound/神聖3.wav
+rm2003-0617	Sound	Sound/Holy4.wav	Sound/神聖4.wav	Sound/神聖4.wav
+rm2003-0618	Sound	Sound/Holy5.wav	Sound/神聖5.wav	Sound/神聖5.wav
+rm2003-0619	Sound	Sound/Holy6.wav	Sound/神聖6.wav	Sound/神聖6.wav
+rm2003-0620	Sound	Sound/Holy7.wav	Sound/神聖7.wav	Sound/神聖7.wav
+rm2003-0621	Sound	Sound/Holy8.wav	Sound/神聖8.wav	Sound/神聖8.wav
+rm2003-0622	Sound	Sound/Holy9.wav	Sound/神聖9.wav	Sound/神聖9.wav
+rm2003-0623	Sound	Sound/Move.wav	Sound/移動.wav	Sound/移動.wav
+rm2003-0624	Sound	Sound/Pollen.wav	Sound/花粉.wav	Sound/花粉.wav
+rm2003-0625	Sound	Sound/Fall1.wav	Sound/落ちる1.wav	Sound/落下1.wav
+rm2003-0626	Sound	Sound/Fall2.wav	Sound/落ちる2.wav	Sound/落下2.wav
+rm2003-0627	Sound	Sound/Raise1.wav	Sound/蘇生1.wav	Sound/復活1.wav
+rm2003-0628	Sound	Sound/Raise2.wav	Sound/蘇生2.wav	Sound/復活2.wav
+rm2003-0629	Sound	Sound/Raise3.wav	Sound/蘇生3.wav	Sound/復活3.wav
+rm2003-0630	Sound	Sound/Escape.wav	Sound/逃走.wav	Sound/逃走.wav
+rm2003-0631	Sound	Sound/Key.wav	Sound/鍵.wav	Sound/鑰匙.wav
+rm2003-0632	Sound	Sound/Bell.wav	Sound/鐘.wav	Sound/鐘.wav
+rm2003-0633	Sound	Sound/Close1.wav	Sound/閉める1.wav	Sound/關閉1.wav
+rm2003-0634	Sound	Sound/Close2.wav	Sound/閉める2.wav	Sound/關閉2.wav
+rm2003-0635	Sound	Sound/Open1.wav	Sound/開ける1.wav	Sound/開啟1.wav
+rm2003-0636	Sound	Sound/Open2.wav	Sound/開ける2.wav	Sound/開啟2.wav
+rm2003-0637	Sound	Sound/Rain1.wav	Sound/雨1.wav	Sound/雨1.wav
+rm2003-0638	Sound	Sound/Rain2.wav	Sound/雨2.wav	Sound/雨2.wav
+rm2003-0639	Sound	Sound/Thunder1.wav	Sound/雷1.wav	Sound/雷1.wav
+rm2003-0640	Sound	Sound/Thunder2.wav	Sound/雷2.wav	Sound/雷2.wav
+rm2003-0641	Sound	Sound/Thunder3.wav	Sound/雷3.wav	Sound/雷3.wav
+rm2003-0642	Sound	Sound/Thunder4.wav	Sound/雷4.wav	Sound/雷4.wav
+rm2003-0643	Sound	Sound/Thunder5.wav	Sound/雷5.wav	Sound/雷5.wav
+rm2003-0644	Sound	Sound/Thunder6.wav	Sound/雷6.wav	Sound/雷6.wav
+rm2003-0645	Sound	Sound/Thunder7.wav	Sound/雷7.wav	Sound/雷7.wav
+rm2003-0646	Sound	Sound/Thunder8.wav	Sound/雷8.wav	Sound/雷8.wav
+rm2003-0647	Sound	Sound/Thunder9.wav	Sound/雷9.wav	Sound/雷9.wav
+rm2003-0648	Sound	Sound/Thunder10.wav	Sound/雷10.wav	Sound/雷10.wav
+rm2003-0649	Sound	Sound/Fog1.wav	Sound/霧1.wav	Sound/霧1.wav
+rm2003-0650	Sound	Sound/Fog2.wav	Sound/霧2.wav	Sound/霧2.wav
+rm2003-0651	Sound	Sound/Wave1.wav	Sound/音波1.wav	Sound/音波1.wav
+rm2003-0652	Sound	Sound/Wave2.wav	Sound/音波2.wav	Sound/音波2.wav
+rm2003-0653	Sound	Sound/Wind1.wav	Sound/風1.wav	Sound/風1.wav
+rm2003-0654	Sound	Sound/Wind2.wav	Sound/風2.wav	Sound/風2.wav
+rm2003-0655	Sound	Sound/Wind3.wav	Sound/風3.wav	Sound/風3.wav
+rm2003-0656	Sound	Sound/Wind4.wav	Sound/風4.wav	Sound/風4.wav
+rm2003-0657	Sound	Sound/Wind5.wav	Sound/風5.wav	Sound/風5.wav
+rm2003-0658	Sound	Sound/Wind6.wav	Sound/風6.wav	Sound/風6.wav
+rm2003-0659	Sound	Sound/Wind7.wav	Sound/風7.wav	Sound/風7.wav
+rm2003-0660	Sound	Sound/Wind8.wav	Sound/風8.wav	Sound/風8.wav
+rm2003-0661	Sound	Sound/Wind9.wav	Sound/風9.wav	Sound/風9.wav
+rm2003-0662	Sound	Sound/Wind10.wav	Sound/風10.wav	Sound/風10.wav
+rm2003-0663	Sound	Sound/Wind11.wav	Sound/風11.wav	Sound/風11.wav
+rm2003-0664	Sound	Sound/Magic1.wav	Sound/魔法1.wav	Sound/魔法1.wav
+rm2003-0665	Sound	Sound/Magic2.wav	Sound/魔法2.wav	Sound/魔法2.wav
+rm2003-0666	System	System/System.png	System/システム.png	System/系統.png
+rm2003-0667	System	System/SystemA.png	System/システムa.png	System/系統a.png
+rm2003-0668	System	System/SystemB.png	System/システムb.png	System/系統b.png
+rm2003-0669	System	System/SystemC.png	System/システムc.png	System/系統c.png
+rm2003-0670	System2	System2/System2A.png	System2/システム２a.png	System2/系統2a.png
+rm2003-0671	System2	System2/System2B.png	System2/システム２b.png	System2/系統2b.png
+rm2003-0672	System2	System2/System2C.png	System2/システム２c.png	System2/系統2c.png
+rm2003-0673	Title	Title/Title1.png	Title/タイトル1.png	Title/標題1.png
+rm2003-0674	Title	Title/Title2.png	Title/タイトル2.png	Title/標題2.png
+rm2003-0675	Title	Title/Title3.png	Title/タイトル3.png	Title/標題3.png
+rm2003-0676	Title	Title/Title4.png	Title/タイトル4.png	Title/標題4.png

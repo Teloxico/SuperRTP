@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "snapshot_date": "2026-09-23",
+  "scope": "Filename-only interoperability facts; no upstream creative content is included.",
+  "rpg_maker_sources": {
+    "rm2000": {
+      "url": "https://assets.rpgmakerweb.com/rpg2000_rtp_installer.exe",
+      "archive_sha256": "ec82b92da65ca6fdb2d3df25dfbcd7f2bb716e4fe63a079e8e5e396e91fa5e29",
+      "inventory_file": "rm2000.txt",
+      "asset_path_count": 466,
+      "category_counts": {
+        "(root)": 1,
+        "Backdrop": 25,
+        "Battle": 28,
+        "CharSet": 15,
+        "ChipSet": 5,
+        "FaceSet": 5,
+        "GameOver": 1,
+        "Monster": 65,
+        "Music": 97,
+        "Panorama": 13,
+        "Sound": 206,
+        "System": 1,
+        "Title": 4
+      },
+      "inventory_sha256": "bb71e32271887dd8c93604202c84bc6603bead60b9e1c3ea05bb4865017df340"
+    },
+    "rm2003": {
+      "url": "https://assets.rpgmakerweb.com/rpg2003_rtp_installer.zip",
+      "archive_sha256": "ddd519b50a22a2a95beeb831d29f7d7d92ae6263f953491163b446b808b66863",
+      "inventory_file": "rm2003.txt",
+      "asset_path_count": 676,
+      "category_counts": {
+        "(root)": 1,
+        "Backdrop": 34,
+        "Battle": 54,
+        "BattleCharSet": 64,
+        "BattleWeapon": 1,
+        "CharSet": 15,
+        "ChipSet": 5,
+        "FaceSet": 5,
+        "GameOver": 1,
+        "Monster": 115,
+        "Music": 151,
+        "Panorama": 13,
+        "Sound": 206,
+        "System": 4,
+        "System2": 3,
+        "Title": 4
+      },
+      "inventory_sha256": "ea1fa01ec28f331af49f43a62401c1f4a8d5c5d67cc2203f8ea950a537be05e0"
+    },
+    "rmxp": {
+      "url": "https://assets.rpgmakerweb.com/xp_rtp104e.exe",
+      "archive_sha256": "b3bd20ad7f413b40ac233aafd2e061de1dc429c2eadb59d0b3157ba3c47f16b2",
+      "inventory_file": "rmxp.txt",
+      "asset_path_count": 882,
+      "category_counts": {
+        "(root)": 1,
+        "Audio/BGM": 64,
+        "Audio/BGS": 20,
+        "Audio/ME": 16,
+        "Audio/SE": 180,
+        "Graphics/Animations": 30,
+        "Graphics/Autotiles": 81,
+        "Graphics/Battlebacks": 50,
+        "Graphics/Battlers": 100,
+        "Graphics/Characters": 200,
+        "Graphics/Fogs": 10,
+        "Graphics/Gameovers": 1,
+        "Graphics/Icons": 50,
+        "Graphics/Panoramas": 7,
+        "Graphics/Tilesets": 50,
+        "Graphics/Titles": 1,
+        "Graphics/Transitions": 20,
+        "Graphics/Windowskins": 1
+      },
+      "inventory_sha256": "1a79bada0111dcbd02e200dd84da57bb3246bb8356e9ba3ade52180c9a9a394b"
+    },
+    "rmvx": {
+      "url": "https://assets.rpgmakerweb.com/vx_rtp102e.zip",
+      "archive_sha256": "8c82c02c876391d9585934454a629748d71b421c4957ada1dff8dc4b013ce403",
+      "inventory_file": "rmvx.txt",
+      "asset_path_count": 439,
+      "category_counts": {
+        "(root)": 1,
+        "Audio/BGM": 42,
+        "Audio/BGS": 10,
+        "Audio/ME": 10,
+        "Audio/SE": 200,
+        "Graphics/Animations": 59,
+        "Graphics/Battlers": 56,
+        "Graphics/Characters": 27,
+        "Graphics/Faces": 10,
+        "Graphics/Parallaxes": 6,
+        "Graphics/System": 18
+      },
+      "inventory_sha256": "5649c63e3562c71fa4cbc5b6bfc847874899ec732468ec22c77aceae511e236b"
+    },
+    "rmvxace": {
+      "url": "https://assets.rpgmakerweb.com/RPGVXAce_RTP.zip",
+      "archive_sha256": "7e93d0ead93a686218b7c671bf099ef42f09f536083bd0b2f0fa6423a39fc19b",
+      "inventory_file": "rmvxace.txt",
+      "asset_path_count": 748,
+      "category_counts": {
+        "(root)": 1,
+        "Audio/BGM": 42,
+        "Audio/BGS": 10,
+        "Audio/ME": 13,
+        "Audio/SE": 275,
+        "Graphics/Animations": 93,
+        "Graphics/Battlebacks1": 54,
+        "Graphics/Battlebacks2": 54,
+        "Graphics/Battlers": 74,
+        "Graphics/Characters": 48,
+        "Graphics/Faces": 12,
+        "Graphics/Parallaxes": 15,
+        "Graphics/System": 6,
+        "Graphics/Tilesets": 22,
+        "Graphics/Titles1": 20,
+        "Graphics/Titles2": 9
+      },
+      "inventory_sha256": "2e19a91e362ec9ef8be851bd58e8d841ccdb4d6ed9a6fc9397d62e785650af75"
+    }
+  },
+  "wolf_source": {
+    "url": "https://github.com/smokingwolf/tool_wolf_rpg_editor/releases/download/v3.717/WolfRPGEditor_3.717_full.zip",
+    "version": "3.717",
+    "sha256": "037e845bc0905c947e9ba337e0ad44771ce5122610188dac34cf08efe7dad608",
+    "inventory_file": "wolf.txt",
+    "asset_path_count": 645,
+    "category_counts": {
+      "Data/BGM": 72,
+      "Data/BasicData": 126,
+      "Data/BattleEffect": 30,
+      "Data/CharaChip": 80,
+      "Data/EnemyGraphic": 117,
+      "Data/Fog_BackGround": 10,
+      "Data/MapChip": 89,
+      "Data/Picture": 3,
+      "Data/SE": 94,
+      "Data/SystemFile": 24
+    },
+    "inventory_sha256": "e6184d294718de509f92d8c0b2de8d05c2ef1ed9658c2f9804b668c84efe2125"
+  },
+  "official_locale_alias_source": {
+    "url": "https://raw.githubusercontent.com/EasyRPG/Player/0.8.1.1/src/rtp_table.cpp",
+    "version": "0.8.1.1",
+    "sha256": "05e165d23add7287f8fa9582971547b1bffb35306421248393aeacd901e43cc0",
+    "files": {
+      "rm2000": {
+        "file": "rm2000-official-aliases.tsv",
+        "rows": 465,
+        "sha256": "515e37031a2e10c87be17556c26bf5440eeddbd98591e3b0d51648ba7f6f9c05"
+      },
+      "rm2003": {
+        "file": "rm2003-official-aliases.tsv",
+        "rows": 676,
+        "sha256": "5000d3a83d318292e3ed111e38b08c4ea7ad3e463e431770583afc65925f28c3"
+      }
+    },
+    "included_locales": {
+      "rm2000": [
+        "english",
+        "japanese"
+      ],
+      "rm2003": [
+        "english",
+        "japanese",
+        "traditional_chinese"
+      ]
+    },
+    "excluded_columns": "Community translation/add-on columns are not publisher RTP inventories."
+  }
+}

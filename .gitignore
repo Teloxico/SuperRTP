@@ -9,3 +9,6 @@ __pycache__/
 .playwright-cli/
 tools/generate_fixture
 node_modules/
+
+# Generated asset packs are large and rebuilt from .cache/flux; their manifest and provenance stay tracked.
+artifacts/generation/full-inventory/*/packs/
