@@ -13,7 +13,7 @@
   "output_root": "artifacts/generation/full-inventory/v2",
   "art_direction": {
     "path": "specs/generation/art-direction.v1.json",
-    "sha256": "2b9a33f13f45a3cd02e8043bfda62a2727c57e9fa7841c9dc090859ef03389d5",
+    "sha256": "2a486cf7acc11adc9326bd8d2ca2251a5e0af103edb9f1f0b248cc2665a7aad9",
     "role": "prompt text for every FLUX concept (style guide, family briefs, per-subject descriptions)"
   },
   "visual_generation": {

@@ -66,6 +66,20 @@ class TestFullInventoryGeneration(unittest.TestCase):
                                    "charset-vx-single", "faces", "faces-vx", "portrait", "icon")
             self.assertEqual(job.key_rgb is not None, keyed, job.job_id)
 
+    def test_turnaround_views_reference_their_own_front_view_generated_first(self):
+        """Side and back views are conditioned on the front view of the same character; the only
+        image input is that project-generated front, and the plan generates it first."""
+        jobs = flux_jobs.plan_jobs(self.plan)
+        order = {job.job_id: i for i, job in enumerate(jobs)}
+        views = [job for job in jobs if job.view]
+        self.assertTrue(views)
+        for job in views:
+            if job.view == "front":
+                self.assertIsNone(job.reference, job.job_id)
+                continue
+            self.assertEqual(job.reference, job.job_id.rsplit("-", 1)[0] + "-front", job.job_id)
+            self.assertLess(order[job.reference], order[job.job_id], job.job_id)
+
     def test_representative_media_are_byte_deterministic(self):
         for engine, path in (
             ("rm2000", "Backdrop/Forest1.png"),
