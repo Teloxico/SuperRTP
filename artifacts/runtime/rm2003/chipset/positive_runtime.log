@@ -1,30 +1,25 @@
-Debug: EasyRPG Player 0.8.1.1 (2025-06-02) started
-Debug: ===========================================
-Debug: CLI: --project-path /home/manc/Documents/SuperRTP/tests/fixtures/rm2003_chipset_min --rtp-path /home/manc/Documents/SuperRTP/generated/rm2003 --engine rpg2k3 --new-game --disable-audio --no-pause-focus-lost --no-log-color --seed 42 
-Debug: Clock: StdSteady steady=true period=ns (1 / 1000000000)
-Debug: Seeded the RNG with 42.
-Debug: SDL2: RendererInfo hw=false sw=true vsync=true
-Debug: SDL2: Detected format (1) SDL_PIXELFORMAT_ARGB8888 : rank=(2)
-Debug: SDL2: Selected Pixel Format SDL_PIXELFORMAT_ARGB8888
-Debug: Detected encoding: ibm-5348_P100-1997
-Debug: Game and Save Directory:
-Debug: 1: [Native]  -> /home/manc/Documents/SuperRTP/tests/fixtures/rm2003_chipset_min
-Debug: Loading game SuperRTP_ChipSet_Fixture_2k3
-Debug: Cannot find RPG_RT
-Debug: Engine configured as: 2k=false 2k3=true MajorUpdated=false Eng=false
-Debug: wine prefix not found: "/home/manc/.wine"
-Debug: wine prefix not found: "/home/manc/.wine"
-Debug: wine prefix not found: "/home/manc/.wine"
-Debug: wine prefix not found: "/home/manc/.wine"
-Debug: wine prefix not found: "/home/manc/.wine"
-Debug: wine prefix not found: "/home/manc/.wine"
-Debug: Adding /home/manc/Documents/SuperRTP/generated/rm2003 to RTP path
-Debug: RTP is "Vlad Russian Translation" (2/350)
-Debug: Patch configuration: None
-Debug: Cannot find: Font/Font
-Debug: Cannot find: Font/Font2
-Debug: Cannot find: Logo/LOGO1
-Debug: Resolution changed to 320x240
-Debug: Loaded Map Map0001.lmu
-Debug: Tree: Map0001
-Debug: Game uses RTP "RPG Advocate English Translation"
+[2026-09-23 11:43:10] Debug: EasyRPG Player 0.8.1.1 (2025-06-02) started
+[2026-09-23 11:43:10] Debug: ===========================================
+[2026-09-23 11:43:10] Debug: CLI: --project-path <repo>/tests/fixtures/rm2003_chipset_min --rtp-path <repo>/generated/rm2003 --engine rpg2k3 --new-game --disable-audio --no-pause-focus-lost --fullscreen --no-log-color --seed 42 --log-file <repo>/artifacts/runtime/rm2003/chipset/positive_runtime.log 
+[2026-09-23 11:43:10] Debug: Clock: StdSteady steady=true period=ns (1 / 1000000000)
+[2026-09-23 11:43:10] Debug: Seeded the RNG with 42.
+[2026-09-23 11:43:10] Debug: SDL2: RendererInfo hw=true sw=false vsync=true
+[2026-09-23 11:43:10] Debug: SDL2: Detected format (0) SDL_PIXELFORMAT_ARGB8888 : rank=(2)
+[2026-09-23 11:43:10] Debug: SDL2: Detected format (1) SDL_PIXELFORMAT_ABGR8888 : rank=(2)
+[2026-09-23 11:43:10] Debug: SDL2: Selected Pixel Format SDL_PIXELFORMAT_ARGB8888
+[2026-09-23 11:43:10] Debug: Detected encoding: ibm-5348_P100-1997
+[2026-09-23 11:43:10] Debug: Game and Save Directory:
+[2026-09-23 11:43:10] Debug: 1: [Native]  -> <repo>/tests/fixtures/rm2003_chipset_min
+[2026-09-23 11:43:10] Debug: Loading game SuperRTP_ChipSet_Fixture_2k3
+[2026-09-23 11:43:10] Debug: Cannot find RPG_RT
+[2026-09-23 11:43:10] Debug: Engine configured as: 2k=false 2k3=true MajorUpdated=false Eng=false
+[2026-09-23 11:43:10] Debug: Adding <repo>/generated/rm2003 to RTP path
+[2026-09-23 11:43:10] Debug: RTP is "Vlad Russian Translation" (2/350)
+[2026-09-23 11:43:10] Debug: Patch configuration: None
+[2026-09-23 11:43:10] Debug: Cannot find: Font/Font
+[2026-09-23 11:43:10] Debug: Cannot find: Font/Font2
+[2026-09-23 11:43:10] Debug: Cannot find: Logo/LOGO1
+[2026-09-23 11:43:11] Debug: Resolution changed to 320x240
+[2026-09-23 11:43:11] Debug: Loaded Map Map0001.lmu
+[2026-09-23 11:43:11] Debug: Tree: Map0001
+[2026-09-23 11:43:12] Debug: Game uses RTP "RPG Advocate English Translation"

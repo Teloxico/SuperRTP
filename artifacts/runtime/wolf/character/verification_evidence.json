@@ -39,7 +39,10 @@
     "Data/Picture/test_pad.png": "8deedef4a762f49a6eadb16118b70492f056e50fd9692cacd73014ca225e7b41"
   },
   "positive_lookup_result": "72 128",
-  "negative_lookup_result": "<<NotFound>>",
+  "negative_diagnostic": "ERROR: Cannot find [CharaChip/SuperRTP_Calibration.png]",
+  "negative_error_log_sha256": "aab7eee31668f7a41ea2c9cd3982e4c1cdd853b72134d587f99cefa8553eab5a",
+  "positive_runtime_log_sha256": "3ffea399efb20f9e235f239e538abcca4d99e537489d56ea6c645e4b575bd0c0",
+  "negative_runtime_log_sha256": "3ffea399efb20f9e235f239e538abcca4d99e537489d56ea6c645e4b575bd0c0",
   "positive_screenshots": {
     "wolf_character_positive.png": "2aa86a0d12ce970eafcbcbf95180b45cca4e2aea84458bf7194adb5f331605e4",
     "wolf_character_down.png": "8afcb99876ff719152bdf57ab62ff5a6e1dc099cca5da1e3e013e0787b4acda7",
@@ -52,23 +55,54 @@
   "negative_screenshot": {
     "wolf_character_negative_control.png": "f9f093218963b3637139595af40ef1e7fd58818552abed46b7356dcbc65a4bea"
   },
-  "directional_visual_assertions": {
-    "down": "VERIFIED_DOWN_ARROW",
-    "left": "VERIFIED_LEFT_ARROW",
-    "right": "VERIFIED_RIGHT_ARROW",
-    "up": "VERIFIED_UP_ARROW"
-  },
-  "movement_animation_assertions": {
-    "step_left": "VERIFIED_WALK_PHASE_STEP_LEFT",
-    "idle": "VERIFIED_WALK_PHASE_IDLE",
-    "step_right": "VERIFIED_WALK_PHASE_STEP_RIGHT",
-    "phase_transition": "VERIFIED_IDLE_TO_STEP_TRANSITION"
+  "directional_captures": {
+    "wolf_character_down.png": {
+      "pattern": 2,
+      "position": [
+        280,
+        160
+      ]
+    },
+    "wolf_character_left.png": {
+      "pattern": 5,
+      "position": [
+        280,
+        160
+      ]
+    },
+    "wolf_character_right.png": {
+      "pattern": 8,
+      "position": [
+        280,
+        160
+      ]
+    },
+    "wolf_character_up.png": {
+      "pattern": 11,
+      "position": [
+        280,
+        160
+      ]
+    },
+    "wolf_character_walk_step1.png": {
+      "pattern": 1,
+      "position": [
+        280,
+        160
+      ]
+    },
+    "wolf_character_walk_step2.png": {
+      "pattern": 3,
+      "position": [
+        280,
+        160
+      ]
+    }
   },
   "runtime_environment_metadata": {
     "os": "linux",
-    "wine_bin": "/home/manc/.local/bin/wine",
-    "display": ":99",
-    "capture_method": "ffmpeg_x11grab_lossless_640x480"
+    "wine_version": "wine-10.0 (Ubuntu 10.0~repack-12ubuntu1)",
+    "capture_method": "xvfb_ffmpeg_x11grab_640x480"
   },
-  "timestamp": "2026-09-17T01:44:19.662298+00:00"
+  "timestamp": "2026-09-23T05:29:31.462448+00:00"
 }
