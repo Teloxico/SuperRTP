@@ -72,6 +72,43 @@ image is `flux2-klein-4b` or `procedural`.
   `candidate-not-active`: the active target builder does not emit them until a runtime
   promotion gate approves their slot maps.
 
+## Runtime gate
+
+`tools/verify_generated_packs.py` runs the real engines against the generated packs,
+reusing the clean-room fixtures with the RTP pointed at a pack:
+
+- **RM2000/2003 (EasyRPG):** each pack's CharSet and ChipSet load. The fixtures request
+  legacy alias names (Basis, Hero1, Main). EasyRPG resolves them to the official file
+  names in the pack (World, Actor1), and the session must end with the map loaded, no
+  "Image not found" and no warning banner.
+- **XP/VX/VX Ace (mkxp-z):** `Bitmap.new` of the character slot resolves through the
+  pack at the pack file's exact size.
+- **Report:** `artifacts/generation/full-inventory/v2/runtime-gate.json`, with
+  screenshots, binding each loaded slot's SHA-256.
+- **Service:** it runs this gate at completion and records the result in
+  `.cache/flux/COMPLETE.json`.
+
+WOLF has no RTP search path; its packs are covered by the structural checks.
+
+The VX/VX Ace calibration fixtures expect the 288x256 calibration sheet (24x32 frames).
+The generated sheets follow the stock VX layout of 32x32 frames (384x256). RGSS2/3 derive
+the frame size from the bitmap, so both load. The gate accepts the fixtures' size-mismatch
+exit only when the loaded size equals the pack file's.
+
+## Running unattended
+
+`tools/asset_generation/run_flux_service.sh --install` installs `superrtp-flux.service`, a
+systemd user service that restarts after failures and starts at login. It runs
+`flux_worker.py --until-complete`, which does the following in order:
+1. Generates every concept, retrying failed jobs for up to three passes.
+2. Structures the concepts, then builds and verifies the packs.
+3. Runs the runtime gate.
+4. Writes `.cache/flux/COMPLETE.json` and frees the model and its environment (~12 GB).
+   `setup_flux.sh` recreates them.
+
+The service then disables itself. Follow progress in `.cache/flux/status.json` or
+`.cache/flux/worker.log`.
+
 ## Known limits
 
 - **Walking animation:** steps are synthesised from one standing view per direction, a

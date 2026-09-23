@@ -126,13 +126,14 @@ class MkxpRun:
 
 
 def run_session(mkxp_bin: str, conf: dict, screenshot_path: str, record_seconds: float, scene_drawn,
-                timeout: float = 60.0) -> MkxpRun:
+                timeout: float = 60.0, require_frame: bool = True) -> MkxpRun:
     """
     Runs mkxp-z with `conf` (paths repository-relative) under Xvfb and records the screen.
     The saved screenshot is the middle of the stable run of samples for which
     `scene_drawn(rgb24_bytes)` is true (runtime_harness.pick_video_frames), so start-up
     delays cannot shift which frame is captured. Returns the exit code and output.
     If no frame qualifies, the recording is kept as `<screenshot_path>.failed.mkv`.
+    With `require_frame=False` no screenshot is taken (the run is judged by its output).
     """
     width, height = SCREEN_SIZES[conf["rgssVersion"]]
     runtime_conf = dict(conf, gameFolder=os.path.join(REPO_ROOT, conf["gameFolder"]),
@@ -148,6 +149,8 @@ def run_session(mkxp_bin: str, conf: dict, screenshot_path: str, record_seconds:
                 time.sleep(RECORDER_WARMUP_S)
                 code, out, err = run_to_completion([mkxp_bin], env=env, cwd=workdir, timeout=timeout)
                 finish_recording(recorder, timeout=record_seconds + 30)
+        if not require_frame:
+            return MkxpRun(code, out, err)
         try:
             pick_video_frames(video, width, height, lambda rgb: "scene" if scene_drawn(rgb) else None,
                               ["scene"], {"scene": screenshot_path})
