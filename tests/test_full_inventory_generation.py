@@ -14,7 +14,6 @@ from support import REPO_ROOT
 
 from asset_generation import flux_jobs
 from asset_generation.generate_full_inventory import build_plan, load_spec, verify
-from asset_generation.procedural_audio import audio_policy, render_audio
 from asset_generation.procedural_visuals import encode_visual, render_visual, visual_policy
 
 
@@ -82,14 +81,13 @@ class TestFullInventoryGeneration(unittest.TestCase):
                 first = encode_visual(engine, path, policy, render_visual(engine, path, policy))
                 second = encode_visual(engine, path, policy, render_visual(engine, path, policy))
                 self.assertEqual(hashlib.sha256(first).digest(), hashlib.sha256(second).digest())
-        for path, creative_id in (
-            ("Music/Battle1.mid", "audio.bgm.battle1"),
-            ("Sound/Attack1.wav", "audio.se.attack1"),
-            ("Audio/BGS/Rain.ogg", "audio.bgs.rain"),
-        ):
-            with self.subTest(path=path):
-                policy = audio_policy(path)
-                self.assertEqual(render_audio(path, creative_id, policy), render_audio(path, creative_id, policy))
+
+    def test_prequantized_images_keep_the_indexed_format(self):
+        """Structured FLUX images for RM2000/2003 skip palette quantization but must stay indexed PNGs."""
+        policy = visual_policy("rm2000", "Backdrop/Forest1.png")
+        rgba = render_visual("rm2000", "Backdrop/Forest1.png", policy)
+        png = encode_visual("rm2000", "Backdrop/Forest1.png", policy, rgba, prequantized=True)
+        self.assertEqual(png[25], 3, "IHDR colour type must be 3 (indexed)")
 
     def test_generated_collection_is_hash_bound(self):
         manifest = os.path.join(REPO_ROOT, self.spec["output_root"], "manifest.json")

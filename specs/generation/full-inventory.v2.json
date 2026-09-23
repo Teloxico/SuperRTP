@@ -34,12 +34,6 @@
     ],
     "rule": "each visual uses its structured FLUX asset when one exists; otherwise the procedural renderer, and the manifest records which (visual_source)"
   },
-  "audio": {
-    "sample_rate": 22050,
-    "wav_sample_width_bits": 16,
-    "ogg_codec": "vorbis",
-    "midi_division": 480
-  },
   "evaluated_but_blocked_visual_backends": [
     {
       "base_model": "black-forest-labs/FLUX.2-klein-9B",
@@ -70,6 +64,10 @@
     "proprietary_filename_facts_used": true,
     "upstream_pixels_or_audio_used": false,
     "external_creative_assets_used": false,
-    "method": "text-only FLUX.2 [klein] 4B concepts from original art direction (no image inputs), deterministic structuring into engine layouts, procedural synthesis for audio and structural visuals, and filename-derived neutral functional semantics"
+    "method": "text-only FLUX.2 [klein] 4B concepts from original art direction (no image inputs), deterministic structuring into engine layouts, procedural synthesis for structural visuals, and filename-derived neutral functional semantics"
+  },
+  "audio": {
+    "status": "not-generated",
+    "reason": "Audio generation is out of scope; the 2,738 inventoried audio paths are listed in the pack manifest as a backlog."
   }
 }
