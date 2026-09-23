@@ -70,23 +70,19 @@ DIRECTIONAL_ORIGIN = (280, 160)
 DIRECTIONAL_EVENT_CELL = (9, 6)
 DIRECTIONAL_SEARCH = [DIRECTIONAL_ORIGIN] + [(x, y) for _, x, y, _ in COMPOSITE_SLOTS] + [(70, 60)]
 
-# Glyph bitmaps of the digits in "72 128" as WOLF renders them in this fixture (threshold 80
-# on the red channel). Only these four digits occur; any other glyph decodes as '?'.
+# Glyph bitmaps of the digits in "72 128" as Wine renders the fixture's text with only its
+# bundled fonts visible (wolf_runtime.FONTCONFIG_FILE; threshold 80 on the red channel).
+# Only these four digits occur; any other glyph decodes as '?'.
 REF_DIGITS = {
-    "7": ["111111110", "111111111", "100000001", "000000010", "000000010", "000000010", "000000100", "000000100",
-          "000000100", "000001100", "000001000", "000001000", "000011000", "000010000", "000010000"],
-    "2": ["0001111000", "0011001100", "0100000010", "1100000010", "0000000011", "0000000010", "0000000110",
-          "0000001100", "0000011000", "0000110000", "0001100000", "0011000000", "0110000000", "1100000000", "1111111111"],
-    "1": ["000010000", "011110000", "110010000", "000010000", "000010000", "000010000", "000010000", "000010000",
-          "000010000", "000010000", "000010000", "000010000", "000010000", "000010000", "111111111"],
-    "8": ["000111000", "011000110", "010000010", "100000011", "100000001", "110000010", "011000110", "001111100",
-          "011000110", "110000011", "100000001", "100000001", "100000001", "010000010", "001111100", "000010000"],
+    "7": ["11111111111", "11111111111", "11111111111", "00000000110", "00000001110", "00000001110", "00000001100", "00000011100", "00000011000", "00000111000", "00000111000", "00000110000", "00001110000", "00001100000", "00011100000", "00011100000", "00011000000", "00111000000"],
+    "2": ["00111111000", "11111111100", "11100001110", "00000000111", "00000000111", "00000000011", "00000000111", "00000000110", "00000001110", "00000011100", "00000111000", "00001110000", "00011100000", "00111000000", "01110000000", "11100000000", "11111111111", "11111111111"],
+    "1": ["001110000", "111111000", "111111000", "000111000", "000111000", "000111000", "000111000", "000111000", "000111000", "000111000", "000111000", "000111000", "000111000", "000111000", "000111000", "000111000", "111111111", "111111111"],
+    "8": ["000111111000", "001111111100", "011100001110", "011000001110", "111000000110", "011000000110", "011100001110", "001111111100", "000111111000", "001111111100", "011100001110", "111000000110", "111000000111", "111000000110", "111000000110", "011000001110", "011110111100", "000111111000"],
 }
 GLYPH_MAX_DIFF = 4
 TEXT_THRESHOLD = 80
 LOOKUP_LINES = ((384, 402), (418, 438))  # y ranges of "RESULT:<w>" and "<h>"
 LOOKUP_X = (20, 160)
-RESULT_PREFIX_GLYPHS = len("RESULT:")
 
 
 def get_target_config(artifacts_dir=None):
@@ -159,14 +155,22 @@ def _glyph_spans(pixels, y1, y2, x1, x2):
     return spans
 
 
+def _is_colon(bitmap) -> bool:
+    """A narrow glyph made of two blobs separated by at least one blank row."""
+    return bool(bitmap) and len(bitmap[0]) <= 4 and any("1" not in row for row in bitmap)
+
+
 def decode_lookup_dimensions(pixels):
     """Reads '<w> <h>' from the RESULT lines the fixture prints, or 'UNKNOWN'."""
     (a1, a2), (b1, b2) = LOOKUP_LINES
     line1 = _glyph_spans(pixels, a1, a2, *LOOKUP_X)
     line2 = _glyph_spans(pixels, b1, b2, *LOOKUP_X)
-    if len(line1) <= RESULT_PREFIX_GLYPHS or not line2:
+    # The width follows "RESULT:". Letters can touch and share a span, so the prefix is
+    # located by its colon rather than by counting glyphs.
+    colons = [i for i, (x1, x2) in enumerate(line1) if _is_colon(_glyph_bitmap(pixels, a1, a2, x1, x2))]
+    if not colons or colons[-1] == len(line1) - 1 or not line2:
         return "UNKNOWN"
-    width = "".join(match_digit_bitmap(_glyph_bitmap(pixels, a1, a2, x1, x2)) for x1, x2 in line1[RESULT_PREFIX_GLYPHS:])
+    width = "".join(match_digit_bitmap(_glyph_bitmap(pixels, a1, a2, x1, x2)) for x1, x2 in line1[colons[-1] + 1:])
     height = "".join(match_digit_bitmap(_glyph_bitmap(pixels, b1, b2, x1, x2)) for x1, x2 in line2)
     return f"{width} {height}"
 
