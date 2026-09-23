@@ -8,6 +8,31 @@ on:
   workflow_dispatch:
 
 jobs:
+  # The pack installer on each desktop OS. Windows runs the registry tests (the runner is
+  # disposable); the engine side of an installation is covered by tools/verify_generated_packs.py.
+  installer:
+    name: Installer (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, python: '3.12' }
+          - { os: ubuntu-22.04, python: '3.8' }
+          - { os: windows-latest, python: '3.12' }
+          - { os: windows-latest, python: '3.8' }
+          - { os: macos-latest, python: '3.12' }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Installer tests
+        env:
+          SUPERRTP_TEST_REGISTRY: ${{ runner.os == 'Windows' && '1' || '0' }}
+        working-directory: tests
+        run: python -m unittest -v test_installer
+
   verify:
     name: Verify Vertical Slice
     runs-on: ubuntu-latest
