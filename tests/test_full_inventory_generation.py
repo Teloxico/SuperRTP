@@ -42,6 +42,18 @@ class TestFullInventoryGeneration(unittest.TestCase):
         self.assertEqual(sum(entry["media"] == "visual" for entry in self.plan), 2934)
         self.assertEqual(sum(entry["media"] == "audio" for entry in self.plan), 2738)
 
+    def test_localized_aliases_share_their_english_creative_id(self):
+        """A Japanese or Chinese RTP name is the same asset as its English row, so it must not
+        count as a separate creative work (e.g. 主人公1 is Actor1, not a creative named '1')."""
+        english = {f"packs/{entry['pack']}/{entry['path']}": entry for entry in self.plan
+                   if entry["locale"] == "en"}
+        aliases = [entry for entry in self.plan if entry["alias_of"]]
+        self.assertEqual(len(aliases), 1815)
+        for entry in aliases:
+            source = english[entry["alias_of"]]
+            self.assertEqual((entry["creative_id"], entry["family"]), (source["creative_id"], source["family"]),
+                             f"{entry['pack']}:{entry['path']}")
+
     def test_clean_room_and_model_license_gates_are_explicit(self):
         attestation = self.spec["clean_room_attestation"]
         self.assertFalse(attestation["proprietary_creative_inputs_used"])
