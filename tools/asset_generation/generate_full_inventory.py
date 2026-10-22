@@ -87,7 +87,7 @@ def _slug(value: str) -> str:
 
 
 def _entry(engine: str, pack: str, locale: str, path: str, semantic_id: str | None = None,
-           alias_of: str | None = None):
+           alias_of: str | None = None, creative_id: str | None = None):
     extension = os.path.splitext(path)[1].lower()
     if extension in VISUAL_EXTENSIONS:
         policy = visual_policy(engine, path)
@@ -100,9 +100,7 @@ def _entry(engine: str, pack: str, locale: str, path: str, semantic_id: str | No
         media = "audio"
     else:
         raise ValueError(f"Unexpected creative extension in inventory: {path}")
-    creative_id = f"{media}.{_slug(family)}.{semantic_stem(path)}"
-    if semantic_id and not semantic_stem(path):
-        creative_id += f".{semantic_id}"
+    creative_id = creative_id or f"{media}.{_slug(family)}.{semantic_stem(path)}"
     return {
         "engine": engine,
         "pack": pack,
@@ -128,6 +126,9 @@ def build_plan(spec):
                 path = line.rstrip("\n")
                 entries.append(_entry(engine, _pack(engine), "en" if engine in ("rm2000", "rm2003") else "base", path))
 
+    # A localized name is the same asset as its English row, so it reuses that row's creative id;
+    # a stem of the localized name loses its non-ASCII text (主人公1 -> "1") and collides.
+    english_ids = {(entry["engine"], entry["path"]): entry for entry in entries}
     aliases = (
         ("rm2000", "rm2000-official-aliases.tsv", (("ja", "japanese_path"),)),
         ("rm2003", "rm2003-official-aliases.tsv", (("ja", "japanese_path"), ("zh-tw", "traditional_chinese_path"))),
@@ -136,12 +137,18 @@ def build_plan(spec):
         with open(os.path.join(INVENTORY_DIR, filename), encoding="utf-8", newline="") as handle:
             for row in csv.DictReader(handle, delimiter="\t"):
                 english = row["english_path"]
+                source = english_ids[(engine, english)] if english else None
                 for locale, column in locales:
                     path = row[column]
                     if not path:
                         continue
                     alias_of = f"packs/{_pack(engine)}/{english}" if english else None
-                    entries.append(_entry(engine, _pack(engine, locale), locale, path, row["semantic_id"], alias_of))
+                    entry = _entry(engine, _pack(engine, locale), locale, path, row["semantic_id"], alias_of,
+                                   source["creative_id"] if source else None)
+                    if source and entry["family"] != source["family"]:
+                        raise ValueError(f"Alias {engine}-{locale}:{path} is family {entry['family']}, "
+                                         f"its English row {english} is {source['family']}")
+                    entries.append(entry)
 
     expected = spec["scope"]["total_output_paths"]
     if len(entries) != expected:
